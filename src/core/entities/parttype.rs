@@ -10,10 +10,12 @@ pub struct PartType{
     rotated_size: Size,
 }
 
+static mut ID: usize = 0;
+
 impl PartType{
-    pub fn new (id: usize, width: u64, height: u64, fixed_orientation: Orientation) -> PartType{
+    pub fn new (width: u64, height: u64, fixed_orientation: Orientation) -> PartType{
         PartType{
-            id: id,
+            id: unsafe { ID += 1; ID },
             width: width,
             height: height,
             fixed_orientation: fixed_orientation,
@@ -21,4 +23,29 @@ impl PartType{
             rotated_size: Size::new(height, width),
         }
     }
+
+    pub fn id(&self) -> usize{
+        self.id
+    }
+
+    pub fn width(&self) -> u64{
+        self.width
+    }
+
+    pub fn height(&self) -> u64{
+        self.height
+    }
+    
+    pub fn fixed_orientation(&self) -> Orientation{
+        self.fixed_orientation
+    }
+
+    pub fn size(&self) -> Size{
+        self.size
+    }
+
+    pub fn rotated_size(&self) -> Size{
+        self.rotated_size
+    }
+
 }

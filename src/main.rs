@@ -8,6 +8,6 @@ pub mod core;
 fn main() {
     println!("Hello, world!");
 
-    let parttype = PartType::new(0, 10, 10, Orientation::Default);
-    println!("{:?}", parttype);
+    let parttype = PartType::new(10, 10, Orientation::Default);
+    println!("{:?}", parttype.id());
 }
