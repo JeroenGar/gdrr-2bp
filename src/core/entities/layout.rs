@@ -23,11 +23,11 @@ impl Layout{
         todo!()
     }
 
-    pub fn removeNode(&mut self, node: &Node){
+    pub fn remove_node(&mut self, node: &Node){
         todo!()
     }
 
-    pub fn createDeepCopy(&self) -> Layout{
+    pub fn create_deep_copy(&self) -> Layout{
         todo!()
     }
 
