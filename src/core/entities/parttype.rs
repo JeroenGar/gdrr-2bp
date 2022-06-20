@@ -1,11 +1,12 @@
 use crate::core::orientation::Orientation;
 use crate::core::size::Size;
+use crate::Rotation;
 
 pub struct PartType{
     id: usize,
     width: u64,
     height: u64,
-    fixed_orientation: Option<Orientation>,
+    fixed_rotation: Option<Rotation>,
     size: Size,
     rotated_size: Size,
 }
@@ -13,12 +14,12 @@ pub struct PartType{
 static mut ID: usize = 0;
 
 impl PartType{
-    pub fn new (width: u64, height: u64, fixed_orientation: Option<Orientation>) -> PartType{
+    pub fn new (width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType{
         PartType{
             id: unsafe { ID += 1; ID },
-            width: width,
-            height: height,
-            fixed_orientation: fixed_orientation,
+            width,
+            height,
+            fixed_rotation,
             size: Size::new(width, height),
             rotated_size: Size::new(height, width),
         }
@@ -36,15 +37,13 @@ impl PartType{
         self.height
     }
 
-    pub fn size(&self) -> Size{
-        self.size
+    pub fn fixed_rotation(&self) -> &Option<Rotation> {
+        &self.fixed_rotation
     }
-
-    pub fn rotated_size(&self) -> Size{
-        self.rotated_size
+    pub fn size(&self) -> &Size {
+        &self.size
     }
-
-    pub fn fixed_orientation(&self) -> Option<Orientation> {
-        self.fixed_orientation
+    pub fn rotated_size(&self) -> &Size {
+        &self.rotated_size
     }
 }

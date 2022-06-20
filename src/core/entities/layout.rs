@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 
-use crate::core::{cost::Cost, proposals::insertion_blueprint::InsertionBlueprint};
+use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
+use crate::core::entities::node::Node;
 
-use super::{node::node::Node, sheettype::SheetType, parttype::PartType};
+use super::{sheettype::SheetType, parttype::PartType};
 
 pub struct Layout{
     id : usize,

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Size{
     width: u64,
     height: u64,
@@ -15,4 +15,13 @@ impl Size{
     }
 
 
+    pub fn width(&self) -> u64 {
+        self.width
+    }
+    pub fn height(&self) -> u64 {
+        self.height
+    }
+    pub fn area(&self) -> u64 {
+        self.area
+    }
 }

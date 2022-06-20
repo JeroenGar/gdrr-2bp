@@ -1,5 +1,6 @@
 pub mod cost;
 pub mod size;
-pub mod proposals;
+pub mod insertion;
 pub mod orientation;
 pub mod entities;
+pub mod rotation;
