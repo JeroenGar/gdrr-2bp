@@ -3,15 +3,15 @@ use crate::core::entities::node::Node;
 use crate::{Orientation, PartType, Rotation};
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 
-pub struct InsertionOption<'a>{
+pub struct InsertionOption<'a,'b>{
     original_node: &'a Node,
-    parttype: &'a PartType,
+    parttype: &'b PartType,
     rotation: Option<Rotation>,
-    blueprints: RefCell<Option<Vec<InsertionBlueprint<'a>>>>
+    blueprints: RefCell<Option<Vec<InsertionBlueprint<'a,'b>>>>
 }
 
-impl<'a> InsertionOption<'a>{
-    pub fn new(original_node: &'a Node, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
+impl<'a,'b> InsertionOption<'a,'b>{
+    pub fn new(original_node: &'a Node, parttype: &'b PartType, rotation: Option<Rotation>) -> Self {
         Self {
             original_node,
             parttype,
@@ -20,7 +20,7 @@ impl<'a> InsertionOption<'a>{
         }
     }
 
-    pub fn get_blueprints(&self) -> Ref<'_, Option<Vec<InsertionBlueprint<'a>>>> {
+    pub fn get_blueprints(&self) -> Ref<'_, Option<Vec<InsertionBlueprint<'a,'b>>>> {
         if self.blueprints.borrow().is_none() {
             self.blueprints.replace(Some(self.generate_blueprints()));
         }
@@ -28,7 +28,7 @@ impl<'a> InsertionOption<'a>{
         self.blueprints.borrow()
     }
 
-    fn generate_blueprints(&self) -> Vec<InsertionBlueprint<'a>> {
+    fn generate_blueprints(&self) -> Vec<InsertionBlueprint<'a,'b>> {
         let mut blueprints = Vec::new();
         match self.rotation{
             Some(rotation) => {

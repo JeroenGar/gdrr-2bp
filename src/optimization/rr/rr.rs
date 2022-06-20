@@ -17,6 +17,8 @@ impl<'a> RR<'a> {
 
     pub fn recreate(){
         todo!();
+
+
     }
 
     fn best_fit_insert_parts(){

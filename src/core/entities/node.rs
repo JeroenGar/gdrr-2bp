@@ -46,7 +46,7 @@ impl Node {
         todo!()
     }
 
-    pub fn generate_insertion_blueprints<'a>(&'a self, insertion_blueprints: &mut Vec<InsertionBlueprint<'a>>, parttype : &PartType, rotation: Rotation) {
+    pub fn generate_insertion_blueprints<'a,'b>(&'a self, insertion_blueprints: &mut Vec<InsertionBlueprint<'a,'b>>, parttype : &'b PartType , rotation: Rotation) {
         debug_assert!(self.insertion_possible(parttype, rotation));
 
         let part_size = match rotation {
@@ -80,19 +80,19 @@ impl Node {
 
         if self.next_cut_orient == Orientation::Horizontal && self.height == part_size.height() {
             let remainder_width = self.width - part_size.width();
-            let part_node = NodeBlueprint::new(part_size.width(), self.height, Some(parttype.id()), self.next_cut_orient);
+            let part_node = NodeBlueprint::new(part_size.width(), self.height, Some(parttype), self.next_cut_orient);
             let remainder_node = NodeBlueprint::new(remainder_width, self.height, None, self.next_cut_orient);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node, remainder_node], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node, remainder_node], parttype);
             insertion_blueprints.push(insertion_blueprint);
             return;
         }
         if self.next_cut_orient == Orientation::Vertical && self.width == part_size.width() {
             let remainder_height = self.height - part_size.height();
-            let part_node = NodeBlueprint::new(self.width, part_size.height(), Some(parttype.id()), self.next_cut_orient);
+            let part_node = NodeBlueprint::new(self.width, part_size.height(), Some(parttype), self.next_cut_orient);
             let remainder_node = NodeBlueprint::new(self.width, remainder_height, None, self.next_cut_orient);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node, remainder_node], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node, remainder_node], parttype);
             insertion_blueprints.push(insertion_blueprint);
             return;
         }
@@ -111,13 +111,13 @@ impl Node {
 
             let remainder_height = self.height - part_size.height();
 
-            let part_node = NodeBlueprint::new(self.width, part_size.height(), Some(parttype.id()), self.next_cut_orient.rotate());
+            let part_node = NodeBlueprint::new(self.width, part_size.height(), Some(parttype), self.next_cut_orient.rotate());
             let remainder_node = NodeBlueprint::new(self.width, remainder_height, None, self.next_cut_orient.rotate());
 
             copy.add_child(part_node);
             copy.add_child(remainder_node);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype);
             insertion_blueprints.push(insertion_blueprint);
 
             return;
@@ -128,13 +128,13 @@ impl Node {
 
             let remainder_width = self.width - part_size.width();
 
-            let part_node = NodeBlueprint::new(part_size.width(), self.height, Some(parttype.id()), self.next_cut_orient.rotate());
+            let part_node = NodeBlueprint::new(part_size.width(), self.height, Some(parttype), self.next_cut_orient.rotate());
             let remainder_node = NodeBlueprint::new(remainder_width, self.height, None, self.next_cut_orient.rotate());
 
             copy.add_child(part_node);
             copy.add_child(remainder_node);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype);
             insertion_blueprints.push(insertion_blueprint);
 
             return;
@@ -159,13 +159,13 @@ impl Node {
             let remainder_node_top = NodeBlueprint::new(remainder_width_top, self.height, None, self.next_cut_orient);
 
             let remainder_height_bottom = self.height - part_size.height();
-            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype.id()), self.next_cut_orient.rotate());
+            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype), self.next_cut_orient.rotate());
             let remainder_node_bottom = NodeBlueprint::new(part_size.width(), remainder_height_bottom, None, self.next_cut_orient.rotate());
 
             part_node_parent.add_child(part_node);
             part_node_parent.add_child(remainder_node_bottom);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node_parent, remainder_node_top], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node_parent, remainder_node_top], parttype);
             insertion_blueprints.push(insertion_blueprint);
         }
 
@@ -175,13 +175,13 @@ impl Node {
             let remainder_node_top = NodeBlueprint::new(self.width, remainder_height_top, None, self.next_cut_orient);
 
             let remainder_width_bottom = self.width - part_size.width();
-            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype.id()), self.next_cut_orient.rotate());
+            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype), self.next_cut_orient.rotate());
             let remainder_node_bottom = NodeBlueprint::new(remainder_width_bottom, part_size.height(), None, self.next_cut_orient.rotate());
 
             part_node_parent.add_child(part_node);
             part_node_parent.add_child(remainder_node_bottom);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node_parent, remainder_node_top], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node_parent, remainder_node_top], parttype);
             insertion_blueprints.push(insertion_blueprint);
         }
 
@@ -204,7 +204,7 @@ impl Node {
             let remainder_node_top = NodeBlueprint::new(self.width, remainder_height_top, None, self.next_cut_orient.rotate());
 
             let remainder_width_bottom = self.width - part_size.width();
-            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype.id()), self.next_cut_orient.rotate().rotate());
+            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype), self.next_cut_orient.rotate().rotate());
             let remainder_node_bottom = NodeBlueprint::new(remainder_width_bottom, part_size.height(), None, self.next_cut_orient.rotate().rotate());
 
             part_node_parent.add_child(part_node);
@@ -213,7 +213,7 @@ impl Node {
             copy.add_child(part_node_parent);
             copy.add_child(remainder_node_top);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype);
             insertion_blueprints.push(insertion_blueprint);
         }
 
@@ -226,7 +226,7 @@ impl Node {
 
             let remainder_height_bottom = self.height - part_size.height();
 
-            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype.id()), self.next_cut_orient.rotate().rotate());
+            let part_node = NodeBlueprint::new(part_size.width(), part_size.height(), Some(parttype), self.next_cut_orient.rotate().rotate());
             let remainder_node_bottom = NodeBlueprint::new(part_size.width(), remainder_height_bottom, None, self.next_cut_orient.rotate().rotate());
 
             part_node_parent.add_child(part_node);
@@ -235,7 +235,7 @@ impl Node {
             copy.add_child(part_node_parent);
             copy.add_child(remainder_node_top);
 
-            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
+            let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype);
             insertion_blueprints.push(insertion_blueprint);
         }
     }
@@ -271,6 +271,10 @@ impl Node {
     }
     pub fn next_cut_orient(&self) -> Orientation {
         self.next_cut_orient
+    }
+
+    pub fn area(&self) -> u64 {
+        self.width * self.height
     }
 }
 

@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 indexmap = "1.9.0"
+by_address = "1.0.4"

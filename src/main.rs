@@ -15,11 +15,8 @@ fn main() {
     let parttype = PartType::new(10, 10, Some(Rotation::Default));
     let sheettype = SheetType::new(100,100,100*100);
 
-    let mut parts = IndexMap::new();
-    let mut sheets = IndexMap::new();
-
-    parts.insert(parttype, 100);
-    sheets.insert(sheettype, 1);
+    let parts = vec![(parttype, 100)];
+    let sheets = vec![(sheettype, 1)];
 
     let instance = Instance::new(parts, sheets);
 

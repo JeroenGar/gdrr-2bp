@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::collections::LinkedList;
+use std::rc::Rc;
 
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
@@ -10,7 +12,8 @@ pub struct Layout{
     sheettype : usize,
     top_node : Node,
     cached_cost: RefCell<Option<Cost>>,
-    usage : f64
+    usage : f64,
+    sorted_empty_nodes: LinkedList<Rc<Node>>
 }
 
 
@@ -56,6 +59,8 @@ impl Layout{
         todo!()
     }
 
-
+    pub fn get_sorted_empty_nodes(&self) -> &LinkedList<Rc<Node>>{
+        todo!()
+    }
 
 }
