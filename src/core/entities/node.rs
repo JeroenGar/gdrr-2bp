@@ -1,33 +1,41 @@
 use std::{rc::Rc};
+use std::borrow::Borrow;
+use std::cell::RefCell;
+use std::rc::Weak;
 use crate::core::cost::Cost;
 
 use crate::{Orientation, PartType};
+use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::rotation::Rotation;
 
 #[derive(Debug)]
 pub struct Node {
-    width : u64,
+    width: u64,
     height: u64,
-    children : Vec<Rc<Node>>,
+    children: Vec<Rc<RefCell<Node>>>,
+    parent: Option<Weak<RefCell<Node>>>,
     parttype: Option<usize>,
-    next_cut_orient : Orientation
+    next_cut_orient: Orientation,
+    layout: Weak<Layout>,
 }
 
 
 impl Node {
-    pub fn new(width: u64, height: u64, next_cut_orient: Orientation) -> Node {
+    pub fn new(width: u64, height: u64, next_cut_orient: Orientation, layout: Weak<Layout>) -> Node {
         Node {
             width,
             height,
             children: Vec::new(),
+            parent: None,
             parttype: None,
-            next_cut_orient
+            next_cut_orient,
+            layout,
         }
     }
 
-    pub fn new_from_blueprint(blueprint : &NodeBlueprint) -> Node {
+    pub fn new_from_blueprint(blueprint: &NodeBlueprint) -> Node {
         todo!();
     }
 
@@ -39,15 +47,96 @@ impl Node {
         todo!()
     }
 
-    pub fn remove_child(&mut self, child: &Node) {
+    pub fn remove_child(&mut self, child: &Node) -> Rc<RefCell<Node>> {
+        /*
+           Scenario 1: Waste piece present + other child(ren)
+            -> expand existing waste piece
+
+             ---******               ---******
+                *$$$$*                  *$$$$*
+                ******                  ******
+                *XXXX*     ----->       *    *
+                ******                  *    *
+                *    *                  *    *
+             ---******               ---******
+
+             Scenario 2: No waste piece present
+                -> convert Node to be removed into waste Node
+
+             ---******               ---******
+                *$$$$*                  *$$$$*
+                ******    ----->        ******
+                *XXXX*                  *    *
+             ---******               ---******
+
+             Scenario 3: No other children present besides waste piece
+                -> convert parent into waste piece
+
+             ---******               ---******
+                *XXXX*                  *    *
+                ******    ----->        *    *
+                *    *                  *    *
+             ---******               ---******
+         */
+
+        //Check if there is an empty_node present
+        let empty_node_index = self.children.iter().position(|wrapped_node: &Rc<RefCell<Node>>| {
+            let node = wrapped_node.as_ref().borrow();
+            node.parttype.is_none() && node.children.is_empty()
+        });
+
+        if empty_node_index.is_some(){
+            //Scenario 1 and 3
+            let empty_node_index = empty_node_index.unwrap();
+
+            if self.children.len() > 1 || self.parent.is_none() {
+                //Scenario 1 (also do this when node is the root)
+                //Two children are merged into one
+                let mut empty_node = self.children.get(empty_node_index).unwrap().as_ref().borrow_mut();
+                match self.next_cut_orient{
+                    Orientation::Horizontal => {
+                        let new_height = empty_node.height + child.height;
+                        empty_node.set_height(new_height);
+                    },
+                    Orientation::Vertical => {
+                        let new_width = empty_node.width + child.width;
+                        empty_node.set_width(new_width);
+                    }
+                }
+            }
+            else{
+                //Scenario 3: convert the parent into an empty node
+                self.children.clear();
+            }
+
+            //Remove the child
+            let child_to_remove_index = self.children.iter().position(|c| c.as_ptr() as *const Node == child as *const Node).unwrap();
+            let removed_child = self.children.remove(child_to_remove_index);
+        }
+        else {
+            //Scenario 2: convert the node itself into an empty node
+            let child_to_remove_index = self.children.iter().position(|c| c.as_ptr() as *const Node == child as *const Node).unwrap();
+            let mut child_to_remove = self.children.get(child_to_remove_index).unwrap().as_ref().borrow_mut();
+            child_to_remove.children.clear();
+        }
+
         todo!()
     }
 
-    pub fn replace_child(&mut self, old_child: &Node, replacements: Vec<Node>) {
-        todo!()
+    pub fn replace_child(&mut self, old_child: &Node, replacements: Vec<Node>) -> Rc<RefCell<Node>>{
+
+        let old_child_index = self.children.iter().position(|c| c.as_ptr() as *const Node == old_child as *const Node).unwrap();
+        let old_child = self.children.remove(old_child_index);
+
+        for replacement in replacements {
+            let wrapped = Rc::new(RefCell::new(replacement));
+            self.children.push(wrapped);
+        }
+
+        old_child
     }
 
-    pub fn generate_insertion_blueprints<'a,'b>(&'a self, insertion_blueprints: &mut Vec<InsertionBlueprint<'a,'b>>, parttype : &'b PartType , rotation: Rotation) {
+    pub fn generate_insertion_blueprints<'a, 'b>(&'a self, insertion_blueprints: &mut Vec<InsertionBlueprint<'a, 'b>>, parttype: &'b PartType, rotation: Rotation) {
         debug_assert!(self.insertion_possible(parttype, rotation));
 
         let part_size = match rotation {
@@ -218,7 +307,7 @@ impl Node {
             insertion_blueprints.push(insertion_blueprint);
         }
 
-        if self.next_cut_orient == Orientation::Vertical{
+        if self.next_cut_orient == Orientation::Vertical {
             let mut copy = NodeBlueprint::new(self.width, self.height, None, self.next_cut_orient);
 
             let remainder_width_top = self.width - part_size.width();
@@ -241,7 +330,7 @@ impl Node {
         }
     }
 
-    pub fn insertion_possible(&self, parttype : &PartType, rotation : Rotation) -> bool {
+    pub fn insertion_possible(&self, parttype: &PartType, rotation: Rotation) -> bool {
         debug_assert!(*parttype.fixed_rotation() == None || *parttype.fixed_rotation() == Some(rotation));
         debug_assert!(self.children.is_empty() && self.parttype.is_none());
 
@@ -264,18 +353,46 @@ impl Node {
     pub fn height(&self) -> u64 {
         self.height
     }
-    pub fn children(&self) -> &Vec<Rc<Node>> {
-        &self.children
-    }
     pub fn parttype(&self) -> Option<usize> {
         self.parttype
     }
     pub fn next_cut_orient(&self) -> Orientation {
         self.next_cut_orient
     }
-
     pub fn area(&self) -> u64 {
         self.width * self.height
+    }
+    pub fn layout(&self) -> &Weak<Layout> {
+        &self.layout
+    }
+    pub fn children(&self) -> &Vec<Rc<RefCell<Node>>> {
+        &self.children
+    }
+    pub fn parent(&self) -> &Option<Weak<RefCell<Node>>> {
+        &self.parent
+    }
+
+
+    pub fn set_width(&mut self, width: u64) {
+        self.width = width;
+    }
+    pub fn set_height(&mut self, height: u64) {
+        self.height = height;
+    }
+    pub fn set_children(&mut self, children: Vec<Rc<RefCell<Node>>>) {
+        self.children = children;
+    }
+    pub fn set_parent(&mut self, parent: Option<Weak<RefCell<Node>>>) {
+        self.parent = parent;
+    }
+    pub fn set_parttype(&mut self, parttype: Option<usize>) {
+        self.parttype = parttype;
+    }
+    pub fn set_next_cut_orient(&mut self, next_cut_orient: Orientation) {
+        self.next_cut_orient = next_cut_orient;
+    }
+    pub fn set_layout(&mut self, layout: Weak<Layout>) {
+        self.layout = layout;
     }
 }
 

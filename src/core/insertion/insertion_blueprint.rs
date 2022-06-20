@@ -21,4 +21,18 @@ impl<'a,'b> InsertionBlueprint<'a,'b> {
     fn calculate_cost(original_node: &'a Node, replacements: &Vec<NodeBlueprint>) -> Cost {
         todo!()
     }
+
+
+    pub fn original_node(&self) -> &'a Node {
+        self.original_node
+    }
+    pub fn replacements(&self) -> &Vec<NodeBlueprint<'b>> {
+        &self.replacements
+    }
+    pub fn parttype(&self) -> &'b PartType {
+        self.parttype
+    }
+    pub fn cost(&self) -> &Cost {
+        &self.cost
+    }
 }

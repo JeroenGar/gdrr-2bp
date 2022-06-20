@@ -4,23 +4,30 @@ use std::rc::Rc;
 
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
+use crate::Orientation;
 
 use super::{sheettype::SheetType, parttype::PartType};
 
+#[derive(Debug)]
 pub struct Layout{
     id : usize,
     sheettype : usize,
-    top_node : Node,
+    top_node : Rc<RefCell<Node>>,
     cached_cost: RefCell<Option<Cost>>,
     usage : f64,
-    sorted_empty_nodes: LinkedList<Rc<Node>>
+    sorted_empty_nodes: Vec<Rc<Node>>
 }
 
 
 impl Layout{
 
-    pub fn new(sheettype: &SheetType){
-        
+    pub fn new(sheettype: &SheetType, first_cut_orientation : Orientation) -> Self{
+        //let top_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation);
+        todo!()
+    }
+
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint) {
+        todo!()
     }
 
     pub fn implement_insertion(&mut self, blueprint: &InsertionBlueprint){

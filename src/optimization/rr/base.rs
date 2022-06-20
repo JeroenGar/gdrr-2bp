@@ -4,6 +4,7 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_option::InsertionOption;
 use crate::optimization::problem::Problem;
 use crate::{PartType, Rotation};
+use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::util::multi_map::MultiMap;
 
 pub fn add_insertion_options_for_parttype<'s, 'l : 's>(
@@ -109,12 +110,18 @@ pub fn remove_insertion_options_for_parttype<'s, 'l : 's>(
 }
 
 pub fn remove_insertion_options_for_node<'s, 'l : 's>(
-    node: &'s Node,
+    node: Rc<Node>,
     option_node_map: &mut MultiMap<ByAddress<Rc<Node>>, Rc<InsertionOption<'s, 'l>>>,
     option_parttype_map: &mut MultiMap<&'l PartType, Rc<InsertionOption<'s, 'l>>>) {
     todo!();
+
+    for insert_opt in option_node_map.get(&ByAddress(node.clone())).unwrap() {
+        option_parttype_map.remove(&insert_opt.parttype(), insert_opt);
+    }
+    option_node_map.remove_all(&ByAddress(node.clone()));
 }
 
-pub fn implement_insertion_blueprint() {
+pub fn implement_insertion_blueprint<'a>(problem : &mut Problem, insertion_blueprint: &'a InsertionBlueprint, mat_limit_margin : u64)-> (u64, Vec<&'a Node>, Vec<&'a Node>) {
+
     todo!();
 }
