@@ -9,7 +9,15 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new(parts: Vec<(PartType, usize)>, sheets: Vec<(SheetType,usize)>) -> Self {
+    pub fn new(mut parts: Vec<(PartType, usize)>, mut sheets: Vec<(SheetType,usize)>) -> Self {
+        //Assign IDs to parttypes and sheettypes
+        parts.iter_mut().enumerate().for_each(|(i, (parttype, qty))| {
+            parttype.set_id(i);
+        });
+        sheets.iter_mut().enumerate().for_each(|(i, (sheettype, qty))| {
+            sheettype.set_id(i);
+        });
+
         Self {
             parts,
             sheets
@@ -19,6 +27,7 @@ impl Instance {
     pub fn parts(&self) -> &Vec<(PartType, usize)> {
         &self.parts
     }
+
     pub fn sheets(&self) -> &Vec<(SheetType, usize)> {
         &self.sheets
     }

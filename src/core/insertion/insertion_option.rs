@@ -1,8 +1,11 @@
 use std::cell::{Ref, RefCell};
+use std::hash::{Hash, Hasher};
+use by_address::ByAddress;
 use crate::core::entities::node::Node;
 use crate::{Orientation, PartType, Rotation};
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 
+#[derive(Debug)]
 pub struct InsertionOption<'a,'b>{
     original_node: &'a Node,
     parttype: &'b PartType,
@@ -42,4 +45,38 @@ impl<'a,'b> InsertionOption<'a,'b>{
         }
         blueprints
     }
+
+
+    pub fn original_node(&self) -> &'a Node {
+        self.original_node
+    }
+    pub fn parttype(&self) -> &'b PartType {
+        self.parttype
+    }
+    pub fn rotation(&self) -> Option<Rotation> {
+        self.rotation
+    }
+    pub fn blueprints(&self) -> &RefCell<Option<Vec<InsertionBlueprint<'a, 'b>>>> {
+        &self.blueprints
+    }
+}
+
+impl Hash for InsertionOption<'_,'_>{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        ByAddress(self.original_node()).hash(state);
+        self.parttype().hash(state);
+        self.rotation().hash(state);
+    }
+}
+
+impl PartialEq for InsertionOption<'_, '_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.original_node() as *const _ == other.original_node() as *const _ &&
+        self.parttype() == other.parttype() &&
+        self.rotation() == other.rotation()
+    }
+}
+
+impl Eq for InsertionOption<'_, '_> {
+
 }

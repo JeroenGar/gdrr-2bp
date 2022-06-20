@@ -1,7 +1,7 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Rotation{
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Rotation {
     Default,
-    Rotated
+    Rotated,
 }
 
 impl Rotation {

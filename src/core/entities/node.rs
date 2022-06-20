@@ -6,6 +6,7 @@ use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::rotation::Rotation;
 
+#[derive(Debug)]
 pub struct Node {
     width : u64,
     height: u64,

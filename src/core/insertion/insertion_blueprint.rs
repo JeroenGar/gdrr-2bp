@@ -3,6 +3,7 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::PartType;
 
+#[derive(Debug)]
 pub struct InsertionBlueprint<'a,'b> {
     original_node: &'a Node,
     replacements: Vec<NodeBlueprint<'b>>,
