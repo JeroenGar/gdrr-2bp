@@ -1,3 +1,7 @@
+use std::hash::{Hash, Hasher};
+use std::sync::atomic::AtomicUsize;
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct SheetType{
     id: usize,
     width: u64,
@@ -5,15 +9,18 @@ pub struct SheetType{
     value : u64,
 }
 
-static mut ID: usize = 0;
+fn get_id() -> usize {
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
+    COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
 
 impl SheetType{
     pub fn new (width: u64, height: u64, value: u64) -> SheetType{
         SheetType{
-            id: unsafe { ID += 1; ID },
-            width: width,
-            height: height,
-            value: value,
+            id: get_id(),
+            width,
+            height,
+            value
         }
     }
 
@@ -31,6 +38,12 @@ impl SheetType{
 
     pub fn value(&self) -> u64{
         self.value
+    }
+}
+
+impl Hash for SheetType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
     }
 }
 

@@ -46,8 +46,9 @@ impl Node {
         todo!()
     }
 
-    pub fn generate_insertion_blueprints(&self, parttype : &PartType, rotation: Rotation) -> Vec<InsertionBlueprint> {
-        let mut insertion_blueprints = Vec::new();
+    pub fn generate_insertion_blueprints<'a>(&'a self, insertion_blueprints: &mut Vec<InsertionBlueprint<'a>>, parttype : &PartType, rotation: Rotation) {
+        debug_assert!(self.insertion_possible(parttype, rotation));
+
         let part_size = match rotation {
             Rotation::Default => parttype.size(),
             Rotation::Rotated => parttype.rotated_size()
@@ -84,7 +85,7 @@ impl Node {
 
             let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node, remainder_node], parttype.id());
             insertion_blueprints.push(insertion_blueprint);
-            return insertion_blueprints;
+            return;
         }
         if self.next_cut_orient == Orientation::Vertical && self.width == part_size.width() {
             let remainder_height = self.height - part_size.height();
@@ -93,7 +94,7 @@ impl Node {
 
             let insertion_blueprint = InsertionBlueprint::new(self, vec![part_node, remainder_node], parttype.id());
             insertion_blueprints.push(insertion_blueprint);
-            return insertion_blueprints;
+            return;
         }
 
         /*
@@ -119,7 +120,7 @@ impl Node {
             let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
             insertion_blueprints.push(insertion_blueprint);
 
-            return insertion_blueprints;
+            return;
         }
 
         if self.next_cut_orient == Orientation::Vertical && self.height == part_size.height() {
@@ -136,7 +137,7 @@ impl Node {
             let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
             insertion_blueprints.push(insertion_blueprint);
 
-            return insertion_blueprints;
+            return;
         }
 
         /*
@@ -237,12 +238,18 @@ impl Node {
             let insertion_blueprint = InsertionBlueprint::new(self, vec![copy], parttype.id());
             insertion_blueprints.push(insertion_blueprint);
         }
-
-        insertion_blueprints
     }
 
-    pub fn insertion_possible() -> bool {
-        todo!()
+    pub fn insertion_possible(&self, parttype : &PartType, rotation : Rotation) -> bool {
+        debug_assert!(*parttype.fixed_rotation() == None || *parttype.fixed_rotation() == Some(rotation));
+        debug_assert!(self.children.is_empty() && self.parttype.is_none());
+
+        let part_size = match rotation {
+            Rotation::Default => parttype.size(),
+            Rotation::Rotated => parttype.rotated_size()
+        };
+
+        self.width >= part_size.width() && self.height >= part_size.height()
     }
 
     pub fn get_cost() -> Cost {

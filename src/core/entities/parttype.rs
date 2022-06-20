@@ -1,7 +1,10 @@
+use std::hash::{Hash, Hasher};
+use std::sync::atomic::AtomicUsize;
 use crate::core::orientation::Orientation;
 use crate::core::size::Size;
 use crate::Rotation;
 
+#[derive(Debug)]
 pub struct PartType{
     id: usize,
     width: u64,
@@ -11,12 +14,15 @@ pub struct PartType{
     rotated_size: Size,
 }
 
-static mut ID: usize = 0;
+fn get_id() -> usize {
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
+    COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
 
 impl PartType{
     pub fn new (width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType{
         PartType{
-            id: unsafe { ID += 1; ID },
+            id: get_id(),
             width,
             height,
             fixed_rotation,
@@ -46,4 +52,20 @@ impl PartType{
     pub fn rotated_size(&self) -> &Size {
         &self.rotated_size
     }
+}
+
+impl Hash for PartType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq<Self> for PartType {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for PartType {
+
 }
