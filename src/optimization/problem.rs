@@ -8,6 +8,7 @@ use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::optimization::rr::cache_updates::CacheUpdates;
+use crate::util::assertions;
 
 pub struct Problem<'a> {
     instance : &'a Instance,
@@ -58,11 +59,21 @@ impl<'a> Problem<'a> {
             }
         };
 
-
-        todo!();
-
         cache_updates
 
+    }
+
+    pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: &Rc<RefCell<Layout<'a>>>) {
+        debug_assert!(assertions::node_belongs_to_layout(node, layout));
+        debug_assert!(assertions::layout_belongs_to_problem(layout, self));
+
+        let mut layout_ref = layout.as_ref().borrow_mut();
+        let released_parts = layout_ref.remove_node(node);
+
+        released_parts.iter().for_each(|p| {self.release_part(p, 1)});
+        if layout_ref.is_empty() {
+            self.release_layout(layout);
+        }
     }
 
 
@@ -90,7 +101,7 @@ impl<'a> Problem<'a> {
     }
 
     fn release_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
-
+        debug_assert!(assertions::layout_belongs_to_problem(layout, self));
         todo!(); //register parts & sheets
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
     }

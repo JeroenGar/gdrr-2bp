@@ -42,11 +42,11 @@ impl<'a> Layout<'a> {
         todo!()
     }
 
-    pub fn implement_insertion(&mut self, blueprint: &InsertionBlueprint) {
+    pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) -> Vec<&'a PartType> {
         todo!()
     }
 
-    pub fn remove_node(&mut self, node: &Node) {
+    pub fn is_empty(&self) -> bool {
         todo!()
     }
 
