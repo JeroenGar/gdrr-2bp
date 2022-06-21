@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::collections::{LinkedList};
 use std::ops::Deref;
+use std::rc::Rc;
 use indexmap::IndexMap;
 use crate::{Instance, PartType, SheetType};
 use crate::core::entities::layout::Layout;
@@ -9,8 +11,8 @@ pub struct Problem<'a> {
     instance : &'a Instance,
     parttype_qtys: Vec<usize>,
     sheettype_qtys : Vec<usize>,
-    layouts : Vec<Layout>,
-    empty_layouts : Vec<Layout>,
+    layouts : Vec<Rc<RefCell<Layout>>>,
+    empty_layouts : Vec<Rc<Layout>>,
     random : rand::rngs::ThreadRng,
 }
 
@@ -26,13 +28,8 @@ impl<'a> Problem<'a> {
     }
 
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint) {
-        let blueprint_layout_ptr = blueprint.original_node().layout().as_ptr();
-        let layout_index = self.layouts.iter().position(
-            |l| l as *const Layout == blueprint_layout_ptr)
-            .unwrap();
-
-        let mut layout = self.layouts.get_mut(layout_index).unwrap();
-        layout.implement_insertion_blueprint(blueprint);
+        let blueprint_layout = blueprint.layout().as_ref().unwrap().upgrade().unwrap();
+        blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint);
         todo!()
     }
 
@@ -46,13 +43,14 @@ impl<'a> Problem<'a> {
     pub fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
    }
-    pub fn empty_layouts(&self) -> &Vec<Layout> {
+    pub fn empty_layouts(&self) -> &Vec<Rc<Layout>> {
         &self.empty_layouts
     }
     pub fn random(&self) -> &rand::rngs::ThreadRng {
         &self.random
     }
-    pub fn layouts(&self) -> &Vec<Layout> {
+
+    pub fn layouts(&self) -> &Vec<Rc<RefCell<Layout>>> {
         &self.layouts
     }
 }
