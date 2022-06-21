@@ -15,7 +15,7 @@ pub struct Layout<'a> {
     sheettype: &'a SheetType,
     top_node: Rc<RefCell<Node<'a>>>,
     cached_cost: RefCell<Option<Cost>>,
-    usage: f64,
+    cached_usage: RefCell<Option<f64>>,
     sorted_empty_nodes: Vec<Weak<RefCell<Node<'a>>>>,
 }
 
@@ -33,7 +33,7 @@ impl<'a> Layout<'a> {
             sheettype,
             top_node,
             cached_cost: RefCell::new(None),
-            usage: 0.0,
+            cached_usage: RefCell::new(None),
             sorted_empty_nodes: Vec::new(),
         }
     }
@@ -55,6 +55,10 @@ impl<'a> Layout<'a> {
     }
 
     pub fn get_cost(&self) -> Cost {
+        todo!()
+    }
+
+    pub fn get_usage(&self) -> f64 {
         todo!()
     }
 
@@ -95,9 +99,7 @@ impl<'a> Layout<'a> {
     pub fn cached_cost(&self) -> &RefCell<Option<Cost>> {
         &self.cached_cost
     }
-    pub fn usage(&self) -> f64 {
-        self.usage
-    }
+
     pub fn sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
         &self.sorted_empty_nodes
     }

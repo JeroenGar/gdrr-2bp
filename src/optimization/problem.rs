@@ -87,20 +87,20 @@ impl<'a> Problem<'a> {
         &self.sheettype_qtys
    }
 
-    pub fn random(&self) -> &rand::rngs::ThreadRng {
-        &self.random
+    pub fn random(&mut self) -> &mut rand::rngs::ThreadRng {
+        &mut self.random
     }
 
     pub fn layouts(&self) -> &Vec<Rc<RefCell<Layout<'a>>>> {
         &self.layouts
     }
 
-    fn register_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
+    pub fn register_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         todo!(); //register parts & sheets
         self.layouts.push(layout.clone());
     }
 
-    fn release_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
+    pub fn release_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
         todo!(); //register parts & sheets
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
@@ -138,4 +138,5 @@ impl<'a> Problem<'a> {
         self.counter_layout_id += 1;
         self.counter_layout_id
     }
+
 }
