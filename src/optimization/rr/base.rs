@@ -8,11 +8,12 @@ use crate::optimization::problem::Problem;
 use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
+use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::multi_map::MultiMap;
 
 pub fn add_insertion_options_for_parttype<'a>(
-    problem: &'a Problem, mut parttypes: Vec<&'a PartType>,
-    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node>>>, Rc<InsertionOption<'a>>>,
+    problem: &'a Problem<'a>, mut parttypes: Vec<&'a PartType>,
+    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
     option_parttype_map: &mut MultiMap<&'a PartType, Rc<InsertionOption<'a>>>) {
     if parttypes.is_empty() {
         return;
@@ -56,8 +57,8 @@ pub fn add_insertion_options_for_parttype<'a>(
 }
 
 pub fn add_insertion_options_for_node<'a>(
-    node: &Rc<RefCell<Node>>, mut parttypes: Vec<&'a PartType>,
-    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node>>>, Rc<InsertionOption<'a>>>,
+    node: &Rc<RefCell<Node<'a>>>, parttypes: Vec<&'a PartType>,
+    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
     option_parttype_map: &mut MultiMap<&'a PartType, Rc<InsertionOption<'a>>>) {
     let node_ref = node.as_ref().borrow();
     if node_ref.parttype().is_none() && node_ref.children().is_empty() {
@@ -75,7 +76,7 @@ pub fn add_insertion_options_for_node<'a>(
     }
 }
 
-fn generate_insertion_option_for_node_and_parttype<'a>(node: &Rc<RefCell<Node>>, parttype: &'a PartType) -> Option<InsertionOption<'a>> {
+fn generate_insertion_option_for_node_and_parttype<'a>(node: &Rc<RefCell<Node<'a>>>, parttype: &'a PartType) -> Option<InsertionOption<'a>> {
     let node_ref = node.as_ref().borrow();
     match parttype.fixed_rotation() {
         Some(fixed_rotation) => {
@@ -107,29 +108,30 @@ fn generate_insertion_option_for_node_and_parttype<'a>(node: &Rc<RefCell<Node>>,
 
 pub fn remove_insertion_options_for_parttype<'a>(
     parttype: &'a PartType,
-    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node>>>, Rc<InsertionOption<'a>>>,
-    option_parttype_map: &mut MultiMap<&'a PartType, Rc<InsertionOption<'a>>>) {
-
+    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
+    option_parttype_map: &'a mut MultiMap<&'a PartType, Rc<InsertionOption<'a>>>) {
     for insert_opt in option_parttype_map.get(&parttype).unwrap() {
         option_node_map.remove(&ByAddress(insert_opt.original_node().upgrade().unwrap()), insert_opt);
     }
     option_parttype_map.remove_all(&parttype);
-
 }
 
 pub fn remove_insertion_options_for_node<'a>(
-    node: Rc<RefCell<Node>>,
-    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node>>>, Rc<InsertionOption<'a>>>,
-    option_parttype_map: &mut MultiMap<&'a PartType, Rc<InsertionOption<'a>>>) {
-    todo!();
+    node: Rc<RefCell<Node<'a>>>,
+    option_node_map: &mut MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
+    option_parttype_map: &'a mut MultiMap<&'a PartType, Rc<InsertionOption<'a>>>) {
+    //todo!();
 
     for insert_opt in option_node_map.get(&ByAddress(node.clone())).unwrap() {
         option_parttype_map.remove(&insert_opt.parttype(), insert_opt);
-    }
+    };
     option_node_map.remove_all(&ByAddress(node.clone()));
 }
 
-pub fn implement_insertion_blueprint<'a>(problem : &mut Problem, insertion_blueprint: &'a InsertionBlueprint, mat_limit_margin : u64)-> (u64, Vec<Weak<RefCell<Node>>>, Vec<Weak<RefCell<Node>>>) {
-
+pub fn implement_insertion_blueprint<'a>(
+    problem: &mut Problem,
+    insertion_blueprint: &'a InsertionBlueprint,
+    mat_limit_margin: u64)
+    -> (u64, CacheUpdates<Rc<RefCell<Node<'a>>>>) {
     todo!();
 }

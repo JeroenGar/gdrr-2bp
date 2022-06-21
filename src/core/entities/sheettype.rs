@@ -3,7 +3,7 @@ use std::sync::atomic::AtomicUsize;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SheetType{
-    id: usize,
+    id: Option<usize>,
     width: u64,
     height: u64,
     value : u64,
@@ -12,15 +12,19 @@ pub struct SheetType{
 impl SheetType{
     pub fn new (width: u64, height: u64, value: u64) -> SheetType{
         SheetType{
-            id: 0,
+            id: None,
             width,
             height,
             value
         }
     }
 
-    pub fn id(&self) -> usize{
+    pub fn id(&self) -> Option<usize>{
         self.id
+    }
+
+    pub fn set_id(&mut self, id: usize){
+        self.id = Some(id);
     }
 
 
@@ -35,10 +39,6 @@ impl SheetType{
 
     pub fn value(&self) -> u64{
         self.value
-    }
-
-    pub fn set_id(&mut self, id: usize) {
-        self.id = id;
     }
 }
 

@@ -13,18 +13,18 @@ use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::rotation::Rotation;
 
 #[derive(Debug)]
-pub struct Node {
+pub struct Node<'a> {
     width: u64,
     height: u64,
-    children: Vec<Rc<RefCell<Node>>>,
-    parent: Option<Weak<RefCell<Node>>>,
-    parttype: Option<usize>,
+    children: Vec<Rc<RefCell<Node<'a>>>>,
+    parent: Option<Weak<RefCell<Node<'a>>>>,
+    parttype: Option<&'a PartType>,
     next_cut_orient: Orientation,
 }
 
 
-impl Node {
-    pub fn new(width: u64, height: u64, next_cut_orient: Orientation) -> Node {
+impl<'a> Node<'a> {
+    pub fn new(width: u64, height: u64, next_cut_orient: Orientation) -> Node<'a> {
         Node {
             width,
             height,
@@ -35,15 +35,15 @@ impl Node {
         }
     }
 
-    pub fn new_from_blueprint(blueprint: &NodeBlueprint) -> Node {
+    pub fn new_from_blueprint(blueprint: &NodeBlueprint) -> Node<'a> {
         todo!();
     }
 
     pub fn create_deep_copy(
         &self,
-        parent: Option<Weak<RefCell<Node>>>,
-        original_copy_node_map: &mut IndexMap<ByAddress<Rc<RefCell<Node>>>,
-            Rc<RefCell<Node>>>) -> Rc<RefCell<Node>> {
+        parent: Option<Weak<RefCell<Node<'a>>>>,
+        original_copy_node_map: &mut IndexMap<ByAddress<Rc<RefCell<Node<'a>>>>,
+            Rc<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
         let mut copy = Node::new(self.width, self.height, self.next_cut_orient);
         copy.set_parent(parent);
         let copy = Rc::new(RefCell::new(copy));
@@ -59,11 +59,11 @@ impl Node {
         copy
     }
 
-    pub fn add_child(&mut self, child: Rc<RefCell<Node>>) {
+    pub fn add_child(&mut self, child: Rc<RefCell<Node<'a>>>) {
         todo!()
     }
 
-    pub fn remove_child(&mut self, child: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+    pub fn remove_child(&mut self, child: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node>> {
         /*
            Scenario 1: Waste piece present + other child(ren)
             -> expand existing waste piece
@@ -137,7 +137,7 @@ impl Node {
         todo!()
     }
 
-    pub fn replace_child(&mut self, old_child: &Node, replacements: Vec<Node>) -> Rc<RefCell<Node>> {
+    pub fn replace_child(&mut self, old_child: &Node<'a>, replacements: Vec<Node<'a>>) -> Rc<RefCell<Node<'a>>> {
         let old_child_index = self.children.iter().position(|c| c.as_ptr() as *const Node == old_child as *const Node).unwrap();
         let old_child = self.children.remove(old_child_index);
 
@@ -149,7 +149,7 @@ impl Node {
         old_child
     }
 
-    pub fn generate_insertion_blueprints<'a>(wrapped_node: &Rc<RefCell<Node>>, insertion_blueprints: &mut Vec<InsertionBlueprint<'a>>, parttype: &'a PartType, rotation: Rotation) {
+    pub fn generate_insertion_blueprints(wrapped_node: &Rc<RefCell<Node<'a>>>, insertion_blueprints: &mut Vec<InsertionBlueprint<'a>>, parttype: &'a PartType, rotation: Rotation) {
         let node = wrapped_node.as_ref().borrow();
         debug_assert!(node.insertion_possible(parttype, rotation));
 
@@ -367,8 +367,8 @@ impl Node {
     pub fn height(&self) -> u64 {
         self.height
     }
-    pub fn parttype(&self) -> Option<usize> {
-        self.parttype
+    pub fn parttype(&self) -> &Option<&PartType> {
+        &self.parttype
     }
     pub fn next_cut_orient(&self) -> Orientation {
         self.next_cut_orient
@@ -376,10 +376,10 @@ impl Node {
     pub fn area(&self) -> u64 {
         self.width * self.height
     }
-    pub fn children(&self) -> &Vec<Rc<RefCell<Node>>> {
+    pub fn children(&self) -> &Vec<Rc<RefCell<Node<'a>>>> {
         &self.children
     }
-    pub fn parent(&self) -> &Option<Weak<RefCell<Node>>> {
+    pub fn parent(&self) -> &Option<Weak<RefCell<Node<'a>>>> {
         &self.parent
     }
 
@@ -390,17 +390,18 @@ impl Node {
     pub fn set_height(&mut self, height: u64) {
         self.height = height;
     }
-    pub fn set_children(&mut self, children: Vec<Rc<RefCell<Node>>>) {
+    pub fn set_children(&mut self, children: Vec<Rc<RefCell<Node<'a>>>>) {
         self.children = children;
     }
-    pub fn set_parent(&mut self, parent: Option<Weak<RefCell<Node>>>) {
+    pub fn set_parent(&mut self, parent: Option<Weak<RefCell<Node<'a>>>>) {
         self.parent = parent;
     }
-    pub fn set_parttype(&mut self, parttype: Option<usize>) {
-        self.parttype = parttype;
-    }
+
     pub fn set_next_cut_orient(&mut self, next_cut_orient: Orientation) {
         self.next_cut_orient = next_cut_orient;
+    }
+    pub fn set_parttype(&mut self, parttype: Option<&'a PartType>) {
+        self.parttype = parttype;
     }
 }
 

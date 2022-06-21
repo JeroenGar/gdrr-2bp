@@ -1,6 +1,6 @@
 use crate::{Orientation, PartType};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NodeBlueprint<'a>{
     width : u64,
     height: u64,

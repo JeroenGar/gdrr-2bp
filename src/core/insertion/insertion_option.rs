@@ -8,14 +8,14 @@ use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 
 #[derive(Debug)]
 pub struct InsertionOption<'a> {
-    original_node: Weak<RefCell<Node>>,
+    original_node: Weak<RefCell<Node<'a>>>,
     parttype: &'a PartType,
     rotation: Option<Rotation>,
     blueprints: RefCell<Option<Vec<InsertionBlueprint<'a>>>>,
 }
 
 impl<'a> InsertionOption<'a> {
-    pub fn new(original_node: Weak<RefCell<Node>>, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
+    pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
         Self {
             original_node,
             parttype,
@@ -57,7 +57,7 @@ impl<'a> InsertionOption<'a> {
     pub fn blueprints(&self) -> &RefCell<Option<Vec<InsertionBlueprint<'a>>>> {
         &self.blueprints
     }
-    pub fn original_node(&self) -> &Weak<RefCell<Node>> {
+    pub fn original_node(&self) -> &Weak<RefCell<Node<'a>>> {
         &self.original_node
     }
 }
