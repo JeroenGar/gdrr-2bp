@@ -32,7 +32,7 @@ impl<'a> Problem<'a> {
         Self { instance, parttype_qtys, sheettype_qtys, layouts, empty_layouts, random, counter_layout_id }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &Rc<InsertionBlueprint<'a>>) -> (CacheUpdates<Rc<RefCell<Node<'a>>>>, bool){
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> (CacheUpdates<'a,Rc<RefCell<Node<'a>>>>, bool){
         let blueprint_layout = blueprint.layout().as_ref().unwrap().upgrade().unwrap();
 
         let blueprint_creates_new_layout = self.empty_layouts.iter().any(|e| Rc::ptr_eq(e, &blueprint_layout));
@@ -46,14 +46,19 @@ impl<'a> Problem<'a> {
             true => {
                 let copy = blueprint_layout.borrow().create_deep_copy();
                 //Create a copy of the insertion blueprint and map it to the copy of the layout
-                let mut insertion_bp_copy = blueprint.as_ref().clone();
-                //Modify so the original node maps a node of the copied layout
-                insertion_bp_copy.set_original_node(Rc::downgrade(&copy.top_node().as_ref().borrow().children().first().unwrap()));
+                let mut insertion_bp_copy = blueprint.clone();
+                //Modify so the blueprint so the original node maps to the respective node of the copied layout
+                let modified_original_node = copy.top_node().as_ref().borrow().children().first().unwrap().clone();
+                insertion_bp_copy.set_original_node(Rc::downgrade(&modified_original_node));
+                //wrap the copied layout
                 let copy = Rc::new(RefCell::new(copy));
                 insertion_bp_copy.set_layout(Rc::downgrade(&copy));
-                let cache_updates = copy.as_ref().borrow_mut().implement_insertion_blueprint(&insertion_bp_copy);
+                self.register_layout(copy.clone());
 
-                self.register_layout(&copy);
+                //Search the layout again in the problem, to please the borrow checker
+                let copy = self.layouts.iter().find(|l| Rc::ptr_eq(l, &copy)).unwrap();
+
+                let cache_updates = copy.as_ref().borrow_mut().implement_insertion_blueprint(&insertion_bp_copy);
 
                 cache_updates
             }
@@ -95,9 +100,9 @@ impl<'a> Problem<'a> {
         &self.layouts
     }
 
-    pub fn register_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
+    pub fn register_layout(&mut self, layout: Rc<RefCell<Layout<'a>>>) {
         todo!(); //register parts & sheets
-        self.layouts.push(layout.clone());
+        self.layouts.push(layout);
     }
 
     pub fn release_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {

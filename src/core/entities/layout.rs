@@ -37,7 +37,7 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint) -> CacheUpdates<Rc<RefCell<Node<'a>>>> {
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> CacheUpdates<'a,Rc<RefCell<Node<'a>>>> {
         todo!()
     }
 

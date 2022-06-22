@@ -31,11 +31,8 @@ impl Instance {
     pub fn sheets(&self) -> &Vec<(SheetType, usize)> {
         &self.sheets
     }
-    pub fn get_parttype(&self, index : usize) -> Option<&PartType>{
-        match self.parts.get(index){
-            Some((parttype, _)) => Some(parttype),
-            None => None
-        }
+    pub fn get_parttype(&self, index : usize) -> &PartType{
+        &self.parts.get(index).as_ref().unwrap().0
     }
     pub fn get_parttype_qty(&self, index : usize) -> Option<usize>{
         match self.parts.get(index){
@@ -43,11 +40,8 @@ impl Instance {
             None => None
         }
     }
-    pub fn get_sheettype(&self, index : usize) -> Option<&SheetType>{
-        match self.sheets.get(index){
-            Some((sheettype, _)) => Some(sheettype),
-            None => None
-        }
+    pub fn get_sheettype(&self, index : usize) -> &SheetType{
+        &self.sheets.get(index).as_ref().unwrap().0
     }
     pub fn get_sheettype_qty(&self, index : usize) -> Option<usize>{
         match self.sheets.get(index){

@@ -5,6 +5,8 @@ use std::path::Iter;
 use std::rc::Rc;
 use indexmap::{IndexMap, IndexSet};
 use rand::Rng;
+use rand::prelude::SliceRandom;
+use rand::rngs::ThreadRng;
 use crate::core::cost::Cost;
 use crate::{Instance, PartType};
 use crate::core::entities::layout::Layout;
@@ -13,13 +15,14 @@ use crate::core::insertion::insertion_option::InsertionOption;
 use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
+use crate::util::blink;
 use crate::util::multi_map::MultiMap;
 
 pub struct GDRR<'a> {
     config: Config,
     instance: &'a Instance,
     problem: Problem<'a>,
-    cost_comparator: fn(&Cost, &Cost) -> Ordering
+    cost_comparator: fn(&Cost, &Cost) -> Ordering,
 }
 
 
@@ -53,7 +56,7 @@ impl<'a> GDRR<'a> {
     pub fn recreate(&'a mut self, mut mat_limit_budget: u64, max_part_area_not_included: u64) {
         let mut parttypes_to_consider: IndexSet<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(i, q)| { **q > 0 })
-            .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i).unwrap() }).collect();
+            .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i)}).collect();
 
 
         let mut insertion_option_cache = InsertionOptionCache::new();
@@ -63,21 +66,19 @@ impl<'a> GDRR<'a> {
         let mut layouts_to_consider = Vec::new();
         layouts_to_consider.extend(self.problem.layouts().iter().cloned());
         layouts_to_consider.extend(self.problem.empty_layouts().iter()
-                .filter(|l| { *self.problem.sheettype_qtys().get(l.as_ref().borrow().sheettype().id()).unwrap() > 0 })
-                .cloned());
+            .filter(|l| { *self.problem.sheettype_qtys().get(l.as_ref().borrow().sheettype().id()).unwrap() > 0 })
+            .cloned());
 
 
         //Generate insertion options for all relevant parttypes and layouts
         insertion_option_cache.add_for_parttypes(parttypes_to_consider.iter(), &layouts_to_consider);
 
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_not_included {
+            let elected_parttype = GDRR::select_next_parttype(&self.instance, &parttypes_to_consider, &insertion_option_cache, self.problem.random(), &self.config);
+            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, self.problem.random(), &self.config, &self.cost_comparator);
 
-            let elected_parttype = GDRR::select_next_parttype(&self.instance, &parttypes_to_consider, &insertion_option_cache);
-            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget);
-
-            if elected_blueprint.is_some(){
-
-                let elected_blueprint_sheettype_id =  elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap().as_ref().borrow().sheettype().id();
+            if elected_blueprint.is_some() {
+                let elected_blueprint_sheettype_id = elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap().as_ref().borrow().sheettype().id();
 
                 let (cache_updates, blueprint_created_new_layout) =
                     self.problem.implement_insertion_blueprint(elected_blueprint.as_ref().unwrap());
@@ -85,17 +86,18 @@ impl<'a> GDRR<'a> {
 
                 if blueprint_created_new_layout {
                     //update mat_limit_budget
-                    mat_limit_budget -= self.instance.get_sheettype(elected_blueprint_sheettype_id).unwrap().value();
+                    mat_limit_budget -= self.instance.get_sheettype(elected_blueprint_sheettype_id).value();
                     //remove the relevant empty_layout from consideration if the stock is empty
                     if *self.problem.sheettype_qtys().get(elected_blueprint_sheettype_id).unwrap() == 0 {
                         self.problem.empty_layouts().iter()
-                            .filter(|l| { l.as_ref().borrow().sheettype().id() == elected_blueprint_sheettype_id
-                        }).for_each(|l| { insertion_option_cache.remove_for_layout(l);
+                            .filter(|l| {
+                                l.as_ref().borrow().sheettype().id() == elected_blueprint_sheettype_id
+                            }).for_each(|l| {
+                            insertion_option_cache.remove_for_layout(l);
                         });
                     }
                 }
-            }
-            else{
+            } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem
                 part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
                     * elected_parttype.area();
@@ -112,11 +114,77 @@ impl<'a> GDRR<'a> {
         todo!();
     }
 
-    fn select_next_parttype<'b : 'a>(instance : &'b Instance, parttypes: &'a IndexSet<&'a PartType>, insertion_option_cache : &InsertionOptionCache) -> &'b PartType {
-        todo!();
+    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &IndexSet<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut ThreadRng, config: &Config) -> &'b PartType {
+        let mut parttypes_to_consider = parttypes.iter().map(|p| { p.id() }).collect::<Vec<_>>();
+        parttypes_to_consider.shuffle(rand);
+
+        parttypes_to_consider.sort_by(|a, b| {
+            let a_insertion_options = match insertion_option_cache.get_for_parttype(instance.get_parttype(*a)) {
+                Some(options) => options.len(),
+                None => 0
+            };
+            let b_insertion_options = match insertion_option_cache.get_for_parttype(instance.get_parttype(*b)) {
+                Some(options) => options.len(),
+                None => 0
+            };
+            a_insertion_options.cmp(&b_insertion_options)
+        });
+
+        let selected_index = blink::select_lowest(0..parttypes_to_consider.len(), config.blink_chance(), rand);
+        let selected_parttype_id = parttypes_to_consider[selected_index];
+
+        instance.get_parttype(selected_parttype_id)
     }
 
-    fn select_insertion_blueprint(parttype : &'a PartType, insertion_option_cache : &InsertionOptionCache<'a>, mut mat_limit_budget : u64) -> Option<Rc<InsertionBlueprint<'a>>> {
-        todo!();
+    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: u64, rand: &mut ThreadRng, config : &Config, cost_comparator : &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+        let insertion_options = insertion_option_cache.get_for_parttype(parttype);
+        match insertion_options {
+            Some(options) => {
+                //Collect the blueprints
+                let mut existing_layout_blueprints : Vec<InsertionBlueprint<'a>> = Vec::new();
+                let mut new_layout_blueprints : Vec<InsertionBlueprint<'a>> = Vec::new();
+
+                for option in options {
+                    if existing_layout_blueprints.len() > 20 {
+                        break; //enough blueprints to consider
+                    }
+                    if option.layout().upgrade().unwrap().as_ref().borrow().is_empty() {
+                        new_layout_blueprints.extend(option.get_blueprints());
+                    }
+                    else {
+                        existing_layout_blueprints.extend(option.get_blueprints());
+                    }
+                }
+                match existing_layout_blueprints.is_empty(){
+                    false => {
+                        //Sort the blueprints by cost
+                        existing_layout_blueprints.sort_by(|a, b| {
+                            cost_comparator(a.cost(), b.cost())
+                        });
+                        //Select the best (blinked) one
+                        let selected_blinked_index = blink::select_lowest(0..existing_layout_blueprints.len(), config.blink_chance(), rand);
+                        Some(existing_layout_blueprints.remove(selected_blinked_index))
+                    }
+                    true => {
+                        //No blueprints for existing layouts, try new layouts
+                        match new_layout_blueprints.is_empty(){
+                            true => {
+                                //No insertion blueprint available
+                                None
+                            },
+                            false => {
+                                //Select a random blueprint from the new layout blueprints
+                                let selected_index = rand.gen_range(0..new_layout_blueprints.len());
+                                Some(new_layout_blueprints.remove(selected_index))
+                            }
+                        }
+                    }
+                }
+            },
+            None => {
+                None
+            }
+        }
+
     }
 }

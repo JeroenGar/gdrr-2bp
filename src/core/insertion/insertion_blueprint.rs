@@ -19,8 +19,7 @@ pub struct InsertionBlueprint<'a> {
 impl<'a> InsertionBlueprint<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint<'a>>, parttype: &'a PartType) -> Self {
         let cost = InsertionBlueprint::calculate_cost(&original_node, &replacements);
-        let layout = None;
-        Self { original_node, replacements, parttype, cost, layout }
+        Self { original_node, replacements, parttype, cost, layout : None}
     }
 
     fn calculate_cost(original_node: &Weak<RefCell<Node>>, replacements: &Vec<NodeBlueprint>) -> Cost {
@@ -30,8 +29,6 @@ impl<'a> InsertionBlueprint<'a> {
     pub fn set_layout(&mut self, layout: Weak<RefCell<Layout<'a>>>) {
         self.layout = Some(layout);
     }
-
-
 
     pub fn replacements(&self) -> &Vec<NodeBlueprint<'a>> {
         &self.replacements

@@ -4,6 +4,7 @@ use std::rc::Weak;
 use by_address::ByAddress;
 use crate::core::entities::node::Node;
 use crate::{Orientation, PartType, Rotation};
+use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 
 #[derive(Debug)]
@@ -11,25 +12,28 @@ pub struct InsertionOption<'a> {
     original_node: Weak<RefCell<Node<'a>>>,
     parttype: &'a PartType,
     rotation: Option<Rotation>,
-    blueprints: RefCell<Option<Vec<InsertionBlueprint<'a>>>>,
+    layout : Weak<RefCell<Layout<'a>>>
 }
 
+//TODO: cache the blueprints
+
 impl<'a> InsertionOption<'a> {
-    pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
+    pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>, layout : Weak<RefCell<Layout<'a>>>) -> Self {
         Self {
             original_node,
             parttype,
             rotation,
-            blueprints: RefCell::new(None),
+            layout
         }
     }
 
-    pub fn get_blueprints(&self) -> Ref<'_, Option<Vec<InsertionBlueprint<'a>>>> {
-        if self.blueprints.borrow().is_none() {
+    pub fn get_blueprints(&self) -> Vec<InsertionBlueprint<'a>> {
+        /*if self.blueprints.borrow().is_none() {
             self.blueprints.replace(Some(self.generate_blueprints()));
         }
 
-        self.blueprints.borrow()
+        self.blueprints.borrow()*/
+        InsertionOption::generate_blueprints(self)
     }
 
     fn generate_blueprints(&self) -> Vec<InsertionBlueprint<'a>> {
@@ -44,6 +48,10 @@ impl<'a> InsertionOption<'a> {
                 Node::generate_insertion_blueprints(&original_node, &mut blueprints, self.parttype, Rotation::Rotated);
             }
         }
+        blueprints.iter_mut().for_each(|blueprint| {
+            blueprint.set_layout(self.layout.clone());
+        });
+
         blueprints
     }
 
@@ -54,11 +62,13 @@ impl<'a> InsertionOption<'a> {
     pub fn rotation(&self) -> Option<Rotation> {
         self.rotation
     }
-    pub fn blueprints(&self) -> &RefCell<Option<Vec<InsertionBlueprint<'a>>>> {
-        &self.blueprints
-    }
+
     pub fn original_node(&self) -> &Weak<RefCell<Node<'a>>> {
         &self.original_node
+    }
+
+    pub fn layout(&self) -> &Weak<RefCell<Layout<'a>>> {
+        &self.layout
     }
 }
 
