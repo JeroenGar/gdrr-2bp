@@ -1,5 +1,4 @@
 use std::{rc::Rc};
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::rc::Weak;
 use by_address::ByAddress;
@@ -7,7 +6,6 @@ use indexmap::IndexMap;
 use crate::core::cost::Cost;
 
 use crate::{Orientation, PartType};
-use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::rotation::Rotation;

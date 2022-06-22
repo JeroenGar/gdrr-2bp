@@ -32,21 +32,21 @@ impl<'a> Problem<'a> {
         Self { instance, parttype_qtys, sheettype_qtys, layouts, empty_layouts, random, counter_layout_id }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &'a InsertionBlueprint<'a>) -> CacheUpdates<Rc<RefCell<Node<'a>>>>{
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &Rc<InsertionBlueprint<'a>>) -> (CacheUpdates<Rc<RefCell<Node<'a>>>>, bool){
         let blueprint_layout = blueprint.layout().as_ref().unwrap().upgrade().unwrap();
 
-        let blueprint_uses_existing_layout = !self.empty_layouts.iter().any(|e| Rc::ptr_eq(e, &blueprint_layout));
+        let blueprint_creates_new_layout = self.empty_layouts.iter().any(|e| Rc::ptr_eq(e, &blueprint_layout));
 
-        let cache_updates = match blueprint_uses_existing_layout {
-            true => {
+        let cache_updates = match blueprint_creates_new_layout {
+            false => {
                 self.register_part(blueprint.parttype(), 1);
                 let cache_updates = blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint);
                 cache_updates
             }
-            false => {
+            true => {
                 let copy = blueprint_layout.borrow().create_deep_copy();
                 //Create a copy of the insertion blueprint and map it to the copy of the layout
-                let mut insertion_bp_copy = blueprint.clone();
+                let mut insertion_bp_copy = blueprint.as_ref().clone();
                 //Modify so the original node maps a node of the copied layout
                 insertion_bp_copy.set_original_node(Rc::downgrade(&copy.top_node().as_ref().borrow().children().first().unwrap()));
                 let copy = Rc::new(RefCell::new(copy));
@@ -59,7 +59,7 @@ impl<'a> Problem<'a> {
             }
         };
 
-        cache_updates
+        (cache_updates, blueprint_creates_new_layout)
 
     }
 
@@ -139,4 +139,11 @@ impl<'a> Problem<'a> {
         self.counter_layout_id
     }
 
+
+    pub fn empty_layouts(&self) -> &Vec<Rc<RefCell<Layout<'a>>>> {
+        &self.empty_layouts
+    }
+    pub fn counter_layout_id(&self) -> usize {
+        self.counter_layout_id
+    }
 }
