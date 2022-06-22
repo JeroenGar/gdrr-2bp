@@ -63,7 +63,7 @@ impl<'a> GDRR<'a> {
         let mut layouts_to_consider = Vec::new();
         layouts_to_consider.extend(self.problem.layouts().iter().cloned());
         layouts_to_consider.extend(self.problem.empty_layouts().iter()
-                .filter(|l| { *self.problem.sheettype_qtys().get(l.as_ref().borrow().sheettype().id().unwrap()).unwrap() > 0 })
+                .filter(|l| { *self.problem.sheettype_qtys().get(l.as_ref().borrow().sheettype().id()).unwrap() > 0 })
                 .cloned());
 
 
@@ -72,12 +72,12 @@ impl<'a> GDRR<'a> {
 
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_not_included {
 
-            let elected_parttype_id = self.select_next_parttype(&parttypes_to_consider, &insertion_option_cache);
-            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype_id, &insertion_option_cache, mat_limit_budget);
+            let elected_parttype = GDRR::select_next_parttype(&self.instance, &parttypes_to_consider, &insertion_option_cache);
+            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget);
 
             if elected_blueprint.is_some(){
 
-                let elected_blueprint_sheettype_id =  elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap().as_ref().borrow().sheettype().id().unwrap();
+                let elected_blueprint_sheettype_id =  elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap().as_ref().borrow().sheettype().id();
 
                 let (cache_updates, blueprint_created_new_layout) =
                     self.problem.implement_insertion_blueprint(elected_blueprint.as_ref().unwrap());
@@ -89,7 +89,7 @@ impl<'a> GDRR<'a> {
                     //remove the relevant empty_layout from consideration if the stock is empty
                     if *self.problem.sheettype_qtys().get(elected_blueprint_sheettype_id).unwrap() == 0 {
                         self.problem.empty_layouts().iter()
-                            .filter(|l| { l.as_ref().borrow().sheettype().id().unwrap() == elected_blueprint_sheettype_id
+                            .filter(|l| { l.as_ref().borrow().sheettype().id() == elected_blueprint_sheettype_id
                         }).for_each(|l| { insertion_option_cache.remove_for_layout(l);
                         });
                     }
@@ -97,14 +97,14 @@ impl<'a> GDRR<'a> {
             }
             else{
                 //if there is no insertion blueprint, the part cannot be added to the problem
-                part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype_id).unwrap() as u64
-                    * self.instance.get_parttype(elected_parttype_id).unwrap().area();
+                part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
+                    * elected_parttype.area();
             }
 
-            if elected_blueprint.is_none() || *self.problem.parttype_qtys().get(elected_parttype_id).unwrap() == 0 {
+            if elected_blueprint.is_none() || *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
                 //if the parttype could not be added, or if the parttype is not needed anymore, remove it from the cache
-                insertion_option_cache.remove_for_parttype(self.instance.get_parttype(elected_parttype_id).unwrap());
-                parttypes_to_consider.remove(self.instance.get_parttype(elected_parttype_id).unwrap());
+                insertion_option_cache.remove_for_parttype(elected_parttype);
+                parttypes_to_consider.remove(elected_parttype);
             }
         }
 
@@ -112,11 +112,11 @@ impl<'a> GDRR<'a> {
         todo!();
     }
 
-    fn select_next_parttype(&self, parttypes: &IndexSet<&PartType>, insertion_option_cache : &InsertionOptionCache) -> usize {
+    fn select_next_parttype<'b : 'a>(instance : &'b Instance, parttypes: &'a IndexSet<&'a PartType>, insertion_option_cache : &InsertionOptionCache) -> &'b PartType {
         todo!();
     }
 
-    fn select_insertion_blueprint(parttype : usize, insertion_option_cache : &InsertionOptionCache<'a>, mut mat_limit_budget : u64) -> Option<Rc<InsertionBlueprint<'a>>> {
+    fn select_insertion_blueprint(parttype : &'a PartType, insertion_option_cache : &InsertionOptionCache<'a>, mut mat_limit_budget : u64) -> Option<Rc<InsertionBlueprint<'a>>> {
         todo!();
     }
 }

@@ -19,8 +19,8 @@ impl SheetType{
         }
     }
 
-    pub fn id(&self) -> Option<usize>{
-        self.id
+    pub fn id(&self) -> usize{
+        self.id.unwrap()
     }
 
     pub fn set_id(&mut self, id: usize){

@@ -107,28 +107,28 @@ impl<'a> Problem<'a> {
     }
 
     fn register_part(&mut self, parttype : &'a PartType, qty : usize) {
-        let id = parttype.id().unwrap();
+        let id = parttype.id();
         debug_assert!(self.parttype_qtys[id] - qty >= 0);
 
-        self.parttype_qtys[parttype.id().unwrap()] -= qty;
+        self.parttype_qtys[parttype.id()] -= qty;
     }
 
     fn release_part(&mut self, parttype : &'a PartType, qty : usize) {
-        let id = parttype.id().unwrap();
+        let id = parttype.id();
         debug_assert!(self.parttype_qtys[id] + qty <= self.instance.get_parttype_qty(id).unwrap());
 
         self.parttype_qtys[id] += qty;
     }
 
     fn register_sheet(&mut self, sheettype : &'a SheetType, qty : usize) {
-        let id = sheettype.id().unwrap();
+        let id = sheettype.id();
         debug_assert!(self.sheettype_qtys[id] - qty >= 0);
 
         self.sheettype_qtys[id] -= qty;
     }
 
     fn release_sheet(&mut self, sheettype : &'a SheetType, qty : usize) {
-        let id = sheettype.id().unwrap();
+        let id = sheettype.id();
         debug_assert!(self.sheettype_qtys[id] + qty <= self.instance.get_sheettype_qty(id).unwrap());
 
         self.sheettype_qtys[id] += qty;
