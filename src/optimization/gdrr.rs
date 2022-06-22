@@ -15,6 +15,7 @@ use crate::core::insertion::insertion_option::InsertionOption;
 use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
+use crate::util::biased_sampler::BiasedSampler;
 use crate::util::blink;
 use crate::util::multi_map::MultiMap;
 
@@ -32,9 +33,33 @@ impl<'a> GDRR<'a> {
     }
 
     pub fn ruin(&'a mut self, mut mat_limit_budget: u64) {
-        let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed() - 2) * 2 + 1);
+        let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed() - 2) * 2 + 1) + 2;
 
-        if mat_limit_budget >= 0 {} else {
+        if mat_limit_budget >= 0 {
+
+            for i in 0..n_nodes_to_remove {
+                let reversed_layout_usage_comparator = |a : &RefCell<Layout>, b : &RefCell<Layout>| { a.borrow().get_usage().partial_cmp(&b.borrow().get_usage()).unwrap().reverse() };
+
+                let biased_sampler = BiasedSampler::new_default(
+                    self.problem.layouts().iter().map(|l| { Rc::downgrade(l) }).collect(),
+                    reversed_layout_usage_comparator,
+                );
+
+                let layout = biased_sampler.sample(&mut self.problem.random());
+
+                match layout{
+                    Some(layout) => {
+                        let layout = layout.upgrade().unwrap();
+                        let mut layout_ref= layout.as_ref().borrow_mut();
+                        let removable_nodes = layout_ref.get_removable_nodes();
+                        let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
+
+                        layout_ref.remove_node(&selected_node);
+                    }
+                    None => {break;}
+                }
+            }
+        } else {
             while mat_limit_budget < 0 {
                 if self.problem.layouts().is_empty() {
                     break;
@@ -56,7 +81,7 @@ impl<'a> GDRR<'a> {
     pub fn recreate(&'a mut self, mut mat_limit_budget: u64, max_part_area_not_included: u64) {
         let mut parttypes_to_consider: IndexSet<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(i, q)| { **q > 0 })
-            .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i)}).collect();
+            .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
 
 
         let mut insertion_option_cache = InsertionOptionCache::new();
@@ -136,26 +161,26 @@ impl<'a> GDRR<'a> {
         instance.get_parttype(selected_parttype_id)
     }
 
-    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: u64, rand: &mut ThreadRng, config : &Config, cost_comparator : &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: u64, rand: &mut ThreadRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
         let insertion_options = insertion_option_cache.get_for_parttype(parttype);
         match insertion_options {
             Some(options) => {
                 //Collect the blueprints
-                let mut existing_layout_blueprints : Vec<InsertionBlueprint<'a>> = Vec::new();
-                let mut new_layout_blueprints : Vec<InsertionBlueprint<'a>> = Vec::new();
+                let mut existing_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
+                let mut new_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
 
                 for option in options {
                     if existing_layout_blueprints.len() > 20 {
                         break; //enough blueprints to consider
                     }
-                    if option.layout().upgrade().unwrap().as_ref().borrow().is_empty() {
+                    if option.layout().upgrade().unwrap().as_ref().borrow().is_empty() &&
+                        mat_limit_budget >= option.layout().upgrade().unwrap().as_ref().borrow().sheettype().value() {
                         new_layout_blueprints.extend(option.get_blueprints());
-                    }
-                    else {
+                    } else {
                         existing_layout_blueprints.extend(option.get_blueprints());
                     }
                 }
-                match existing_layout_blueprints.is_empty(){
+                match existing_layout_blueprints.is_empty() {
                     false => {
                         //Sort the blueprints by cost
                         existing_layout_blueprints.sort_by(|a, b| {
@@ -167,11 +192,11 @@ impl<'a> GDRR<'a> {
                     }
                     true => {
                         //No blueprints for existing layouts, try new layouts
-                        match new_layout_blueprints.is_empty(){
+                        match new_layout_blueprints.is_empty() {
                             true => {
                                 //No insertion blueprint available
                                 None
-                            },
+                            }
                             false => {
                                 //Select a random blueprint from the new layout blueprints
                                 let selected_index = rand.gen_range(0..new_layout_blueprints.len());
@@ -180,11 +205,10 @@ impl<'a> GDRR<'a> {
                         }
                     }
                 }
-            },
+            }
             None => {
                 None
             }
         }
-
     }
 }

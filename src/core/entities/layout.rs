@@ -85,6 +85,9 @@ impl<'a> Layout<'a> {
         todo!()
     }
 
+    pub fn get_removable_nodes(&self) -> Vec<Weak<RefCell<Node<'a>>>> {
+        todo!()
+    }
 
     pub fn id(&self) -> usize {
         self.id
