@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
+
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
@@ -12,14 +13,14 @@ pub struct InsertionBlueprint<'a> {
     replacements: Vec<NodeBlueprint<'a>>,
     parttype: &'a PartType,
     cost: Cost,
-    layout: Option<Weak<RefCell<Layout<'a>>>>
+    layout: Option<Weak<RefCell<Layout<'a>>>>,
 }
 
 
 impl<'a> InsertionBlueprint<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint<'a>>, parttype: &'a PartType) -> Self {
         let cost = InsertionBlueprint::calculate_cost(&original_node, &replacements);
-        Self { original_node, replacements, parttype, cost, layout : None}
+        Self { original_node, replacements, parttype, cost, layout: None }
     }
 
     fn calculate_cost(original_node: &Weak<RefCell<Node>>, replacements: &Vec<NodeBlueprint>) -> Cost {

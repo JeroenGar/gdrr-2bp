@@ -1,10 +1,12 @@
 use std::cell::{Ref, RefCell};
 use std::hash::{Hash, Hasher};
 use std::rc::Weak;
+
 use by_address::ByAddress;
-use crate::core::entities::node::Node;
+
 use crate::{Orientation, PartType, Rotation};
 use crate::core::entities::layout::Layout;
+use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 
 #[derive(Debug)]
@@ -12,18 +14,18 @@ pub struct InsertionOption<'a> {
     original_node: Weak<RefCell<Node<'a>>>,
     parttype: &'a PartType,
     rotation: Option<Rotation>,
-    layout : Weak<RefCell<Layout<'a>>>
+    layout: Weak<RefCell<Layout<'a>>>,
 }
 
 //TODO: cache the blueprints
 
 impl<'a> InsertionOption<'a> {
-    pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>, layout : Weak<RefCell<Layout<'a>>>) -> Self {
+    pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>, layout: Weak<RefCell<Layout<'a>>>) -> Self {
         Self {
             original_node,
             parttype,
             rotation,
-            layout
+            layout,
         }
     }
 

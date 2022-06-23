@@ -1,8 +1,10 @@
 use std::cell::RefCell;
-use std::collections::{LinkedList};
+use std::collections::LinkedList;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
+
 use indexmap::IndexMap;
+
 use crate::{Instance, PartType, SheetType};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;

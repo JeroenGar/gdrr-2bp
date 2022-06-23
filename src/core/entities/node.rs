@@ -1,11 +1,12 @@
-use std::{rc::Rc};
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::rc::Weak;
+
 use by_address::ByAddress;
 use indexmap::IndexMap;
-use crate::core::cost::Cost;
 
 use crate::{Orientation, PartType};
+use crate::core::cost::Cost;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::rotation::Rotation;
@@ -34,21 +35,21 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn new_from_blueprint(blueprint: &NodeBlueprint<'a>, parent: Weak<RefCell<Node<'a>>>, all_created_nodes : &mut Vec<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
-        let mut node = Node{
+    pub fn new_from_blueprint(blueprint: &NodeBlueprint<'a>, parent: Weak<RefCell<Node<'a>>>, all_created_nodes: &mut Vec<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
+        let mut node = Node {
             width: blueprint.width(),
             height: blueprint.height(),
             children: Vec::new(),
-            parent : Some(parent),
+            parent: Some(parent),
             parttype: blueprint.parttype(),
-            next_cut_orient: blueprint.next_cut_orient()
+            next_cut_orient: blueprint.next_cut_orient(),
         };
 
         let mut node = Rc::new(RefCell::new(node));
         all_created_nodes.push(Rc::downgrade(&node));
 
         let children = blueprint.children().iter().map(|child_bp| {
-            Node::new_from_blueprint(child_bp,Rc::downgrade(&node), all_created_nodes)
+            Node::new_from_blueprint(child_bp, Rc::downgrade(&node), all_created_nodes)
         }).collect();
 
         node.as_ref().borrow_mut().children = children;
@@ -370,10 +371,10 @@ impl<'a> Node<'a> {
         self.width >= part_size.width() && self.height >= part_size.height()
     }
 
-    pub fn get_included_parts(&self, included_parts : &mut Vec<&'a PartType>) {
+    pub fn get_included_parts(&self, included_parts: &mut Vec<&'a PartType>) {
         debug_assert!(!(self.parttype.is_some() && !self.children.is_empty()));
 
-        match self.parttype{
+        match self.parttype {
             Some(parttype) => {
                 included_parts.push(parttype);
             }
@@ -385,10 +386,10 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn get_all_children(&self, children : &mut Vec<Weak<RefCell<Node<'a>>>>){
+    pub fn get_all_children(&self, children: &mut Vec<Weak<RefCell<Node<'a>>>>) {
         debug_assert!(!(self.parttype.is_some() && !self.children.is_empty()));
 
-        match self.children.is_empty(){
+        match self.children.is_empty() {
             true => {
                 // do nothing
             }
@@ -401,10 +402,26 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn get_cost() -> Cost {
+    pub fn calculate_cost(&self) -> Cost {
         todo!()
     }
 
+    pub fn calculate_usage(&self) -> f64 {
+        if self.parttype.is_some() {
+            1.0
+        } else if self.children.is_empty() {
+            0.0
+        } else {
+            let mut usage = 0.0;
+            for child in &self.children {
+                let child_ref = child.as_ref().borrow();
+                usage += child_ref.area() as f64 * child_ref.calculate_usage();
+            }
+            usage /= self.area() as f64;
+            debug_assert!(usage <= 1.0);
+            usage
+        }
+    }
 
     pub fn width(&self) -> u64 {
         self.width

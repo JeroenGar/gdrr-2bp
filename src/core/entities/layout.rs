@@ -8,7 +8,7 @@ use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::Orientation;
 use crate::util::assertions;
 
-use super::{sheettype::SheetType, parttype::PartType};
+use super::{parttype::PartType, sheettype::SheetType};
 
 #[derive(Debug)]
 pub struct Layout<'a> {
@@ -38,7 +38,7 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates : &mut CacheUpdates<'a,Weak<RefCell<Node<'a>>>>)  {
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>) {
         self.invalidate_caches();
 
         let original_node = blueprint.original_node().upgrade().unwrap();
@@ -63,15 +63,15 @@ impl<'a> Layout<'a> {
         );
         self.register_part(blueprint.parttype());
 
-        debug_assert!(assertions::children_nodes_fit(&self.top_node));
+        debug_assert!(assertions::children_nodes_fit(&parent_node));
     }
 
     pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node<'a>>> {
         self.invalidate_caches();
 
         //remove the node from the tree
-        let mut parent = node.as_ref().borrow().parent().as_ref().unwrap().upgrade().unwrap();
-        let removed_node = parent.as_ref().borrow_mut().remove_child(node);
+        let mut parent_node = node.as_ref().borrow().parent().as_ref().unwrap().upgrade().unwrap();
+        let removed_node = parent_node.as_ref().borrow_mut().remove_child(node);
 
         //unregister the released nodes and parts
         let mut removed_nodes = Vec::new();
@@ -86,18 +86,25 @@ impl<'a> Layout<'a> {
             self.unregister_part(parttype.clone());
         });
 
-        debug_assert!(assertions::children_nodes_fit(&self.top_node));
+        debug_assert!(assertions::children_nodes_fit(&parent_node));
 
         removed_node
     }
 
-    fn invalidate_caches(&mut self){
+    fn invalidate_caches(&mut self) {
         self.cached_cost.replace(None);
         self.cached_usage.replace(None);
     }
 
-    fn recalculate_cost(&self) {
-        todo!()
+    fn calculate_cost(&self) -> Cost {
+        let mut cost = self.top_node.as_ref().borrow().calculate_cost();
+        cost.material_cost = self.sheettype.value();
+
+        cost
+    }
+
+    fn calculate_usage(&self) -> f64 {
+        self.top_node.as_ref().borrow().calculate_usage()
     }
 
     fn register_node(&mut self, node: Weak<RefCell<Node>>) {
@@ -132,11 +139,33 @@ impl<'a> Layout<'a> {
     }
 
     pub fn get_cost(&self) -> Cost {
-        todo!()
+        let mut cached_cost = self.cached_cost.borrow_mut();
+        match cached_cost.as_ref() {
+            Some(cost) => {
+                debug_assert!(*cost == self.calculate_cost());
+                cost.clone()
+            }
+            None => {
+                let cost = self.calculate_cost();
+                cached_cost.replace(cost.clone());
+                cost
+            }
+        }
     }
 
     pub fn get_usage(&self) -> f64 {
-        todo!()
+        let mut cached_usage = self.cached_usage.borrow_mut();
+        match cached_usage.as_ref() {
+            Some(usage) => {
+                debug_assert!(*usage == self.calculate_usage());
+                *usage
+            }
+            None => {
+                let usage = self.calculate_usage();
+                cached_usage.replace(usage);
+                usage
+            }
+        }
     }
 
     pub fn get_sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
@@ -157,10 +186,6 @@ impl<'a> Layout<'a> {
 
     pub fn top_node(&self) -> &Rc<RefCell<Node<'a>>> {
         &self.top_node
-    }
-
-    pub fn cached_cost(&self) -> &RefCell<Option<Cost>> {
-        &self.cached_cost
     }
 
     pub fn sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {

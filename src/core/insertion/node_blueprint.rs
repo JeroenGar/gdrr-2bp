@@ -1,15 +1,15 @@
 use crate::{Orientation, PartType};
 
 #[derive(Debug, Clone)]
-pub struct NodeBlueprint<'a>{
-    width : u64,
+pub struct NodeBlueprint<'a> {
+    width: u64,
     height: u64,
-    children : Vec<NodeBlueprint<'a>>,
+    children: Vec<NodeBlueprint<'a>>,
     parttype: Option<&'a PartType>,
-    next_cut_orient : Orientation
+    next_cut_orient: Orientation,
 }
 
-impl<'a> NodeBlueprint<'a>{
+impl<'a> NodeBlueprint<'a> {
     pub fn new(width: u64, height: u64, parttype: Option<&'a PartType>, next_cut_orient: Orientation) -> Self {
         let children = Vec::new();
         Self { width, height, children, parttype, next_cut_orient }

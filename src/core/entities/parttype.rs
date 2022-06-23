@@ -1,11 +1,12 @@
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::AtomicUsize;
+
 use crate::core::orientation::Orientation;
 use crate::core::size::Size;
 use crate::Rotation;
 
 #[derive(Debug)]
-pub struct PartType{
+pub struct PartType {
     id: Option<usize>,
     width: u64,
     height: u64,
@@ -14,9 +15,9 @@ pub struct PartType{
     rotated_size: Size,
 }
 
-impl PartType{
-    pub fn new (width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType{
-        PartType{
+impl PartType {
+    pub fn new(width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType {
+        PartType {
             id: None,
             width,
             height,
@@ -26,19 +27,19 @@ impl PartType{
         }
     }
 
-    pub fn id(&self) -> usize{
+    pub fn id(&self) -> usize {
         self.id.unwrap()
     }
 
-    pub fn set_id(&mut self, id: usize){
+    pub fn set_id(&mut self, id: usize) {
         self.id = Some(id);
     }
 
-    pub fn width(&self) -> u64{
+    pub fn width(&self) -> u64 {
         self.width
     }
 
-    pub fn height(&self) -> u64{
+    pub fn height(&self) -> u64 {
         self.height
     }
 
@@ -63,8 +64,7 @@ impl Hash for PartType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         if self.id.is_some() {
             self.id.hash(state);
-        }
-        else {
+        } else {
             self.width.hash(state);
             self.height.hash(state);
             self.fixed_rotation.hash(state);
@@ -81,7 +81,7 @@ impl PartialEq for PartType {
                 self.width == other.width &&
                 self.height == other.height &&
                 self.fixed_rotation == other.fixed_rotation
-        }
+        };
     }
 }
 

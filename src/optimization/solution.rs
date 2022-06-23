@@ -1,3 +1,1 @@
-pub struct Solution {
-
-}
+pub struct Solution {}

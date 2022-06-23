@@ -1,19 +1,20 @@
 use std::cell::RefCell;
 use std::rc::Weak;
+
 use crate::core::entities::layout::Layout;
 
-pub struct CacheUpdates<'a,T> {
+pub struct CacheUpdates<'a, T> {
     invalidated: Vec<T>,
     new_entries: Vec<T>,
     layout: Weak<RefCell<Layout<'a>>>,
 }
 
-impl<'a,T> CacheUpdates<'a, T> {
-    pub fn new(layout : Weak<RefCell<Layout<'a>>>) -> Self{
+impl<'a, T> CacheUpdates<'a, T> {
+    pub fn new(layout: Weak<RefCell<Layout<'a>>>) -> Self {
         CacheUpdates {
             invalidated: Vec::new(),
             new_entries: Vec::new(),
-            layout
+            layout,
         }
     }
 

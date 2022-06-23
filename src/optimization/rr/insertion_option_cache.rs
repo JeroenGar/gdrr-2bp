@@ -1,31 +1,33 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
+
 use by_address::ByAddress;
 use indexmap::IndexSet;
-use crate::core::entities::node::Node;
-use crate::core::insertion::insertion_option::InsertionOption;
-use crate::optimization::problem::Problem;
+
 use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
+use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
+use crate::core::insertion::insertion_option::InsertionOption;
+use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::multi_map::MultiMap;
 
-pub struct InsertionOptionCache<'a>{
-    option_node_map : MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
-    option_parttype_map : MultiMap<&'a PartType, Rc<InsertionOption<'a>>>
+pub struct InsertionOptionCache<'a> {
+    option_node_map: MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
+    option_parttype_map: MultiMap<&'a PartType, Rc<InsertionOption<'a>>>,
 }
 
 impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     pub fn new() -> Self {
         Self {
             option_node_map: MultiMap::new(),
-            option_parttype_map: MultiMap::new()
+            option_parttype_map: MultiMap::new(),
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates : &CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, parttypes: &IndexSet<&'a PartType>)
+    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, parttypes: &IndexSet<&'a PartType>)
     {
         cache_updates.invalidated().iter().for_each(|node| {
             match node.upgrade() {
@@ -38,12 +40,12 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         let layout = cache_updates.layout().clone();
         cache_updates.new_entries().iter().for_each(|node| {
             let node = node.upgrade().unwrap();
-            self.add_for_node(&node, layout.clone(),parttypes.iter());
+            self.add_for_node(&node, layout.clone(), parttypes.iter());
         });
     }
 
-    pub fn add_for_parttypes<I>(&mut self, parttypes: I, layouts : &Vec<Rc<RefCell<Layout<'a>>>>)
-        where I: Iterator<Item = &'b &'a PartType>
+    pub fn add_for_parttypes<I>(&mut self, parttypes: I, layouts: &Vec<Rc<RefCell<Layout<'a>>>>)
+        where I: Iterator<Item=&'b &'a PartType>
     {
         let mut sorted_parttypes: Vec<&&PartType> = Vec::from_iter(parttypes);
         //sort by decreasing area
@@ -84,8 +86,8 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn add_for_node<I>(&mut self, node: &Rc<RefCell<Node<'a>>>, layout : Weak<RefCell<Layout<'a>>>, parttypes: I)
-        where I: Iterator<Item = &'b &'a PartType> {
+    pub fn add_for_node<I>(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: Weak<RefCell<Layout<'a>>>, parttypes: I)
+        where I: Iterator<Item=&'b &'a PartType> {
         let node_ref = node.as_ref().borrow();
         if node_ref.parttype().is_none() && node_ref.children().is_empty() {
             for parttype in parttypes.into_iter() {
@@ -102,7 +104,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn remove_for_parttype(&mut self, parttype: &'a PartType){
+    pub fn remove_for_parttype(&mut self, parttype: &'a PartType) {
         for insert_opt in self.option_parttype_map.get(&parttype).unwrap() {
             self.option_node_map.remove(&ByAddress(insert_opt.original_node().upgrade().unwrap()), insert_opt);
         }
@@ -116,7 +118,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         self.option_node_map.remove_all(&ByAddress(node.clone()));
     }
 
-    pub fn remove_for_layout(&mut self, layout : &Rc<RefCell<Layout<'a>>>){
+    pub fn remove_for_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         let layout = layout.as_ref().borrow();
         let sorted_empty_nodes = layout.get_sorted_empty_nodes();
         for empty_node in sorted_empty_nodes.iter() {
@@ -125,7 +127,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    fn generate_insertion_option(node: &Rc<RefCell<Node<'a>>>, parttype: &'a PartType, layout : Weak<RefCell<Layout<'a>>>) -> Option<InsertionOption<'a>> {
+    fn generate_insertion_option(node: &Rc<RefCell<Node<'a>>>, parttype: &'a PartType, layout: Weak<RefCell<Layout<'a>>>) -> Option<InsertionOption<'a>> {
         let node_ref = node.as_ref().borrow();
         match parttype.fixed_rotation() {
             Some(fixed_rotation) => {

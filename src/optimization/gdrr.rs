@@ -3,12 +3,14 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::path::Iter;
 use std::rc::Rc;
+
 use indexmap::{IndexMap, IndexSet};
-use rand::Rng;
 use rand::prelude::SliceRandom;
+use rand::Rng;
 use rand::rngs::ThreadRng;
-use crate::core::cost::Cost;
+
 use crate::{Instance, PartType};
+use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::insertion_option::InsertionOption;
@@ -36,9 +38,8 @@ impl<'a> GDRR<'a> {
         let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed() - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
-
             for i in 0..n_nodes_to_remove {
-                let reversed_layout_usage_comparator = |a : &RefCell<Layout>, b : &RefCell<Layout>| { a.borrow().get_usage().partial_cmp(&b.borrow().get_usage()).unwrap().reverse() };
+                let reversed_layout_usage_comparator = |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().get_usage().partial_cmp(&b.borrow().get_usage()).unwrap().reverse() };
 
                 let biased_sampler = BiasedSampler::new_default(
                     self.problem.layouts().iter().map(|l| { Rc::downgrade(l) }).collect(),
@@ -47,16 +48,16 @@ impl<'a> GDRR<'a> {
 
                 let layout = biased_sampler.sample(&mut self.problem.random());
 
-                match layout{
+                match layout {
                     Some(layout) => {
                         let layout = layout.upgrade().unwrap();
-                        let mut layout_ref= layout.as_ref().borrow_mut();
+                        let mut layout_ref = layout.as_ref().borrow_mut();
                         let removable_nodes = layout_ref.get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
 
                         self.problem.remove_node(&selected_node, &layout);
                     }
-                    None => {break;}
+                    None => { break; }
                 }
             }
         } else {
