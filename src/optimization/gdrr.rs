@@ -54,7 +54,7 @@ impl<'a> GDRR<'a> {
                         let removable_nodes = layout_ref.get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
 
-                        layout_ref.remove_node(&selected_node);
+                        self.problem.remove_node(&selected_node, &layout);
                     }
                     None => {break;}
                 }

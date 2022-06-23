@@ -19,4 +19,21 @@ impl<'a> NodeBlueprint<'a>{
     pub fn add_child(&mut self, child: NodeBlueprint<'a>) {
         self.children.push(child);
     }
+
+
+    pub fn width(&self) -> u64 {
+        self.width
+    }
+    pub fn height(&self) -> u64 {
+        self.height
+    }
+    pub fn children(&self) -> &Vec<NodeBlueprint<'a>> {
+        &self.children
+    }
+    pub fn parttype(&self) -> Option<&'a PartType> {
+        self.parttype
+    }
+    pub fn next_cut_orient(&self) -> Orientation {
+        self.next_cut_orient
+    }
 }

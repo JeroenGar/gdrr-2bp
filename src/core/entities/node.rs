@@ -9,6 +9,7 @@ use crate::{Orientation, PartType};
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::rotation::Rotation;
+use crate::optimization::rr::cache_updates::CacheUpdates;
 
 #[derive(Debug)]
 pub struct Node<'a> {
@@ -33,8 +34,26 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn new_from_blueprint(blueprint: &NodeBlueprint) -> Node<'a> {
-        todo!();
+    pub fn new_from_blueprint(blueprint: &NodeBlueprint<'a>, parent: Weak<RefCell<Node<'a>>>, all_created_nodes : &mut Vec<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
+        let mut node = Node{
+            width: blueprint.width(),
+            height: blueprint.height(),
+            children: Vec::new(),
+            parent : Some(parent),
+            parttype: blueprint.parttype(),
+            next_cut_orient: blueprint.next_cut_orient()
+        };
+
+        let mut node = Rc::new(RefCell::new(node));
+        all_created_nodes.push(Rc::downgrade(&node));
+
+        let children = blueprint.children().iter().map(|child_bp| {
+            Node::new_from_blueprint(child_bp,Rc::downgrade(&node), all_created_nodes)
+        }).collect();
+
+        node.as_ref().borrow_mut().children = children;
+
+        node
     }
 
     pub fn create_deep_copy(
@@ -58,10 +77,10 @@ impl<'a> Node<'a> {
     }
 
     pub fn add_child(&mut self, child: Rc<RefCell<Node<'a>>>) {
-        todo!()
+        self.children.push(child);
     }
 
-    pub fn remove_child(&mut self, child: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node>> {
+    pub fn remove_child(&mut self, child: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node<'a>>> {
         /*
            Scenario 1: Waste piece present + other child(ren)
             -> expand existing waste piece
@@ -135,14 +154,11 @@ impl<'a> Node<'a> {
         todo!()
     }
 
-    pub fn replace_child(&mut self, old_child: &Node<'a>, replacements: Vec<Node<'a>>) -> Rc<RefCell<Node<'a>>> {
-        let old_child_index = self.children.iter().position(|c| c.as_ptr() as *const Node == old_child as *const Node).unwrap();
+    pub fn replace_child(&mut self, old_child: &Rc<RefCell<Node<'a>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
+        let old_child_index = self.children.iter().position(|c| Rc::ptr_eq(c, old_child)).unwrap();
         let old_child = self.children.remove(old_child_index);
 
-        for replacement in replacements {
-            let wrapped = Rc::new(RefCell::new(replacement));
-            self.children.push(wrapped);
-        }
+        self.children.extend(replacements);
 
         old_child
     }
@@ -352,6 +368,21 @@ impl<'a> Node<'a> {
         };
 
         self.width >= part_size.width() && self.height >= part_size.height()
+    }
+
+    pub fn get_included_parts(&self, included_parts : &mut Vec<&'a PartType>) {
+        debug_assert!(!(self.parttype.is_some() && !self.children.is_empty()));
+
+        match self.parttype{
+            Some(parttype) => {
+                included_parts.push(parttype);
+            }
+            None => {
+                for child in &self.children {
+                    child.as_ref().borrow().get_included_parts(included_parts);
+                }
+            }
+        }
     }
 
     pub fn get_cost() -> Cost {

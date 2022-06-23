@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::{LinkedList};
 use std::ops::Deref;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use indexmap::IndexMap;
 use crate::{Instance, PartType, SheetType};
 use crate::core::entities::layout::Layout;
@@ -11,13 +11,13 @@ use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::assertions;
 
 pub struct Problem<'a> {
-    instance : &'a Instance,
+    instance: &'a Instance,
     parttype_qtys: Vec<usize>,
-    sheettype_qtys : Vec<usize>,
-    layouts : Vec<Rc<RefCell<Layout<'a>>>>,
-    empty_layouts : Vec<Rc<RefCell<Layout<'a>>>>,
-    random : rand::rngs::ThreadRng,
-    counter_layout_id : usize
+    sheettype_qtys: Vec<usize>,
+    layouts: Vec<Rc<RefCell<Layout<'a>>>>,
+    empty_layouts: Vec<Rc<RefCell<Layout<'a>>>>,
+    random: rand::rngs::ThreadRng,
+    counter_layout_id: usize,
 }
 
 impl<'a> Problem<'a> {
@@ -32,7 +32,7 @@ impl<'a> Problem<'a> {
         Self { instance, parttype_qtys, sheettype_qtys, layouts, empty_layouts, random, counter_layout_id }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> (CacheUpdates<'a,Rc<RefCell<Node<'a>>>>, bool){
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> (CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, bool) {
         let blueprint_layout = blueprint.layout().as_ref().unwrap().upgrade().unwrap();
 
         let blueprint_creates_new_layout = self.empty_layouts.iter().any(|e| Rc::ptr_eq(e, &blueprint_layout));
@@ -40,7 +40,9 @@ impl<'a> Problem<'a> {
         let cache_updates = match blueprint_creates_new_layout {
             false => {
                 self.register_part(blueprint.parttype(), 1);
-                let cache_updates = blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint);
+                let mut cache_updates = CacheUpdates::new(Rc::downgrade(&blueprint_layout));
+                blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates);
+
                 cache_updates
             }
             true => {
@@ -58,14 +60,14 @@ impl<'a> Problem<'a> {
                 //Search the layout again in the problem, to please the borrow checker
                 let copy = self.layouts.iter().find(|l| Rc::ptr_eq(l, &copy)).unwrap();
 
-                let cache_updates = copy.as_ref().borrow_mut().implement_insertion_blueprint(&insertion_bp_copy);
+                let mut cache_updates = CacheUpdates::new(Rc::downgrade(&copy));
+                copy.as_ref().borrow_mut().implement_insertion_blueprint(&insertion_bp_copy, &mut cache_updates);
 
                 cache_updates
             }
         };
 
         (cache_updates, blueprint_creates_new_layout)
-
     }
 
     pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: &Rc<RefCell<Layout<'a>>>) {
@@ -73,11 +75,19 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
         let mut layout_ref = layout.as_ref().borrow_mut();
-        let released_parts = layout_ref.remove_node(node);
 
-        released_parts.iter().for_each(|p| {self.release_part(p, 1)});
-        if layout_ref.is_empty() {
+        if Rc::ptr_eq(node, layout_ref.top_node()) {
+            //The node to remove is the root node of the layout, so the entire layout is removed
             self.release_layout(layout);
+        } else {
+            let removed_node = layout_ref.remove_node(node);
+            let mut parts_to_release = Vec::new();
+            removed_node.as_ref().borrow().get_included_parts(&mut parts_to_release);
+            parts_to_release.iter().for_each(|p| { self.release_part(p, 1) });
+
+            if layout_ref.is_empty() {
+                self.release_layout(layout);
+            }
         }
     }
 
@@ -90,7 +100,7 @@ impl<'a> Problem<'a> {
     }
     pub fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
-   }
+    }
 
     pub fn random(&mut self) -> &mut rand::rngs::ThreadRng {
         &mut self.random
@@ -101,38 +111,45 @@ impl<'a> Problem<'a> {
     }
 
     pub fn register_layout(&mut self, layout: Rc<RefCell<Layout<'a>>>) {
-        todo!(); //register parts & sheets
+        self.register_sheet(layout.borrow().sheettype(), 1);
+        layout.borrow().get_included_parts().iter().for_each(
+            |p| { self.register_part(p, 1) });
+
         self.layouts.push(layout);
     }
 
     pub fn release_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
-        todo!(); //register parts & sheets
+
+        self.release_sheet(layout.borrow().sheettype(), 1);
+        layout.borrow().get_included_parts().iter().for_each(
+            |p| { self.release_part(p, 1) });
+
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
     }
 
-    fn register_part(&mut self, parttype : &'a PartType, qty : usize) {
+    fn register_part(&mut self, parttype: &'a PartType, qty: usize) {
         let id = parttype.id();
         debug_assert!(self.parttype_qtys[id] - qty >= 0);
 
         self.parttype_qtys[parttype.id()] -= qty;
     }
 
-    fn release_part(&mut self, parttype : &'a PartType, qty : usize) {
+    fn release_part(&mut self, parttype: &'a PartType, qty: usize) {
         let id = parttype.id();
         debug_assert!(self.parttype_qtys[id] + qty <= self.instance.get_parttype_qty(id).unwrap());
 
         self.parttype_qtys[id] += qty;
     }
 
-    fn register_sheet(&mut self, sheettype : &'a SheetType, qty : usize) {
+    fn register_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
         let id = sheettype.id();
         debug_assert!(self.sheettype_qtys[id] - qty >= 0);
 
         self.sheettype_qtys[id] -= qty;
     }
 
-    fn release_sheet(&mut self, sheettype : &'a SheetType, qty : usize) {
+    fn release_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
         let id = sheettype.id();
         debug_assert!(self.sheettype_qtys[id] + qty <= self.instance.get_sheettype_qty(id).unwrap());
 

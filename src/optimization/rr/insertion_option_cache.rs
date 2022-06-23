@@ -25,14 +25,20 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates : &CacheUpdates<'a, Rc<RefCell<Node<'a>>>>, parttypes: &IndexSet<&'a PartType>)
+    pub fn update_cache(&mut self, cache_updates : &CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, parttypes: &IndexSet<&'a PartType>)
     {
         cache_updates.invalidated().iter().for_each(|node| {
-            self.remove_for_node(node);
+            match node.upgrade() {
+                Some(node) => {
+                    self.remove_for_node(&node);
+                }
+                None => {}
+            }
         });
         let layout = cache_updates.layout().clone();
         cache_updates.new_entries().iter().for_each(|node| {
-            self.add_for_node(node, layout.clone(),parttypes.iter());
+            let node = node.upgrade().unwrap();
+            self.add_for_node(&node, layout.clone(),parttypes.iter());
         });
     }
 
