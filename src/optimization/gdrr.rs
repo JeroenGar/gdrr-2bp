@@ -156,7 +156,7 @@ impl<'a> GDRR<'a> {
             a_insertion_options.cmp(&b_insertion_options)
         });
 
-        let selected_index = blink::select_lowest(0..parttypes_to_consider.len(), config.blink_chance(), rand);
+        let selected_index = blink::select_lowest(0..parttypes_to_consider.len(), config.blink_rate(), rand);
         let selected_parttype_id = parttypes_to_consider[selected_index];
 
         instance.get_parttype(selected_parttype_id)
@@ -188,7 +188,7 @@ impl<'a> GDRR<'a> {
                             cost_comparator(a.cost(), b.cost())
                         });
                         //Select the best (blinked) one
-                        let selected_blinked_index = blink::select_lowest(0..existing_layout_blueprints.len(), config.blink_chance(), rand);
+                        let selected_blinked_index = blink::select_lowest(0..existing_layout_blueprints.len(), config.blink_rate(), rand);
                         Some(existing_layout_blueprints.remove(selected_blinked_index))
                     }
                     true => {

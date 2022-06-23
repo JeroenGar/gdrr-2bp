@@ -4,6 +4,7 @@ use std::rc::{Rc, Weak};
 
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
+use crate::optimization::config::Config;
 use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::Orientation;
 use crate::util::assertions;
@@ -96,8 +97,8 @@ impl<'a> Layout<'a> {
         self.cached_usage.replace(None);
     }
 
-    fn calculate_cost(&self) -> Cost {
-        let mut cost = self.top_node.as_ref().borrow().calculate_cost();
+    fn calculate_cost(&self, config : &Config) -> Cost {
+        let mut cost = self.top_node.as_ref().borrow().calculate_cost(config);
         cost.material_cost = self.sheettype.value();
 
         cost
@@ -138,15 +139,15 @@ impl<'a> Layout<'a> {
         todo!()
     }
 
-    pub fn get_cost(&self) -> Cost {
+    pub fn get_cost(&self, config : &Config) -> Cost {
         let mut cached_cost = self.cached_cost.borrow_mut();
         match cached_cost.as_ref() {
             Some(cost) => {
-                debug_assert!(*cost == self.calculate_cost());
+                debug_assert!(*cost == self.calculate_cost(config));
                 cost.clone()
             }
             None => {
-                let cost = self.calculate_cost();
+                let cost = self.calculate_cost(config);
                 cached_cost.replace(cost.clone());
                 cost
             }

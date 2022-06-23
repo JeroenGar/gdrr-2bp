@@ -9,7 +9,9 @@ use crate::{Orientation, PartType};
 use crate::core::cost::Cost;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
+use crate::core::leftover_valuator;
 use crate::core::rotation::Rotation;
+use crate::optimization::config::Config;
 use crate::optimization::rr::cache_updates::CacheUpdates;
 
 #[derive(Debug)]
@@ -402,8 +404,21 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn calculate_cost(&self) -> Cost {
-        todo!()
+    pub fn calculate_cost(&self, config : &Config) -> Cost {
+        if self.parttype.is_some() {
+            return Cost::new(0, 0.0, self.parttype.unwrap().area(), 0);
+        }
+        else if self.children.is_empty() {
+            return Cost::new(0, leftover_valuator::valuate(self.area(), config), 0, 0);
+        }
+        else {
+            let mut cost = Cost::new(0, 0.0, 0, 0);
+            for child in &self.children {
+                let child_cost = child.as_ref().borrow().calculate_cost(config);
+                cost.add(&child_cost);
+            }
+            return cost;
+        }
     }
 
     pub fn calculate_usage(&self) -> f64 {
