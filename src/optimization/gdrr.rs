@@ -73,7 +73,7 @@ impl<'a> GDRR<'a> {
 
                 //release it and update mat_limit_exceedance
                 mat_limit_budget += layout_min_usage.as_ref().borrow().sheettype().value();
-                self.problem.release_layout(&layout_min_usage);
+                self.problem.unregister_layout(&layout_min_usage);
             }
         }
     }

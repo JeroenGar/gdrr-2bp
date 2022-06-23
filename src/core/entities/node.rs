@@ -385,6 +385,22 @@ impl<'a> Node<'a> {
         }
     }
 
+    pub fn get_all_children(&self, children : &mut Vec<Weak<RefCell<Node<'a>>>>){
+        debug_assert!(!(self.parttype.is_some() && !self.children.is_empty()));
+
+        match self.children.is_empty(){
+            true => {
+                // do nothing
+            }
+            false => {
+                for child in &self.children {
+                    children.push(Rc::downgrade(&child));
+                    child.as_ref().borrow().get_all_children(children);
+                }
+            }
+        }
+    }
+
     pub fn get_cost() -> Cost {
         todo!()
     }

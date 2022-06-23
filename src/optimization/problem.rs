@@ -78,15 +78,15 @@ impl<'a> Problem<'a> {
 
         if Rc::ptr_eq(node, layout_ref.top_node()) {
             //The node to remove is the root node of the layout, so the entire layout is removed
-            self.release_layout(layout);
+            self.unregister_layout(layout);
         } else {
             let removed_node = layout_ref.remove_node(node);
             let mut parts_to_release = Vec::new();
             removed_node.as_ref().borrow().get_included_parts(&mut parts_to_release);
-            parts_to_release.iter().for_each(|p| { self.release_part(p, 1) });
+            parts_to_release.iter().for_each(|p| { self.unregister_part(p, 1) });
 
             if layout_ref.is_empty() {
-                self.release_layout(layout);
+                self.unregister_layout(layout);
             }
         }
     }
@@ -118,12 +118,12 @@ impl<'a> Problem<'a> {
         self.layouts.push(layout);
     }
 
-    pub fn release_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
+    pub fn unregister_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
-        self.release_sheet(layout.borrow().sheettype(), 1);
+        self.unregister_sheet(layout.borrow().sheettype(), 1);
         layout.borrow().get_included_parts().iter().for_each(
-            |p| { self.release_part(p, 1) });
+            |p| { self.unregister_part(p, 1) });
 
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
     }
@@ -135,7 +135,7 @@ impl<'a> Problem<'a> {
         self.parttype_qtys[parttype.id()] -= qty;
     }
 
-    fn release_part(&mut self, parttype: &'a PartType, qty: usize) {
+    fn unregister_part(&mut self, parttype: &'a PartType, qty: usize) {
         let id = parttype.id();
         debug_assert!(self.parttype_qtys[id] + qty <= self.instance.get_parttype_qty(id).unwrap());
 
@@ -149,7 +149,7 @@ impl<'a> Problem<'a> {
         self.sheettype_qtys[id] -= qty;
     }
 
-    fn release_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
+    fn unregister_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
         let id = sheettype.id();
         debug_assert!(self.sheettype_qtys[id] + qty <= self.instance.get_sheettype_qty(id).unwrap());
 

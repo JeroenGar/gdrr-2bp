@@ -20,7 +20,6 @@ pub struct Layout<'a> {
     sorted_empty_nodes: Vec<Weak<RefCell<Node<'a>>>>,
 }
 
-
 impl<'a> Layout<'a> {
     pub fn new(sheettype: &'a SheetType, first_cut_orientation: Orientation, id: usize) -> Self {
         let mut top_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation);
@@ -50,7 +49,6 @@ impl<'a> Layout<'a> {
         let mut all_created_nodes = Vec::new();
         for node_blueprint in blueprint.replacements().iter() {
             let node = Node::new_from_blueprint(node_blueprint, Rc::downgrade(&parent_node), &mut all_created_nodes);
-            all_created_nodes.push(Rc::downgrade(&node));
             replacements.push(node);
         }
         parent_node.as_ref().borrow_mut().replace_child(&original_node, replacements);
@@ -64,13 +62,32 @@ impl<'a> Layout<'a> {
             }
         );
         self.register_part(blueprint.parttype());
+
+        debug_assert!(assertions::children_nodes_fit(&self.top_node));
     }
 
     pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node<'a>>> {
         self.invalidate_caches();
 
+        //remove the node from the tree
         let mut parent = node.as_ref().borrow().parent().as_ref().unwrap().upgrade().unwrap();
         let removed_node = parent.as_ref().borrow_mut().remove_child(node);
+
+        //unregister the released nodes and parts
+        let mut removed_nodes = Vec::new();
+        let mut released_parttypes = Vec::new();
+        removed_node.as_ref().borrow().get_all_children(&mut removed_nodes);
+        removed_node.as_ref().borrow().get_included_parts(&mut released_parttypes);
+
+        removed_nodes.iter().for_each(|node| {
+            self.unregister_node(node.clone());
+        });
+        released_parttypes.iter().for_each(|parttype| {
+            self.unregister_part(parttype.clone());
+        });
+
+        debug_assert!(assertions::children_nodes_fit(&self.top_node));
+
         removed_node
     }
 
@@ -87,7 +104,7 @@ impl<'a> Layout<'a> {
         todo!()
     }
 
-    fn deregister_node(&mut self, node: &Node, recursive: bool) {
+    fn unregister_node(&mut self, node: Weak<RefCell<Node>>) {
         todo!()
     }
 
@@ -95,7 +112,7 @@ impl<'a> Layout<'a> {
         todo!()
     }
 
-    fn deregister_part(&mut self, parttype: &PartType) {
+    fn unregister_part(&mut self, parttype: &PartType) {
         todo!()
     }
 
