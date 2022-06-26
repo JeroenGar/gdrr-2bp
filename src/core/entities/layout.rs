@@ -1,5 +1,6 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
+use std::collections::BinaryHeap;
 use std::rc::{Rc, Weak};
 
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
@@ -40,8 +41,6 @@ impl<'a> Layout<'a> {
     }
 
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>) {
-        self.invalidate_caches();
-
         let original_node = blueprint.original_node().upgrade().unwrap();
         let mut parent_node = original_node.as_ref().borrow_mut().parent().as_ref().unwrap().upgrade().unwrap();
 
@@ -68,7 +67,6 @@ impl<'a> Layout<'a> {
     }
 
     pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node<'a>>> {
-        self.invalidate_caches();
 
         //remove the node from the tree
         let mut parent_node = node.as_ref().borrow().parent().as_ref().unwrap().upgrade().unwrap();
@@ -81,7 +79,7 @@ impl<'a> Layout<'a> {
         removed_node.as_ref().borrow().get_included_parts(&mut released_parttypes);
 
         removed_nodes.iter().for_each(|node| {
-            self.unregister_node(node.clone());
+            self.unregister_node(node);
         });
         released_parttypes.iter().for_each(|parttype| {
             self.unregister_part(parttype.clone());
@@ -97,7 +95,7 @@ impl<'a> Layout<'a> {
         self.cached_usage.replace(None);
     }
 
-    fn calculate_cost(&self, config : &Config) -> Cost {
+    fn calculate_cost(&self, config: &Config) -> Cost {
         let mut cost = self.top_node.as_ref().borrow().calculate_cost(config);
         cost.material_cost = self.sheettype.value();
 
@@ -108,19 +106,71 @@ impl<'a> Layout<'a> {
         self.top_node.as_ref().borrow().calculate_usage()
     }
 
-    fn register_node(&mut self, node: Weak<RefCell<Node>>) {
-        todo!()
+    fn register_node(&mut self, node: Weak<RefCell<Node<'a>>>) {
+        self.invalidate_caches();
+
+        let node_rc = node.upgrade().unwrap();
+        let node_ref = node_rc.as_ref().borrow();
+
+        //All empty nodes need to be added to the sorted empty nodes list
+        if node_ref.is_empty() {
+            let result = self.sorted_empty_nodes.binary_search_by(
+                &(|n : &Weak<RefCell<Node<'a>>>| {
+                let n_area = n.upgrade().unwrap().as_ref().borrow().area();
+                    n_area.cmp(&node_ref.area())
+            }));
+
+            match result {
+                Ok(index) => self.sorted_empty_nodes.insert(index, node),
+                Err(index) => self.sorted_empty_nodes.insert(index, node),
+            }
+        }
     }
 
-    fn unregister_node(&mut self, node: Weak<RefCell<Node>>) {
-        todo!()
+    fn unregister_node(&mut self, node: &Weak<RefCell<Node<'a>>>) {
+        self.invalidate_caches();
+
+        let node_rc = node.upgrade().unwrap();
+        let node_ref = node_rc.as_ref().borrow();
+
+        //All empty nodes need to be removed from the sorted empty nodes list
+        if node_ref.is_empty() {
+            let lower_index = self.sorted_empty_nodes.partition_point(|n|
+                {n.upgrade().unwrap().as_ref().borrow().area() < node_ref.area()});
+
+            if Weak::ptr_eq(&self.sorted_empty_nodes[lower_index],&node){
+                //We have found the correct node, remove it
+                self.sorted_empty_nodes.remove(lower_index);
+            }
+            else{
+                let upper_index = self.sorted_empty_nodes.partition_point(|n|
+                    {n.upgrade().unwrap().as_ref().borrow().area() <= node_ref.area()});
+
+                let mut node_found = false;
+                for i in lower_index..upper_index{
+                    if Weak::ptr_eq(&self.sorted_empty_nodes[i],&node){
+                        //We have found the correct node, remove it
+                        self.sorted_empty_nodes.remove(i);
+                        node_found = true;
+                        break;
+                    }
+                }
+                if !node_found{
+                    panic!("Node not found in sorted_empty_nodes");
+                }
+            }
+        }
     }
 
     fn register_part(&mut self, parttype: &PartType) {
+        self.invalidate_caches();
+
         todo!()
     }
 
     fn unregister_part(&mut self, parttype: &PartType) {
+        self.invalidate_caches();
+
         todo!()
     }
 
@@ -139,7 +189,7 @@ impl<'a> Layout<'a> {
         todo!()
     }
 
-    pub fn get_cost(&self, config : &Config) -> Cost {
+    pub fn get_cost(&self, config: &Config) -> Cost {
         let mut cached_cost = self.cached_cost.borrow_mut();
         match cached_cost.as_ref() {
             Some(cost) => {

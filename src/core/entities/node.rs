@@ -118,8 +118,7 @@ impl<'a> Node<'a> {
 
         //Check if there is an empty_node present
         let empty_node = self.children.iter().find(|node: &&Rc<RefCell<Node>>| {
-            let node_ref = node.as_ref().borrow();
-            node_ref.parttype.is_none() && node_ref.children.is_empty()
+            node.as_ref().borrow().is_empty()
         }).cloned();
 
         if empty_node.is_some() {
@@ -436,6 +435,10 @@ impl<'a> Node<'a> {
             debug_assert!(usage <= 1.0);
             usage
         }
+    }
+
+    pub fn is_empty(&self) -> bool{
+        self.parttype.is_none() && self.children.is_empty()
     }
 
     pub fn width(&self) -> u64 {
