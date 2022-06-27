@@ -3,7 +3,7 @@ use std::collections::LinkedList;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 use crate::{Instance, PartType, SheetType};
 use crate::core::entities::layout::Layout;
@@ -18,8 +18,10 @@ pub struct Problem<'a> {
     sheettype_qtys: Vec<usize>,
     layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     empty_layouts: Vec<Rc<RefCell<Layout<'a>>>>,
+    unchanged_layouts : IndexSet<usize>,
     random: rand::rngs::ThreadRng,
     counter_layout_id: usize,
+    counter_solution_id: usize
 }
 
 impl<'a> Problem<'a> {
@@ -28,10 +30,22 @@ impl<'a> Problem<'a> {
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let layouts = Vec::new();
         let empty_layouts = Vec::new();
+        let unchanged_layouts = IndexSet::new();
         let random = rand::thread_rng();
         let counter_layout_id = 0;
+        let counter_solution_id = 0;
 
-        Self { instance, parttype_qtys, sheettype_qtys, layouts, empty_layouts, random, counter_layout_id }
+        Self {
+            instance,
+            parttype_qtys,
+            sheettype_qtys,
+            layouts,
+            empty_layouts,
+            unchanged_layouts,
+            random,
+            counter_layout_id,
+            counter_solution_id
+        }
     }
 
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> (CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, bool) {
@@ -163,11 +177,31 @@ impl<'a> Problem<'a> {
         self.counter_layout_id
     }
 
+    fn next_solution_id(&mut self) -> usize {
+        self.counter_solution_id += 1;
+        self.counter_solution_id
+    }
+
 
     pub fn empty_layouts(&self) -> &Vec<Rc<RefCell<Layout<'a>>>> {
         &self.empty_layouts
     }
+
     pub fn counter_layout_id(&self) -> usize {
         self.counter_layout_id
+    }
+
+
+    pub fn unchanged_layouts(&self) -> &IndexSet<usize> {
+        &self.unchanged_layouts
+    }
+    pub fn counter_solution_id(&self) -> usize {
+        self.counter_solution_id
+    }
+}
+
+impl<'a> PartialEq for Problem<'a> {
+    fn eq(&self, other: &Problem<'a>) -> bool {
+        std::ptr::eq(self, other)
     }
 }
