@@ -40,6 +40,30 @@ impl<'a> Layout<'a> {
         }
     }
 
+    pub fn create_deep_copy(&self, id : usize) -> Layout<'a> {
+        let sheettype = self.sheettype();
+        let top_node_copy = self.top_node.as_ref().borrow().create_deep_copy(None);
+
+        let mut copy = Layout {
+            id,
+            sheettype,
+            top_node : top_node_copy.clone(),
+            cached_cost: RefCell::new(None),
+            cached_usage : RefCell::new(None),
+            sorted_empty_nodes : Vec::new(),
+        };
+
+        let mut all_new_nodes = vec![Rc::downgrade(&top_node_copy)];
+        top_node_copy.as_ref().borrow().get_all_children(&mut all_new_nodes);
+
+        all_new_nodes.into_iter().for_each(|node| {
+            copy.register_node(node);
+        });
+
+        copy
+    }
+
+
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>) {
         let original_node = blueprint.original_node().upgrade().unwrap();
         let mut parent_node = original_node.as_ref().borrow_mut().parent().as_ref().unwrap().upgrade().unwrap();
@@ -61,7 +85,6 @@ impl<'a> Layout<'a> {
                 self.register_node(node.clone());
             }
         );
-        self.register_part(blueprint.parttype());
 
         debug_assert!(assertions::children_nodes_fit(&parent_node));
     }
@@ -74,15 +97,10 @@ impl<'a> Layout<'a> {
 
         //unregister the released nodes and parts
         let mut removed_nodes = Vec::new();
-        let mut released_parttypes = Vec::new();
         removed_node.as_ref().borrow().get_all_children(&mut removed_nodes);
-        removed_node.as_ref().borrow().get_included_parts(&mut released_parttypes);
 
         removed_nodes.iter().for_each(|node| {
             self.unregister_node(node);
-        });
-        released_parttypes.iter().for_each(|parttype| {
-            self.unregister_part(parttype.clone());
         });
 
         debug_assert!(assertions::children_nodes_fit(&parent_node));
@@ -125,6 +143,9 @@ impl<'a> Layout<'a> {
                 Err(index) => self.sorted_empty_nodes.insert(index, node),
             }
         }
+        if node_ref.parttype().is_some() {
+            self.register_part(node_ref.parttype().unwrap());
+        }
     }
 
     fn unregister_node(&mut self, node: &Weak<RefCell<Node<'a>>>) {
@@ -160,6 +181,9 @@ impl<'a> Layout<'a> {
                 }
             }
         }
+        if node_ref.parttype().is_some(){
+            self.unregister_part(node_ref.parttype().unwrap());
+        }
     }
 
     fn register_part(&mut self, parttype: &PartType) {
@@ -182,11 +206,7 @@ impl<'a> Layout<'a> {
     }
 
     pub fn is_empty(&self) -> bool {
-        todo!()
-    }
-
-    pub fn create_deep_copy(&self) -> Layout<'a> {
-        todo!()
+        self.top_node.as_ref().borrow().is_empty()
     }
 
     pub fn get_cost(&self, config: &Config) -> Cost {

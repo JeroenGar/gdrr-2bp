@@ -48,7 +48,7 @@ impl<'a> Problem<'a> {
                 cache_updates
             }
             true => {
-                let copy = blueprint_layout.borrow().create_deep_copy();
+                let copy = blueprint_layout.borrow().create_deep_copy(self.next_layout_id());
                 //Create a copy of the insertion blueprint and map it to the copy of the layout
                 let mut insertion_bp_copy = blueprint.clone();
                 //Modify so the blueprint so the original node maps to the respective node of the copied layout
@@ -158,7 +158,7 @@ impl<'a> Problem<'a> {
         self.sheettype_qtys[id] += qty;
     }
 
-    fn get_layout_id(&mut self) -> usize {
+    fn next_layout_id(&mut self) -> usize {
         self.counter_layout_id += 1;
         self.counter_layout_id
     }

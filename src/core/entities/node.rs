@@ -59,20 +59,14 @@ impl<'a> Node<'a> {
         node
     }
 
-    pub fn create_deep_copy(
-        &self,
-        parent: Option<Weak<RefCell<Node<'a>>>>,
-        original_copy_node_map: &mut IndexMap<ByAddress<Rc<RefCell<Node<'a>>>>,
-            Rc<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
+    pub fn create_deep_copy(&self, parent: Option<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
         let mut copy = Node::new(self.width, self.height, self.next_cut_orient);
         copy.set_parent(parent);
         let copy = Rc::new(RefCell::new(copy));
 
         for child in &self.children {
             let child_copy = child.as_ref().borrow().create_deep_copy(
-                Some(Rc::downgrade(&copy)),
-                original_copy_node_map);
-            original_copy_node_map.insert(ByAddress(child.clone()), child_copy.clone());
+                Some(Rc::downgrade(&copy)));
             copy.as_ref().borrow_mut().add_child(child_copy);
         }
 
