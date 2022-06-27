@@ -15,6 +15,7 @@ use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::insertion_option::InsertionOption;
 use crate::optimization::config::Config;
+use crate::optimization::listeners::solution_listener::SolutionListener;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::util::biased_sampler::BiasedSampler;
@@ -26,12 +27,15 @@ pub struct GDRR<'a> {
     instance: &'a Instance,
     problem: Problem<'a>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
+    solution_listener : SolutionListener<'a>
 }
 
 
 impl<'a> GDRR<'a> {
     pub fn lahc() {
         todo!();
+
+
     }
 
     pub fn ruin(&'a mut self, mut mat_limit_budget: u64) {

@@ -107,7 +107,6 @@ impl<'a> Problem<'a> {
         }
     }
 
-
     pub fn instance(&self) -> &'a Instance {
         self.instance
     }
