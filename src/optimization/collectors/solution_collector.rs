@@ -28,35 +28,43 @@ impl<'a> SolutionCollector<'a> {
     pub fn report_instance_solution(&mut self, solution : InstanceSolution<'a>){
         match &self.best_incomplete_solution{
             None => {
-                self.replace_best_incomplete_solution(solution)
+                self.accept_solution(solution)
             },
             Some(best_incomplete_solution) => {
                 if (self.cost_comparator)(&solution.cost(), &best_incomplete_solution.cost()) == Ordering::Less{
-                    self.replace_best_incomplete_solution(solution)
+                    self.accept_solution(solution)
                 }
             }
         };
-        todo!()
     }
 
     pub fn report_problem_solution(&mut self, solution : &ProblemSolution<'a>){
         match &self.best_incomplete_solution{
             None => {
-                self.replace_best_incomplete_solution(InstanceSolution::new(&solution));
+                self.accept_solution(InstanceSolution::new(&solution));
             },
             Some(best_incomplete_solution) => {
                 if (self.cost_comparator)(&solution.cost(), &best_incomplete_solution.cost()) == Ordering::Less{
-                    self.replace_best_incomplete_solution(InstanceSolution::new(&solution));
+                    self.accept_solution(InstanceSolution::new(&solution));
                 }
             }
         };
-        todo!()
     }
 
-    fn replace_best_incomplete_solution(&mut self, solution : InstanceSolution<'a>){
-        self.best_incomplete_solution = Some(solution);
-
-        todo!("check for complete solution")
+    fn accept_solution(&mut self, solution : InstanceSolution<'a>){
+        match solution.is_complete(){
+            true => {
+                self.best_incomplete_solution = None;
+                self.material_limit = solution.cost().material_cost;
+                println!("New best complete solution: {:?} sheets, {:?} material value", solution.layouts().len(), solution.cost().material_cost);
+                self.best_complete_solution = Some(solution);
+            },
+            false => {
+                let part_area_excluded_pct = (solution.cost().part_area_excluded * 100) as f64 / solution.instance().total_part_area() as f64;
+                println!("New best incomplete solution: {:.3}%", part_area_excluded_pct);
+                self.best_incomplete_solution = Some(solution);
+            }
+        };
     }
 
 

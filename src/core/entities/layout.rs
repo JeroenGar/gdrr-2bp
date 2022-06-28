@@ -1,6 +1,7 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
 use std::collections::BinaryHeap;
+use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
@@ -19,54 +20,42 @@ pub struct Layout<'a> {
     top_node: Rc<RefCell<Node<'a>>>,
     cached_cost: RefCell<Option<Cost>>,
     cached_usage: RefCell<Option<f64>>,
-    sorted_empty_nodes: Vec<Weak<RefCell<Node<'a>>>>,
+    sorted_empty_nodes: Vec<Weak<RefCell<Node<'a>>>>, //sorted by descending area
 }
 
 impl<'a> Layout<'a> {
     pub fn new(sheettype: &'a SheetType, first_cut_orientation: Orientation, id: usize) -> Self {
-        let mut top_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation);
-        let placeholder = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation.rotate());
-        top_node.add_child(Rc::new(RefCell::new(placeholder)));
+        let mut top_node = Node::new_top_node(sheettype.width(), sheettype.height(), first_cut_orientation);
 
         let top_node = Rc::new(RefCell::new(top_node));
 
         let mut layout = Self {
             id,
             sheettype,
-            top_node,
+            top_node: top_node.clone(),
             cached_cost: RefCell::new(None),
             cached_usage: RefCell::new(None),
             sorted_empty_nodes: Vec::new(),
         };
-        let mut all_nodes = vec![Rc::downgrade(&layout.top_node)];
-        layout.top_node.as_ref().borrow().get_all_children(&mut all_nodes);
-
-        all_nodes.into_iter().for_each(|node| {
-            layout.register_node(node);
-        });
+        layout.register_node(&top_node, true);
 
         layout
     }
 
-    pub fn create_deep_copy(&self, id : usize) -> Layout<'a> {
+    pub fn create_deep_copy(&self, id: usize) -> Layout<'a> {
         let sheettype = self.sheettype();
         let top_node_copy = self.top_node.as_ref().borrow().create_deep_copy(None);
 
         let mut copy = Layout {
             id,
             sheettype,
-            top_node : top_node_copy.clone(),
+            top_node: top_node_copy.clone(),
             cached_cost: RefCell::new(None),
-            cached_usage : RefCell::new(None),
-            sorted_empty_nodes : Vec::new(),
+            cached_usage: RefCell::new(None),
+            sorted_empty_nodes: Vec::new(),
         };
+        copy.register_node(&top_node_copy, true);
 
-        let mut all_new_nodes = vec![Rc::downgrade(&top_node_copy)];
-        top_node_copy.as_ref().borrow().get_all_children(&mut all_new_nodes);
-
-        all_new_nodes.into_iter().for_each(|node| {
-            copy.register_node(node);
-        });
         debug_assert!(assertions::all_weak_references_alive(&copy.sorted_empty_nodes));
 
         copy
@@ -84,38 +73,111 @@ impl<'a> Layout<'a> {
             let node = Node::new_from_blueprint(node_blueprint, Rc::downgrade(&parent_node), &mut all_created_nodes);
             replacements.push(node);
         }
+        //(un)register applicable nodes
+        self.unregister_node(&original_node, false);
+        replacements.iter().for_each(|n| { self.register_node(&n, true) });
+
         parent_node.as_ref().borrow_mut().replace_child(&original_node, replacements);
 
         //update the cache
-        self.unregister_node(&Rc::downgrade(&original_node));
         cache_updates.add_invalidated(Rc::downgrade(&original_node));
         all_created_nodes.iter().for_each(
             |node| {
                 cache_updates.add_new(node.clone());
-                self.register_node(node.clone());
             }
         );
 
-        debug_assert!(assertions::children_nodes_fit(&parent_node), "{:#?}", blueprint);
+        debug_assert!(assertions::children_nodes_fit(parent_node.as_ref().borrow().deref()), "{:#?}", blueprint);
     }
 
-    pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node<'a>>> {
+    pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) {
+        /*
+           Scenario 1: Empty node present + other child(ren)
+            -> expand existing waste piece
 
-        //remove the node from the tree
-        let mut parent_node = node.as_ref().borrow().parent().as_ref().unwrap().upgrade().unwrap();
-        let removed_node = parent_node.as_ref().borrow_mut().remove_child(node);
+             ---******               ---******
+                *$$$$*                  *$$$$*
+                ******                  ******
+                *XXXX*     ----->       *    *
+                ******                  *    *
+                *    *                  *    *
+             ---******               ---******
 
-        //unregister the released nodes and parts
-        let mut removed_nodes = Vec::new();
-        removed_node.as_ref().borrow().get_all_children(&mut removed_nodes);
+             Scenario 2: No waste piece present
+                -> convert Node to be removed into waste Node
 
-        removed_nodes.iter().for_each(|node| {
-            self.unregister_node(node);
-        });
+             ---******               ---******
+                *$$$$*                  *$$$$*
+                ******    ----->        ******
+                *XXXX*                  *    *
+             ---******               ---******
 
-        debug_assert!(assertions::children_nodes_fit(&parent_node));
+             Scenario 3: No other children present besides waste piece
+                -> convert parent into waste piece
 
-        removed_node
+             ---******               ---******
+                *XXXX*                  *    *
+                ******    ----->        *    *
+                *    *                  *    *
+             ---******               ---******
+
+         */
+
+        let node_ref = node.as_ref().borrow();
+
+        let mut parent_node = node_ref.parent().as_ref().unwrap().upgrade().unwrap();
+
+        let mut parent_node_ref = parent_node.as_ref().borrow_mut();
+        //Check if there is an empty_node present
+        let empty_node = parent_node_ref.children().iter().find(|node: &&Rc<RefCell<Node>>| {
+            node.as_ref().borrow().is_empty()
+        }).cloned();
+
+        match empty_node {
+            Some(empty_node) => {
+                let mut empty_node_ref = empty_node.as_ref().borrow();
+                //Scenario 1 and 3
+
+                if parent_node_ref.children().len() > 1 || parent_node_ref.parent().is_none() {
+                    //Scenario 1 (also do this when the parent node is the root)
+                    //Two children are merged into one
+                    let replacement_node = match parent_node_ref.next_cut_orient() {
+                        Orientation::Horizontal => {
+                            let new_height = empty_node_ref.height() + node_ref.height();
+                            Rc::new(RefCell::new(
+                                Node::new(node_ref.width(), new_height, node_ref.next_cut_orient())
+                            ))
+                        }
+                        Orientation::Vertical => {
+                            let new_width = empty_node_ref.width() + node_ref.width();
+                            Rc::new(RefCell::new(
+                                Node::new(new_width, node_ref.height(), node_ref.next_cut_orient())
+                            ))
+                        }
+                    };
+                    self.unregister_node(node, true);
+                    self.unregister_node(&empty_node, false);
+                    self.register_node(&replacement_node, false);
+
+                    //Replace the empty node and the node to be removed with a enlarged empty node
+                    parent_node_ref.replace_children(vec![node, &empty_node], vec![replacement_node]);
+                } else {
+                    //Scenario 3: convert the parent into an empty node
+                    self.unregister_node(&parent_node, true);
+                    parent_node_ref.clear_children();
+                    self.register_node(&parent_node, true);
+                }
+            }
+            None => {
+                //Scenario 2: convert the node itself into an empty node
+                let replacement_node = Rc::new(RefCell::new(
+                    Node::new(node_ref.width(), node_ref.height(), node_ref.next_cut_orient())
+                ));
+                self.unregister_node(node, true);
+                self.register_node(&replacement_node, false);
+                parent_node_ref.replace_child(node, vec![replacement_node]);
+            }
+        }
     }
 
     fn invalidate_caches(&mut self) {
@@ -134,66 +196,73 @@ impl<'a> Layout<'a> {
         self.top_node.as_ref().borrow().calculate_usage()
     }
 
-    fn register_node(&mut self, node: Weak<RefCell<Node<'a>>>) {
+    fn register_node(&mut self, node: &Rc<RefCell<Node<'a>>>, recursive: bool) {
         self.invalidate_caches();
 
-        let node_rc = node.upgrade().unwrap();
-        let node_ref = node_rc.as_ref().borrow();
+        let node_ref = node.as_ref().borrow();
 
         //All empty nodes need to be added to the sorted empty nodes list
         if node_ref.is_empty() {
             let result = self.sorted_empty_nodes.binary_search_by(
-                &(|n : &Weak<RefCell<Node<'a>>>| {
-                let n_area = n.upgrade().unwrap().as_ref().borrow().area();
-                    n_area.cmp(&node_ref.area())
-            }));
+                &(|n: &Weak<RefCell<Node<'a>>>| {
+                    let n_area = n.upgrade().unwrap().as_ref().borrow().area();
+                    n_area.cmp(&node_ref.area()).reverse()
+                }));
 
             match result {
-                Ok(index) => self.sorted_empty_nodes.insert(index, node),
-                Err(index) => self.sorted_empty_nodes.insert(index, node),
+                Ok(index) => self.sorted_empty_nodes.insert(index, Rc::downgrade(node)),
+                Err(index) => self.sorted_empty_nodes.insert(index, Rc::downgrade(node)),
             }
+            debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes));
         }
         if node_ref.parttype().is_some() {
             self.register_part(node_ref.parttype().unwrap());
         }
-
+        if recursive {
+            node_ref.children().iter().for_each(|child| {
+                self.register_node(child, true);
+            });
+        }
     }
 
-    fn unregister_node(&mut self, node: &Weak<RefCell<Node<'a>>>) {
+    fn unregister_node(&mut self, node: &Rc<RefCell<Node<'a>>>, recursive: bool) {
         self.invalidate_caches();
 
-        let node_rc = node.upgrade().unwrap();
-        let node_ref = node_rc.as_ref().borrow();
+        let node_ref = node.as_ref().borrow();
 
         //All empty nodes need to be removed from the sorted empty nodes list
         if node_ref.is_empty() {
             let lower_index = self.sorted_empty_nodes.partition_point(|n|
-                {n.upgrade().unwrap().as_ref().borrow().area() < node_ref.area()});
+                { n.upgrade().unwrap().as_ref().borrow().area() < node_ref.area() });
 
-            if Weak::ptr_eq(&self.sorted_empty_nodes[lower_index],&node){
+            if Weak::ptr_eq(&self.sorted_empty_nodes[lower_index], &Rc::downgrade(node)) {
                 //We have found the correct node, remove it
                 self.sorted_empty_nodes.remove(lower_index);
-            }
-            else{
+            } else {
                 let upper_index = self.sorted_empty_nodes.partition_point(|n|
-                    {n.upgrade().unwrap().as_ref().borrow().area() <= node_ref.area()});
+                    { n.upgrade().unwrap().as_ref().borrow().area() <= node_ref.area() });
 
                 let mut node_found = false;
-                for i in lower_index..upper_index{
-                    if Weak::ptr_eq(&self.sorted_empty_nodes[i],&node){
+                for i in lower_index..upper_index {
+                    if Weak::ptr_eq(&self.sorted_empty_nodes[i], &Rc::downgrade(node)) {
                         //We have found the correct node, remove it
                         self.sorted_empty_nodes.remove(i);
                         node_found = true;
                         break;
                     }
                 }
-                if !node_found{
+                if !node_found {
                     panic!("Node not found in sorted_empty_nodes");
                 }
             }
         }
-        if node_ref.parttype().is_some(){
+        if node_ref.parttype().is_some() {
             self.unregister_part(node_ref.parttype().unwrap());
+        }
+        if recursive {
+            node_ref.children().iter().for_each(|child| {
+                self.unregister_node(child, true);
+            });
         }
     }
 
@@ -213,7 +282,10 @@ impl<'a> Layout<'a> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.top_node.as_ref().borrow().is_empty()
+        self.top_node.as_ref().borrow().children().iter().all(
+            |n| {
+                n.as_ref().borrow().is_empty()
+            })
     }
 
     pub fn cost(&self) -> Cost {
@@ -246,13 +318,16 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn get_sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
-        debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes));
+    pub fn sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
+        debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| n.upgrade().unwrap().as_ref().borrow().area()).collect::<Vec<_>>());
         &self.sorted_empty_nodes
     }
 
     pub fn get_removable_nodes(&self) -> Vec<Weak<RefCell<Node<'a>>>> {
-        todo!()
+        let mut nodes = Vec::new();
+        self.top_node.as_ref().borrow().get_all_removable_children(&mut nodes);
+
+        nodes
     }
 
     pub fn id(&self) -> usize {
@@ -265,9 +340,5 @@ impl<'a> Layout<'a> {
 
     pub fn top_node(&self) -> &Rc<RefCell<Node<'a>>> {
         &self.top_node
-    }
-
-    pub fn sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
-        &self.sorted_empty_nodes
     }
 }

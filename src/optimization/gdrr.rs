@@ -114,12 +114,11 @@ impl<'a> GDRR<'a> {
         let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
-            for i in 0..n_nodes_to_remove {
-                let reversed_layout_usage_comparator = |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().usage().partial_cmp(&b.borrow().usage()).unwrap().reverse() };
+            for _i in 0..n_nodes_to_remove {
 
                 let biased_sampler = BiasedSampler::new_default(
                     self.problem.layouts().iter().map(|l| { Rc::downgrade(l) }).collect(),
-                    reversed_layout_usage_comparator,
+                    |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().usage().partial_cmp(&b.borrow().usage()).unwrap().reverse() },
                 );
 
                 let layout = biased_sampler.sample(&mut self.problem.random());
@@ -127,8 +126,7 @@ impl<'a> GDRR<'a> {
                 match layout {
                     Some(layout) => {
                         let layout = layout.upgrade().unwrap();
-                        let mut layout_ref = layout.as_ref().borrow_mut();
-                        let removable_nodes = layout_ref.get_removable_nodes();
+                        let removable_nodes = layout.as_ref().borrow().get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
 
                         mat_limit_budget += self.problem.remove_node(&selected_node, &layout) as i128;

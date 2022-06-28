@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
+use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
 use crate::core::entities::layout::Layout;
@@ -32,33 +33,32 @@ pub fn layout_belongs_to_problem<'a>(layout: &Rc<RefCell<Layout<'a>>>, problem: 
     problem.layouts().iter().any(|l| Rc::ptr_eq(l, layout))
 }
 
-pub fn children_nodes_fit(node: &Rc<RefCell<Node>>) -> bool {
-    let node_ref = node.as_ref().borrow();
+pub fn children_nodes_fit(node: &Node) -> bool {
 
-    match node_ref.children().is_empty() {
+    match node.children().is_empty() {
         true => true,
         false => {
-            match node_ref.next_cut_orient() {
+            match node.next_cut_orient() {
                 Orientation::Horizontal => {
-                    let all_children_same_width = node_ref.children().iter().all(|c| c.as_ref().borrow().width() == node_ref.width());
-                    let sum_of_children_height = node_ref.children().iter().map(|c| c.as_ref().borrow().height()).sum::<u64>();
-                    let all_children_vert_cut_orient = node_ref.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Vertical);
+                    let all_children_same_width = node.children().iter().all(|c| c.as_ref().borrow().width() == node.width());
+                    let sum_of_children_height = node.children().iter().map(|c| c.as_ref().borrow().height()).sum::<u64>();
+                    let all_children_vert_cut_orient = node.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Vertical);
 
-                    if !all_children_same_width || sum_of_children_height != node_ref.height() || !all_children_vert_cut_orient {
+                    if !all_children_same_width || sum_of_children_height != node.height() || !all_children_vert_cut_orient {
                         return false;
                     }
-                    node_ref.children().iter().all(|c| children_nodes_fit(c))
+                    node.children().iter().all(|c| children_nodes_fit(c.as_ref().borrow().deref()))
                 }
                 Orientation::Vertical => {
-                    let all_children_same_height = node_ref.children().iter().all(|c| c.as_ref().borrow().height() == node_ref.height());
-                    let sum_of_children_width = node_ref.children().iter().map(|c| c.as_ref().borrow().width()).sum::<u64>();
-                    let all_children_horz_cut_orient = node_ref.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Horizontal);
+                    let all_children_same_height = node.children().iter().all(|c| c.as_ref().borrow().height() == node.height());
+                    let sum_of_children_width = node.children().iter().map(|c| c.as_ref().borrow().width()).sum::<u64>();
+                    let all_children_horz_cut_orient = node.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Horizontal);
 
 
-                    if !all_children_same_height || sum_of_children_width != node_ref.width() || !all_children_horz_cut_orient{
+                    if !all_children_same_height || sum_of_children_width != node.width() || !all_children_horz_cut_orient{
                         return false;
                     }
-                    node_ref.children().iter().all(|c| children_nodes_fit(c))
+                    node.children().iter().all(|c| children_nodes_fit(c.as_ref().borrow().deref()))
                 }
             }
         }

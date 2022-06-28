@@ -55,7 +55,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
         for layout in layouts.iter() {
             let layout_ref = layout.as_ref().borrow();
-            let sorted_empty_nodes = layout_ref.get_sorted_empty_nodes();
+            let sorted_empty_nodes = layout_ref.sorted_empty_nodes();
             let mut starting_index = 0;
             for empty_node in sorted_empty_nodes.iter() {
                 let empty_node = empty_node.upgrade().unwrap();
@@ -120,7 +120,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn remove_for_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         let layout = layout.as_ref().borrow();
-        let sorted_empty_nodes = layout.get_sorted_empty_nodes();
+        let sorted_empty_nodes = layout.sorted_empty_nodes();
         for empty_node in sorted_empty_nodes.iter() {
             let empty_node = empty_node.upgrade().unwrap();
             self.remove_for_node(&empty_node);

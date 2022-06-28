@@ -117,22 +117,26 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::node_belongs_to_layout(node, layout));
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
-        let mut layout_ref = layout.as_ref().borrow_mut();
-        self.layout_has_changed(layout_ref.id());
+        self.layout_has_changed(layout.as_ref().borrow().id());
 
-        match Rc::ptr_eq(node, layout_ref.top_node()) {
+        let is_top_node = Rc::ptr_eq(node, layout.as_ref().borrow().top_node());
+
+        match is_top_node {
             true => {
                 //The node to remove is the root node of the layout, so the entire layout is removed
                 self.unregister_layout(layout);
                 layout.as_ref().borrow().sheettype().value()
             }
             false => {
-                let removed_node = layout_ref.remove_node(node);
-                let mut parts_to_release = Vec::new();
-                removed_node.as_ref().borrow().get_included_parts(&mut parts_to_release);
-                parts_to_release.iter().for_each(|p| { self.unregister_part(p, 1) });
+                {
+                    let mut layout_ref = layout.as_ref().borrow_mut();
+                    layout_ref.remove_node(node);
+                    let mut parts_to_release = Vec::new();
+                    node.as_ref().borrow().get_included_parts(&mut parts_to_release);
+                    parts_to_release.iter().for_each(|p| { self.unregister_part(p, 1) });
+                }
 
-                if layout_ref.is_empty() {
+                if layout.borrow().is_empty() {
                     self.unregister_layout(layout);
                     layout.as_ref().borrow().sheettype().value()
                 } else {

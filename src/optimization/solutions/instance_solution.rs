@@ -53,4 +53,6 @@ impl<'a> Solution<'a> for InstanceSolution<'a> {
     fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
     }
+
+
 }

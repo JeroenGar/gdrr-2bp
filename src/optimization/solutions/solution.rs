@@ -16,4 +16,9 @@ pub trait Solution<'a>{
 
     fn sheettype_qtys(&self) -> &Vec<usize>;
 
+    fn is_complete(&self) -> bool{
+        self.cost().part_area_excluded == 0
+    }
+
+
 }
