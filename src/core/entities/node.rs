@@ -4,7 +4,6 @@ use std::io::empty;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::rc::Weak;
-
 use by_address::ByAddress;
 use indexmap::IndexMap;
 
@@ -77,8 +76,14 @@ impl<'a> Node<'a> {
     }
 
     pub fn create_deep_copy(&self, parent: Option<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
-        let mut copy = Node::new(self.width, self.height, self.next_cut_orient);
-        copy.parent = parent;
+        let mut copy = Node {
+            width : self.width,
+            height : self.height,
+            children : Vec::new(),
+            parent,
+            parttype : self.parttype,
+            next_cut_orient : self.next_cut_orient
+        };
         let copy = Rc::new(RefCell::new(copy));
 
         for child in &self.children {

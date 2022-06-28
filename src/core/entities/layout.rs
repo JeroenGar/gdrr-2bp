@@ -123,9 +123,7 @@ impl<'a> Layout<'a> {
 
          */
 
-        let node_ref = rb!(node);
-
-        let mut parent_node = node_ref.parent().as_ref().unwrap().upgrade().unwrap();
+        let mut parent_node = rb!(node).parent().as_ref().unwrap().upgrade().unwrap();
         //Check if there is an empty_node present
         let empty_node = rb!(parent_node).children().iter().find(|node: &&Rc<RefCell<Node>>| {
             rb!(node).is_empty()
@@ -133,7 +131,6 @@ impl<'a> Layout<'a> {
 
         match empty_node {
             Some(empty_node) => {
-                let mut empty_node_ref = rb!(empty_node);
                 //Scenario 1 and 3
 
                 if rb!(parent_node).children().len() > 1 || rb!(parent_node).parent().is_none() {
@@ -141,15 +138,15 @@ impl<'a> Layout<'a> {
                     //Two children are merged into one
                     let replacement_node = match rb!(parent_node).next_cut_orient() {
                         Orientation::Horizontal => {
-                            let new_height = empty_node_ref.height() + node_ref.height();
+                            let new_height = rb!(empty_node).height() + rb!(node).height();
                             Rc::new(RefCell::new(
-                                Node::new(node_ref.width(), new_height, node_ref.next_cut_orient())
+                                Node::new(rb!(node).width(), new_height, rb!(node).next_cut_orient())
                             ))
                         }
                         Orientation::Vertical => {
-                            let new_width = empty_node_ref.width() + node_ref.width();
+                            let new_width = rb!(empty_node).width() + rb!(node).width();
                             Rc::new(RefCell::new(
-                                Node::new(new_width, node_ref.height(), node_ref.next_cut_orient())
+                                Node::new(new_width, rb!(node).height(), rb!(node).next_cut_orient())
                             ))
                         }
                     };
@@ -169,7 +166,7 @@ impl<'a> Layout<'a> {
             None => {
                 //Scenario 2: convert the node itself into an empty node
                 let replacement_node = Rc::new(RefCell::new(
-                    Node::new(node_ref.width(), node_ref.height(), node_ref.next_cut_orient())
+                    Node::new(rb!(node).width(), rb!(node).height(), rb!(node).next_cut_orient())
                 ));
                 self.unregister_node(node, true);
                 Node::replace_child(&parent_node, node, vec![replacement_node.clone()]);

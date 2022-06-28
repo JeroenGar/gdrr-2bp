@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
@@ -7,6 +8,7 @@ use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
+use crate::optimization::solutions::solution::Solution;
 use crate::Orientation;
 use crate::util::macros::{rb,rbm};
 
@@ -152,6 +154,43 @@ pub fn all_nodes_have_parents(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
 pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool{
     for value in values {
         if value.upgrade().is_none() {
+            return false;
+        }
+    }
+    return true;
+}
+
+pub fn problem_matches_solution(problem : &Problem, solution : &dyn Solution) -> bool {
+    for layout in problem.layouts().iter() {
+        let sol_layout = solution.layouts().get(&rb!(layout).id()).unwrap();
+        match layouts_match(rb!(layout).deref(), rb!(sol_layout).deref()) {
+            true => (),
+            false => {
+                return false
+            }
+        }
+    }
+    return true;
+}
+
+pub fn layouts_match(layout1 : &Layout, layout2 : &Layout) -> bool {
+    if layout1.sheettype() != layout2.sheettype() {
+        return false;
+    }
+    return nodes_match(rb!(layout1.top_node()).deref(), rb!(layout2.top_node()).deref());
+}
+
+pub fn nodes_match(node1 : &Node, node2 : &Node) -> bool {
+    if node1.width() != node2.width() ||
+        node1.height() != node2.height() ||
+        node1.children().len() != node2.children().len() ||
+        node1.parttype() != node2.parttype() ||
+        node1.next_cut_orient() != node2.next_cut_orient() ||
+        node1.parent().is_some() != node2.parent().is_some() {
+        return false;
+    }
+    for (child1, child2) in node1.children().iter().zip(node2.children().iter()) {
+        if !nodes_match(rb!(child1).deref(), rb!(child2).deref()) {
             return false;
         }
     }

@@ -26,6 +26,7 @@ pub struct Problem<'a> {
     layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     empty_layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     unchanged_layouts: HashSet<usize>,
+    unchanged_layouts_solution_id : Option<usize>,
     random: StdRng,
     counter_layout_id: usize,
     counter_solution_id: usize,
@@ -38,6 +39,7 @@ impl<'a> Problem<'a> {
         let layouts = Vec::new();
         let mut empty_layouts = Vec::new();
         let unchanged_layouts = HashSet::new();
+        let unchanged_layouts_solution_id = None;
         let random = StdRng::seed_from_u64(0);
         let counter_layout_id = 0;
         let counter_solution_id = 0;
@@ -49,6 +51,7 @@ impl<'a> Problem<'a> {
             layouts,
             empty_layouts,
             unchanged_layouts,
+            unchanged_layouts_solution_id,
             random,
             counter_layout_id,
             counter_solution_id,
@@ -157,28 +160,87 @@ impl<'a> Problem<'a> {
         cost
     }
 
-    pub fn create_solution(&mut self, prev_solution : &Option<ProblemSolution<'a>>, cached_cost : Option<Cost>) -> ProblemSolution<'a>{
+    pub fn create_solution(&mut self, old_solution: &Option<ProblemSolution<'a>>, cached_cost : Option<Cost>) -> ProblemSolution<'a>{
         debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
         let id = self.next_solution_id();
-        let solution = match prev_solution{
-            Some(prev_solution) => {
-                debug_assert!(prev_solution.id() == self.counter_solution_id);
+        let solution = match old_solution {
+            Some(old_solution) => {
+                debug_assert!(old_solution.id() == self.unchanged_layouts_solution_id.unwrap());
 
-                ProblemSolution::new(self, cached_cost.unwrap_or(self.cost()), id, prev_solution)
+                ProblemSolution::new(self, cached_cost.unwrap_or(self.cost()), id, old_solution)
             }
             None => {
                 ProblemSolution::new_force_copy_all(self, cached_cost.unwrap_or(self.cost()), id)
             }
         };
 
-        self.reset_unchanged_layouts();
+        debug_assert!(assertions::problem_matches_solution(self, &solution), "{:#?},{:#?}", id, self.unchanged_layouts_solution_id);
+
+        self.reset_unchanged_layouts(solution.id());
+
 
         solution
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
+        let id = solution.id();
 
-        todo!()
+        match Some(id) == self.unchanged_layouts_solution_id {
+            true => {
+                //A partial restore is possible.
+                let mut layouts_in_problem = HashSet::new();
+                for layout in self.layouts.clone().iter() {
+                    //For all layouts in the problem, check which ones occur in the solution
+                    match solution.layouts().contains_key(&rb!(layout).id()){
+                        true => {
+                            //layout is present in the solution
+                            match self.unchanged_layouts.contains(&id) {
+                                true => {
+                                    //the layout is unchanged with respect to the solution, nothing needs to change
+                                },
+                                false => {
+                                    //layout was changed
+                                    self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
+                                    let copy = solution.layouts().get(&id).unwrap().create_deep_copy(id);
+                                    let copy = Rc::new(RefCell::new(copy));
+                                    self.layouts.push(copy.clone());
+                                }
+                            }
+                            layouts_in_problem.insert(id);
+                        },
+                        false => {
+                            //layout is not present in the solution
+                            self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
+                        }
+                    }
+                }
+                //Some layouts are present in the solution, but not in the problem
+                for id in solution.layouts().keys() {
+                    if !layouts_in_problem.contains(id) {
+                        let copy = solution.layouts().get(id).unwrap().create_deep_copy(*id);
+                        let copy = Rc::new(RefCell::new(copy));
+                        self.layouts.push(copy.clone());
+                    }
+                }
+
+            },
+            false => {
+                //The id of the solution does not match unchanged_layouts_solution_id, a partial restore is not possible
+                self.layouts.clear();
+                for (id,layout) in solution.layouts().iter() {
+                    let copy = layout.create_deep_copy(*id);
+                    let copy = Rc::new(RefCell::new(copy));
+                    self.layouts.push(copy.clone());
+                }
+            }
+        }
+
+        self.parttype_qtys = solution.parttype_qtys().clone();
+        self.sheettype_qtys = solution.sheettype_qtys().clone();
+
+        self.reset_unchanged_layouts(solution.id());
+
+        debug_assert!(assertions::problem_matches_solution(self, solution));
     }
 
     pub fn restore_from_instance_solution(&mut self, solution: &InstanceSolution<'a>) {
@@ -226,9 +288,10 @@ impl<'a> Problem<'a> {
         self.unchanged_layouts.remove(&l_id);
     }
 
-    fn reset_unchanged_layouts(&mut self) {
+    fn reset_unchanged_layouts(&mut self, unchanged_layouts_solution_id : usize){
         self.unchanged_layouts = self.layouts.iter().map(
             |l| rb!(l).id()).collect();
+        self.unchanged_layouts_solution_id = Some(unchanged_layouts_solution_id);
     }
 
     fn register_part(&mut self, parttype: &'a PartType, qty: usize) {
@@ -276,6 +339,7 @@ impl<'a> Problem<'a> {
     pub fn unchanged_layouts(&self) -> &HashSet<usize> {
         &self.unchanged_layouts
     }
+
     pub fn counter_solution_id(&self) -> usize {
         self.counter_solution_id
     }
