@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Cost {
     pub material_cost: u64,
     pub leftover_value: f32,

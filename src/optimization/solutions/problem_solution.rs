@@ -9,7 +9,6 @@ use crate::optimization::solutions::solution::Solution;
 
 pub struct ProblemSolution<'a> {
     instance : &'a Instance,
-    problem : &'a Problem<'a>,
     layouts : IndexMap<usize, Rc<Layout<'a>>>,
     cost : Cost,
     id : usize,
@@ -19,10 +18,7 @@ pub struct ProblemSolution<'a> {
 
 impl<'a> ProblemSolution<'a> {
 
-    pub fn new(problem : &'a Problem<'a>, cost : Cost, id : usize, prev_solution : &ProblemSolution<'a>) -> ProblemSolution<'a>{
-        debug_assert!(id == prev_solution.id + 1);
-        debug_assert!(problem == prev_solution.problem);
-
+    pub fn new(problem : &Problem<'a>, cost : Cost, id : usize, prev_solution : &ProblemSolution<'a>) -> ProblemSolution<'a>{
         let mut layouts = IndexMap::new();
 
         for layout in problem.layouts() {
@@ -41,7 +37,6 @@ impl<'a> ProblemSolution<'a> {
 
         Self {
             instance : problem.instance(),
-            problem,
             layouts,
             cost,
             id,
@@ -50,7 +45,7 @@ impl<'a> ProblemSolution<'a> {
         }
     }
 
-    pub fn new_force_copy_all(problem : &'a Problem<'a>, cost : Cost, id : usize) -> ProblemSolution<'a>{
+    pub fn new_force_copy_all(problem : &Problem<'a>, cost : Cost, id : usize) -> ProblemSolution<'a>{
         let mut layouts = IndexMap::new();
 
         for layout in problem.layouts() {
@@ -63,7 +58,6 @@ impl<'a> ProblemSolution<'a> {
 
         Self {
             instance : problem.instance(),
-            problem,
             layouts,
             cost,
             id,
@@ -90,9 +84,6 @@ impl<'a> ProblemSolution<'a> {
     }
     pub fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
-    }
-    pub fn problem(&self) -> &'a Problem<'a> {
-        self.problem
     }
 }
 

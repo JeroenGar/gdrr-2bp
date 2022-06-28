@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::collections::VecDeque;
 use std::path::Iter;
 use std::rc::Rc;
 
@@ -18,6 +19,7 @@ use crate::optimization::config::Config;
 use crate::optimization::listeners::solution_listener::SolutionListener;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
+use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::biased_sampler::BiasedSampler;
 use crate::util::blink;
 use crate::util::multi_map::MultiMap;
@@ -32,13 +34,71 @@ pub struct GDRR<'a> {
 
 
 impl<'a> GDRR<'a> {
-    pub fn lahc() {
+    pub fn lahc(&'a mut self) {
+        let start_time = std::time::Instant::now();
+
+        let max_rr_iterations = self.config.max_rr_iterations();
+        let max_run_time_ms = self.config.max_run_time_ms();
+
+        let mut lahc_history : VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length());
+        let mut n_iterations = 0;
+        let mut mat_limit = u64::MAX;
+        let mut local_optimum : Option<ProblemSolution> = None;
+        let empty_problem_cost = Cost::new(0, 0.0, 0, self.instance.total_part_area());
+
+
+        while n_iterations < max_rr_iterations
+            && (std::time::Instant::now() - start_time).as_millis() < max_run_time_ms as u128 {
+
+            let mat_limit_budget = match local_optimum.as_ref() {
+                Some(solution) => mat_limit as i64 - solution.cost().material_cost as i64,
+                None => mat_limit as i64,
+            };
+
+            let mat_limit_budget = self.ruin(mat_limit_budget);
+            let max_part_area_not_included = match lahc_history.front(){
+                Some(cost) => cost.part_area_excluded,
+                None => u64::MAX,
+            };
+
+            self.recreate(mat_limit_budget, max_part_area_not_included);
+
+            let cost = self.problem.cost();
+
+            if (self.cost_comparator)(&cost, lahc_history.front().unwrap_or(&empty_problem_cost)) <= Ordering::Equal ||
+                (local_optimum.is_some() && (self.cost_comparator)(&cost, local_optimum.as_ref().unwrap().cost()) <= Ordering::Equal) {
+                //Solution is better or equivalent to the last entry in the history queue or the local optimum.
+
+                local_optimum = Some(self.problem.create_solution(&local_optimum, Some(cost.clone())));
+
+                //Current local optimum is better than the last value of the history queue
+                if (self.cost_comparator)(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
+                    if lahc_history.len() == self.config.history_length() {
+                        lahc_history.pop_front();
+                    }
+                    lahc_history.push_back(cost.clone());
+                    self.solution_listener.report_problem_solution(local_optimum.as_ref().unwrap());
+                }
+            }
+            else {
+                self.problem.restore_from_problem_solution(local_optimum.as_ref().unwrap());
+            }
+
+            if self.solution_listener.material_limit() < mat_limit {
+                mat_limit = self.solution_listener.material_limit();
+                local_optimum = None;
+                lahc_history.clear();
+            }
+
+            n_iterations += 1;
+        }
+
         todo!();
 
 
     }
 
-    pub fn ruin(&'a mut self, mut mat_limit_budget: u64) {
+    pub fn ruin(&mut self, mut mat_limit_budget: i64) -> i64 {
         let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed() - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
@@ -59,7 +119,7 @@ impl<'a> GDRR<'a> {
                         let removable_nodes = layout_ref.get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
 
-                        self.problem.remove_node(&selected_node, &layout);
+                        mat_limit_budget += self.problem.remove_node(&selected_node, &layout) as i64;
                     }
                     None => { break; }
                 }
@@ -77,13 +137,13 @@ impl<'a> GDRR<'a> {
                 }).unwrap().clone();
 
                 //release it and update mat_limit_exceedance
-                mat_limit_budget += layout_min_usage.as_ref().borrow().sheettype().value();
-                self.problem.unregister_layout(&layout_min_usage);
+                mat_limit_budget += self.problem.remove_node(layout_min_usage.as_ref().borrow().top_node(), &layout_min_usage) as i64;
             }
         }
+        mat_limit_budget
     }
 
-    pub fn recreate(&'a mut self, mut mat_limit_budget: u64, max_part_area_not_included: u64) {
+    pub fn recreate(&mut self, mut mat_limit_budget: i64, max_part_area_excluded: u64) {
         let mut parttypes_to_consider: IndexSet<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(i, q)| { **q > 0 })
             .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
@@ -103,7 +163,7 @@ impl<'a> GDRR<'a> {
         //Generate insertion options for all relevant parttypes and layouts
         insertion_option_cache.add_for_parttypes(parttypes_to_consider.iter(), &layouts_to_consider);
 
-        while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_not_included {
+        while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
             let elected_parttype = GDRR::select_next_parttype(&self.instance, &parttypes_to_consider, &insertion_option_cache, self.problem.random(), &self.config);
             let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, self.problem.random(), &self.config, &self.cost_comparator);
 
@@ -116,7 +176,7 @@ impl<'a> GDRR<'a> {
 
                 if blueprint_created_new_layout {
                     //update mat_limit_budget
-                    mat_limit_budget -= self.instance.get_sheettype(elected_blueprint_sheettype_id).value();
+                    mat_limit_budget -= self.instance.get_sheettype(elected_blueprint_sheettype_id).value() as i64;
                     //remove the relevant empty_layout from consideration if the stock is empty
                     if *self.problem.sheettype_qtys().get(elected_blueprint_sheettype_id).unwrap() == 0 {
                         self.problem.empty_layouts().iter()
@@ -166,7 +226,7 @@ impl<'a> GDRR<'a> {
         instance.get_parttype(selected_parttype_id)
     }
 
-    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: u64, rand: &mut ThreadRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: i64, rand: &mut ThreadRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
         let insertion_options = insertion_option_cache.get_for_parttype(parttype);
         match insertion_options {
             Some(options) => {
@@ -179,7 +239,7 @@ impl<'a> GDRR<'a> {
                         break; //enough blueprints to consider
                     }
                     if option.layout().upgrade().unwrap().as_ref().borrow().is_empty() &&
-                        mat_limit_budget >= option.layout().upgrade().unwrap().as_ref().borrow().sheettype().value() {
+                        mat_limit_budget >= option.layout().upgrade().unwrap().as_ref().borrow().sheettype().value() as i64 {
                         new_layout_blueprints.extend(option.get_blueprints());
                     } else {
                         existing_layout_blueprints.extend(option.get_blueprints());

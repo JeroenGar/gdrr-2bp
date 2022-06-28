@@ -31,7 +31,7 @@ impl<'a> SolutionListener<'a> {
         todo!()
     }
 
-    pub fn report_problem_solution(&mut self, solution : ProblemSolution<'a>){
+    pub fn report_problem_solution(&mut self, solution : &ProblemSolution<'a>){
         match &self.best_incomplete_solution{
             None => {
                 self.replace_best_incomplete_solution(InstanceSolution::new(&solution));
@@ -52,5 +52,16 @@ impl<'a> SolutionListener<'a> {
     }
 
 
-
+    pub fn best_complete_solution(&self) -> &Option<InstanceSolution<'a>> {
+        &self.best_complete_solution
+    }
+    pub fn best_incomplete_solution(&self) -> &Option<InstanceSolution<'a>> {
+        &self.best_incomplete_solution
+    }
+    pub fn cost_comparator(&self) -> fn(&Cost, &Cost) -> Ordering {
+        self.cost_comparator
+    }
+    pub fn material_limit(&self) -> u64 {
+        self.material_limit
+    }
 }

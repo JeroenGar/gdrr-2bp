@@ -1,15 +1,18 @@
 use std::cell::RefCell;
-use std::collections::LinkedList;
+use std::collections::{HashSet, LinkedList};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
 use indexmap::{IndexMap, IndexSet};
 
 use crate::{Instance, PartType, SheetType};
+use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::optimization::rr::cache_updates::CacheUpdates;
+use crate::optimization::solutions::instance_solution::InstanceSolution;
+use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::assertions;
 
 pub struct Problem<'a> {
@@ -18,10 +21,10 @@ pub struct Problem<'a> {
     sheettype_qtys: Vec<usize>,
     layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     empty_layouts: Vec<Rc<RefCell<Layout<'a>>>>,
-    unchanged_layouts : IndexSet<usize>,
+    unchanged_layouts: HashSet<usize>,
     random: rand::rngs::ThreadRng,
     counter_layout_id: usize,
-    counter_solution_id: usize
+    counter_solution_id: usize,
 }
 
 impl<'a> Problem<'a> {
@@ -30,7 +33,7 @@ impl<'a> Problem<'a> {
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let layouts = Vec::new();
         let empty_layouts = Vec::new();
-        let unchanged_layouts = IndexSet::new();
+        let unchanged_layouts = HashSet::new();
         let random = rand::thread_rng();
         let counter_layout_id = 0;
         let counter_solution_id = 0;
@@ -44,7 +47,7 @@ impl<'a> Problem<'a> {
             unchanged_layouts,
             random,
             counter_layout_id,
-            counter_solution_id
+            counter_solution_id,
         }
     }
 
@@ -86,25 +89,68 @@ impl<'a> Problem<'a> {
         (cache_updates, blueprint_creates_new_layout)
     }
 
-    pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: &Rc<RefCell<Layout<'a>>>) {
+    pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: &Rc<RefCell<Layout<'a>>>) -> u64 {
         debug_assert!(assertions::node_belongs_to_layout(node, layout));
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
         let mut layout_ref = layout.as_ref().borrow_mut();
 
-        if Rc::ptr_eq(node, layout_ref.top_node()) {
-            //The node to remove is the root node of the layout, so the entire layout is removed
-            self.unregister_layout(layout);
-        } else {
-            let removed_node = layout_ref.remove_node(node);
-            let mut parts_to_release = Vec::new();
-            removed_node.as_ref().borrow().get_included_parts(&mut parts_to_release);
-            parts_to_release.iter().for_each(|p| { self.unregister_part(p, 1) });
-
-            if layout_ref.is_empty() {
+        match Rc::ptr_eq(node, layout_ref.top_node()) {
+            true => {
+                //The node to remove is the root node of the layout, so the entire layout is removed
                 self.unregister_layout(layout);
+                layout.as_ref().borrow().sheettype().value()
+            }
+            false => {
+                let removed_node = layout_ref.remove_node(node);
+                let mut parts_to_release = Vec::new();
+                removed_node.as_ref().borrow().get_included_parts(&mut parts_to_release);
+                parts_to_release.iter().for_each(|p| { self.unregister_part(p, 1) });
+
+                if layout_ref.is_empty() {
+                    self.unregister_layout(layout);
+                    layout.as_ref().borrow().sheettype().value()
+                } else {
+                    0
+                }
             }
         }
+    }
+
+    pub fn cost(&self) -> Cost {
+        todo!()
+    }
+
+    pub fn create_solution(&mut self, prev_solution : &Option<ProblemSolution<'a>>, cached_cost : Option<Cost>) -> ProblemSolution<'a>{
+        debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
+        let id = self.next_solution_id();
+        let solution = match prev_solution{
+            Some(prev_solution) => {
+                debug_assert!(prev_solution.id() == self.counter_solution_id);
+
+                ProblemSolution::new(self, cached_cost.unwrap_or(self.cost()), id, prev_solution)
+            }
+            None => {
+                ProblemSolution::new_force_copy_all(self, cached_cost.unwrap_or(self.cost()), id)
+            }
+        };
+
+        todo!()
+    }
+
+    pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
+
+        todo!()
+    }
+
+    pub fn restore_from_instance_solution(&mut self, solution: &InstanceSolution<'a>) {
+
+        todo!()
+    }
+
+    fn reset_unchanged_layouts(&mut self) {
+        self.unchanged_layouts = self.layouts.iter().map(
+            |l| l.as_ref().borrow().id()).collect();
     }
 
     pub fn instance(&self) -> &'a Instance {
@@ -145,7 +191,6 @@ impl<'a> Problem<'a> {
 
     fn register_part(&mut self, parttype: &'a PartType, qty: usize) {
         let id = parttype.id();
-        debug_assert!(self.parttype_qtys[id] - qty >= 0);
 
         self.parttype_qtys[parttype.id()] -= qty;
     }
@@ -159,7 +204,6 @@ impl<'a> Problem<'a> {
 
     fn register_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
         let id = sheettype.id();
-        debug_assert!(self.sheettype_qtys[id] - qty >= 0);
 
         self.sheettype_qtys[id] -= qty;
     }
@@ -191,7 +235,7 @@ impl<'a> Problem<'a> {
     }
 
 
-    pub fn unchanged_layouts(&self) -> &IndexSet<usize> {
+    pub fn unchanged_layouts(&self) -> &HashSet<usize> {
         &self.unchanged_layouts
     }
     pub fn counter_solution_id(&self) -> usize {
