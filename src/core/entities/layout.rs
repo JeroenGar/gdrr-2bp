@@ -216,7 +216,7 @@ impl<'a> Layout<'a> {
         self.top_node.as_ref().borrow().is_empty()
     }
 
-    pub fn get_cost(&self) -> Cost {
+    pub fn cost(&self) -> Cost {
         let mut cached_cost = self.cached_cost.borrow_mut();
         match cached_cost.as_ref() {
             Some(cost) => {
@@ -231,7 +231,7 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn get_usage(&self) -> f64 {
+    pub fn usage(&self) -> f64 {
         let mut cached_usage = self.cached_usage.borrow_mut();
         match cached_usage.as_ref() {
             Some(usage) => {

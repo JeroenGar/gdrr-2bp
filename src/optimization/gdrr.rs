@@ -62,7 +62,7 @@ impl<'a> GDRR<'a> {
         let mut n_iterations = 0;
         let mut mat_limit = self.solution_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
-        let empty_problem_cost = Cost::new(0, 0.0, 0, self.instance.total_part_area());
+        let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area());
 
 
         while n_iterations < max_rr_iterations
@@ -115,7 +115,7 @@ impl<'a> GDRR<'a> {
 
         if mat_limit_budget >= 0 {
             for i in 0..n_nodes_to_remove {
-                let reversed_layout_usage_comparator = |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().get_usage().partial_cmp(&b.borrow().get_usage()).unwrap().reverse() };
+                let reversed_layout_usage_comparator = |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().usage().partial_cmp(&b.borrow().usage()).unwrap().reverse() };
 
                 let biased_sampler = BiasedSampler::new_default(
                     self.problem.layouts().iter().map(|l| { Rc::downgrade(l) }).collect(),
@@ -143,8 +143,8 @@ impl<'a> GDRR<'a> {
                 }
                 //Search the worst layout
                 let layout_min_usage = self.problem.layouts().iter().min_by(|a, b| {
-                    let usage_a = a.as_ref().borrow().get_usage();
-                    let usage_b = b.as_ref().borrow().get_usage();
+                    let usage_a = a.as_ref().borrow().usage();
+                    let usage_b = b.as_ref().borrow().usage();
                     usage_a.partial_cmp(&usage_b).unwrap()
                 }).unwrap().clone();
 

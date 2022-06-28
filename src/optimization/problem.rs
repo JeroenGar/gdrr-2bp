@@ -78,9 +78,9 @@ impl<'a> Problem<'a> {
             false => {
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&blueprint_layout));
 
-                debug_assert!(assertions::all_weak_references_alive(&blueprint_layout.borrow().sorted_empty_nodes()));
                 blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates);
-                debug_assert!(assertions::all_weak_references_alive(&blueprint_layout.borrow().sorted_empty_nodes()));
+                self.layout_has_changed(blueprint_layout.borrow().id());
+
 
                 cache_updates
             }
@@ -118,6 +118,7 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
         let mut layout_ref = layout.as_ref().borrow_mut();
+        self.layout_has_changed(layout_ref.id());
 
         match Rc::ptr_eq(node, layout_ref.top_node()) {
             true => {
@@ -142,7 +143,12 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&self) -> Cost {
-        todo!()
+        let mut cost = self.layouts.iter().fold(Cost::new(0,0.0,0), |acc, l| acc + l.as_ref().borrow().cost());
+
+        cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
+            .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
+
+        cost
     }
 
     pub fn create_solution(&mut self, prev_solution : &Option<ProblemSolution<'a>>, cached_cost : Option<Cost>) -> ProblemSolution<'a>{
@@ -159,7 +165,9 @@ impl<'a> Problem<'a> {
             }
         };
 
-        todo!()
+        self.reset_unchanged_layouts();
+
+        solution
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
@@ -170,11 +178,6 @@ impl<'a> Problem<'a> {
     pub fn restore_from_instance_solution(&mut self, solution: &InstanceSolution<'a>) {
 
         todo!()
-    }
-
-    fn reset_unchanged_layouts(&mut self) {
-        self.unchanged_layouts = self.layouts.iter().map(
-            |l| l.as_ref().borrow().id()).collect();
     }
 
     pub fn instance(&self) -> &'a Instance {
@@ -211,6 +214,15 @@ impl<'a> Problem<'a> {
             |p| { self.unregister_part(p, 1) });
 
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
+    }
+
+    fn layout_has_changed(&mut self, l_id : usize){
+        self.unchanged_layouts.remove(&l_id);
+    }
+
+    fn reset_unchanged_layouts(&mut self) {
+        self.unchanged_layouts = self.layouts.iter().map(
+            |l| l.as_ref().borrow().id()).collect();
     }
 
     fn register_part(&mut self, parttype: &'a PartType, qty: usize) {
