@@ -15,8 +15,8 @@ use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::insertion_option::InsertionOption;
+use crate::optimization::collectors::solution_collector::SolutionCollector;
 use crate::optimization::config::Config;
-use crate::optimization::listeners::solution_listener::SolutionListener;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
@@ -25,38 +25,55 @@ use crate::util::blink;
 use crate::util::multi_map::MultiMap;
 
 pub struct GDRR<'a> {
-    config: Config,
+    config: &'a Config,
     instance: &'a Instance,
     problem: Problem<'a>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
-    solution_listener : SolutionListener<'a>
+    solution_collector: SolutionCollector<'a>,
 }
 
 
 impl<'a> GDRR<'a> {
+    pub fn new(instance: &'a Instance, config: &'a Config) -> Self {
+        let problem = Problem::new(instance);
+        let cost_comparator = |a: &Cost, b: &Cost| {
+            match a.part_area_excluded.cmp(&b.part_area_excluded) {
+                Ordering::Equal => a.leftover_value.partial_cmp(&b.leftover_value).unwrap().reverse(),
+                other => other
+            }
+        };
+        let solution_listener = SolutionCollector::new();
+        Self {
+            config,
+            instance,
+            problem,
+            cost_comparator,
+            solution_collector: solution_listener,
+        }
+    }
+
     pub fn lahc(&'a mut self) {
         let start_time = std::time::Instant::now();
 
-        let max_rr_iterations = self.config.max_rr_iterations();
-        let max_run_time_ms = self.config.max_run_time_ms();
+        let max_rr_iterations = self.config.max_rr_iterations;
+        let max_run_time_ms = self.config.max_run_time_ms;
 
-        let mut lahc_history : VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length());
+        let mut lahc_history: VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length);
         let mut n_iterations = 0;
         let mut mat_limit = u64::MAX;
-        let mut local_optimum : Option<ProblemSolution> = None;
+        let mut local_optimum: Option<ProblemSolution> = None;
         let empty_problem_cost = Cost::new(0, 0.0, 0, self.instance.total_part_area());
 
 
         while n_iterations < max_rr_iterations
             && (std::time::Instant::now() - start_time).as_millis() < max_run_time_ms as u128 {
-
             let mat_limit_budget = match local_optimum.as_ref() {
                 Some(solution) => mat_limit as i64 - solution.cost().material_cost as i64,
                 None => mat_limit as i64,
             };
 
             let mat_limit_budget = self.ruin(mat_limit_budget);
-            let max_part_area_not_included = match lahc_history.front(){
+            let max_part_area_not_included = match lahc_history.front() {
                 Some(cost) => cost.part_area_excluded,
                 None => u64::MAX,
             };
@@ -73,33 +90,28 @@ impl<'a> GDRR<'a> {
 
                 //Current local optimum is better than the last value of the history queue
                 if (self.cost_comparator)(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
-                    if lahc_history.len() == self.config.history_length() {
+                    if lahc_history.len() == self.config.history_length {
                         lahc_history.pop_front();
                     }
                     lahc_history.push_back(cost.clone());
-                    self.solution_listener.report_problem_solution(local_optimum.as_ref().unwrap());
+                    self.solution_collector.report_problem_solution(local_optimum.as_ref().unwrap());
                 }
-            }
-            else {
+            } else {
                 self.problem.restore_from_problem_solution(local_optimum.as_ref().unwrap());
             }
 
-            if self.solution_listener.material_limit() < mat_limit {
-                mat_limit = self.solution_listener.material_limit();
+            if self.solution_collector.material_limit() < mat_limit {
+                mat_limit = self.solution_collector.material_limit();
                 local_optimum = None;
                 lahc_history.clear();
             }
 
             n_iterations += 1;
         }
-
-        todo!();
-
-
     }
 
-    pub fn ruin(&mut self, mut mat_limit_budget: i64) -> i64 {
-        let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed() - 2) * 2 + 1) + 2;
+    fn ruin(&mut self, mut mat_limit_budget: i64) -> i64 {
+        let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
             for i in 0..n_nodes_to_remove {
@@ -143,7 +155,7 @@ impl<'a> GDRR<'a> {
         mat_limit_budget
     }
 
-    pub fn recreate(&mut self, mut mat_limit_budget: i64, max_part_area_excluded: u64) {
+    fn recreate(&mut self, mut mat_limit_budget: i64, max_part_area_excluded: u64) {
         let mut parttypes_to_consider: IndexSet<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(i, q)| { **q > 0 })
             .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
@@ -220,7 +232,7 @@ impl<'a> GDRR<'a> {
             a_insertion_options.cmp(&b_insertion_options)
         });
 
-        let selected_index = blink::select_lowest(0..parttypes_to_consider.len(), config.blink_rate(), rand);
+        let selected_index = blink::select_lowest(0..parttypes_to_consider.len(), config.blink_rate, rand);
         let selected_parttype_id = parttypes_to_consider[selected_index];
 
         instance.get_parttype(selected_parttype_id)
@@ -252,7 +264,7 @@ impl<'a> GDRR<'a> {
                             cost_comparator(a.cost(), b.cost())
                         });
                         //Select the best (blinked) one
-                        let selected_blinked_index = blink::select_lowest(0..existing_layout_blueprints.len(), config.blink_rate(), rand);
+                        let selected_blinked_index = blink::select_lowest(0..existing_layout_blueprints.len(), config.blink_rate, rand);
                         Some(existing_layout_blueprints.remove(selected_blinked_index))
                     }
                     true => {

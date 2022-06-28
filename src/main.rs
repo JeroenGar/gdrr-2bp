@@ -1,8 +1,14 @@
+use std::fs::File;
+use std::io::{BufReader};
 use indexmap::IndexMap;
 
 use crate::core::{entities::parttype::PartType, orientation::Orientation};
 use crate::core::entities::sheettype::SheetType;
 use crate::core::rotation::Rotation;
+use crate::io::json_instance::JsonInstance;
+use crate::io::parser;
+use crate::optimization::config::Config;
+use crate::optimization::gdrr::GDRR;
 use crate::optimization::instance::Instance;
 
 pub mod util;
@@ -12,14 +18,17 @@ pub mod core;
 
 fn main() {
     println!("Hello, world!");
+    let test_file = File::open("assets/1.json").unwrap();
+    let config_file = File::open("assets/config.json").unwrap();
 
-    let parttype = PartType::new(10, 10, Some(Rotation::Default));
-    let sheettype = SheetType::new(100, 100, 100 * 100);
+    let json_instance : JsonInstance = serde_json::from_reader(BufReader::new(test_file)).unwrap();
+    let config : Config = serde_json::from_reader(BufReader::new(config_file)).unwrap();
 
-    let parts = vec![(parttype, 100)];
-    let sheets = vec![(sheettype, 1)];
+    let instance = parser::generate_instance(&json_instance, &config);
+    let mut gdrr = GDRR::new(&instance, &config);
 
-    let instance = Instance::new(parts, sheets);
+    gdrr.lahc();
 
-    dbg!(instance);
+    println!("done");
+
 }

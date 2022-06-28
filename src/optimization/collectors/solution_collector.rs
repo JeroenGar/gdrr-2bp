@@ -4,7 +4,7 @@ use crate::optimization::solutions::instance_solution::InstanceSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 
-pub struct SolutionListener<'a> {
+pub struct SolutionCollector<'a> {
     best_complete_solution : Option<InstanceSolution<'a>>,
     best_incomplete_solution : Option<InstanceSolution<'a>>,
     cost_comparator : fn(&Cost, &Cost) -> Ordering,
@@ -12,7 +12,7 @@ pub struct SolutionListener<'a> {
 }
 
 
-impl<'a> SolutionListener<'a> {
+impl<'a> SolutionCollector<'a> {
     pub fn new() -> Self {
         todo!()
     }
