@@ -67,6 +67,7 @@ impl<'a> Layout<'a> {
         all_new_nodes.into_iter().for_each(|node| {
             copy.register_node(node);
         });
+        debug_assert!(assertions::all_weak_references_alive(&copy.sorted_empty_nodes));
 
         copy
     }
@@ -86,6 +87,7 @@ impl<'a> Layout<'a> {
         parent_node.as_ref().borrow_mut().replace_child(&original_node, replacements);
 
         //update the cache
+        self.unregister_node(&Rc::downgrade(&original_node));
         cache_updates.add_invalidated(Rc::downgrade(&original_node));
         all_created_nodes.iter().for_each(
             |node| {
@@ -94,7 +96,7 @@ impl<'a> Layout<'a> {
             }
         );
 
-        debug_assert!(assertions::children_nodes_fit(&parent_node));
+        debug_assert!(assertions::children_nodes_fit(&parent_node), "{:#?}", blueprint);
     }
 
     pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>) -> Rc<RefCell<Node<'a>>> {
@@ -154,6 +156,7 @@ impl<'a> Layout<'a> {
         if node_ref.parttype().is_some() {
             self.register_part(node_ref.parttype().unwrap());
         }
+
     }
 
     fn unregister_node(&mut self, node: &Weak<RefCell<Node<'a>>>) {

@@ -4,6 +4,8 @@ use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
 use indexmap::{IndexMap, IndexSet};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 
 use crate::{Instance, Orientation, PartType, SheetType};
 use crate::core::cost::Cost;
@@ -22,7 +24,7 @@ pub struct Problem<'a> {
     layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     empty_layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     unchanged_layouts: HashSet<usize>,
-    random: rand::rngs::ThreadRng,
+    random: StdRng,
     counter_layout_id: usize,
     counter_solution_id: usize,
 }
@@ -34,7 +36,7 @@ impl<'a> Problem<'a> {
         let layouts = Vec::new();
         let mut empty_layouts = Vec::new();
         let unchanged_layouts = HashSet::new();
-        let random = rand::thread_rng();
+        let random = StdRng::seed_from_u64(0);
         let counter_layout_id = 0;
         let counter_solution_id = 0;
 
@@ -75,7 +77,10 @@ impl<'a> Problem<'a> {
         let cache_updates = match blueprint_creates_new_layout {
             false => {
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&blueprint_layout));
+
+                debug_assert!(assertions::all_weak_references_alive(&blueprint_layout.borrow().sorted_empty_nodes()));
                 blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates);
+                debug_assert!(assertions::all_weak_references_alive(&blueprint_layout.borrow().sorted_empty_nodes()));
 
                 cache_updates
             }
@@ -94,8 +99,10 @@ impl<'a> Problem<'a> {
                 //Search the layout again in the problem, to please the borrow checker
                 let copy = self.layouts.iter().find(|l| Rc::ptr_eq(l, &copy)).unwrap();
 
+                debug_assert!(assertions::all_weak_references_alive(&copy.borrow().sorted_empty_nodes()));
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&copy));
                 copy.as_ref().borrow_mut().implement_insertion_blueprint(&insertion_bp_copy, &mut cache_updates);
+                debug_assert!(assertions::all_weak_references_alive(&copy.borrow().sorted_empty_nodes()));
 
                 cache_updates
             }
@@ -180,7 +187,7 @@ impl<'a> Problem<'a> {
         &self.sheettype_qtys
     }
 
-    pub fn random(&mut self) -> &mut rand::rngs::ThreadRng {
+    pub fn random(&mut self) -> &mut StdRng {
         &mut self.random
     }
 

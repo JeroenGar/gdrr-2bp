@@ -6,6 +6,7 @@ use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::PartType;
+use crate::util::assertions;
 
 #[derive(Debug, Clone)]
 pub struct InsertionBlueprint<'a> {
@@ -19,6 +20,8 @@ pub struct InsertionBlueprint<'a> {
 
 impl<'a> InsertionBlueprint<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint<'a>>, parttype: &'a PartType) -> Self {
+        debug_assert!(assertions::replacements_fit(&original_node, &replacements), "{:#?}", (&original_node, &replacements));
+
         let cost = InsertionBlueprint::calculate_cost(&original_node, &replacements);
         Self { original_node, replacements, parttype, cost, layout : None}
     }

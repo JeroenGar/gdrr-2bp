@@ -4,6 +4,7 @@ use std::rc::{Rc, Weak};
 
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
+use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
 use crate::Orientation;
 
@@ -41,8 +42,9 @@ pub fn children_nodes_fit(node: &Rc<RefCell<Node>>) -> bool {
                 Orientation::Horizontal => {
                     let all_children_same_width = node_ref.children().iter().all(|c| c.as_ref().borrow().width() == node_ref.width());
                     let sum_of_children_height = node_ref.children().iter().map(|c| c.as_ref().borrow().height()).sum::<u64>();
+                    let all_children_vert_cut_orient = node_ref.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Vertical);
 
-                    if !all_children_same_width || sum_of_children_height != node_ref.height() {
+                    if !all_children_same_width || sum_of_children_height != node_ref.height() || !all_children_vert_cut_orient {
                         return false;
                     }
                     node_ref.children().iter().all(|c| children_nodes_fit(c))
@@ -50,11 +52,76 @@ pub fn children_nodes_fit(node: &Rc<RefCell<Node>>) -> bool {
                 Orientation::Vertical => {
                     let all_children_same_height = node_ref.children().iter().all(|c| c.as_ref().borrow().height() == node_ref.height());
                     let sum_of_children_width = node_ref.children().iter().map(|c| c.as_ref().borrow().width()).sum::<u64>();
+                    let all_children_horz_cut_orient = node_ref.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Horizontal);
 
-                    if !all_children_same_height || sum_of_children_width != node_ref.width() {
+
+                    if !all_children_same_height || sum_of_children_width != node_ref.width() || !all_children_horz_cut_orient{
                         return false;
                     }
                     node_ref.children().iter().all(|c| children_nodes_fit(c))
+                }
+            }
+        }
+    }
+}
+
+pub fn replacements_fit(original_node : &Weak<RefCell<Node>>, replacements : &Vec<NodeBlueprint>) -> bool {
+    let node = original_node.upgrade().unwrap();
+    let node_ref = node.as_ref().borrow();
+
+    if replacements.iter().any(|r| r.next_cut_orient() != node_ref.next_cut_orient()) {
+        return false;
+    }
+
+    match node_ref.next_cut_orient(){
+        Orientation::Horizontal => {
+            let all_replacements_same_height = replacements.iter().all(|nb| nb.height() == node_ref.height());
+            let sum_of_replacements_width = replacements.iter().map(|nb| nb.width()).sum::<u64>();
+
+
+            if !all_replacements_same_height || sum_of_replacements_width != node_ref.width() {
+                return false;
+            }
+        }
+        Orientation::Vertical => {
+            let all_replacements_same_width = replacements.iter().all(|nb| nb.width() == node_ref.width());
+            let sum_of_replacements_height = replacements.iter().map(|nb| nb.height()).sum::<u64>();
+
+            if !all_replacements_same_width || sum_of_replacements_height != node_ref.height() {
+                return false;
+            }
+        }
+    }
+
+    replacements.iter().all(|nb| children_node_blueprints_fit(nb))
+
+}
+
+pub fn children_node_blueprints_fit(node_bp : &NodeBlueprint) -> bool {
+    match node_bp.children().is_empty() {
+        true => true,
+        false => {
+            match node_bp.next_cut_orient() {
+                Orientation::Horizontal => {
+                    let all_children_same_width = node_bp.children().iter().all(|nb| nb.width() == node_bp.width());
+                    let sum_of_children_height = node_bp.children().iter().map(|nb| nb.height()).sum::<u64>();
+                    let all_children_vert_cut_orient = node_bp.children().iter().all(|nb| nb.next_cut_orient() == Orientation::Vertical);
+
+                    if !all_children_same_width || sum_of_children_height != node_bp.height() || !all_children_vert_cut_orient {
+                        return false;
+                    }
+                    node_bp.children().iter().all(|nb| children_node_blueprints_fit(nb))
+                }
+                Orientation::Vertical => {
+                    let all_children_same_height = node_bp.children().iter().all(|nb| nb.height() == node_bp.height());
+                    let sum_of_children_width = node_bp.children().iter().map(|nb| nb.width()).sum::<u64>();
+                    let all_children_horz_cut_orient = node_bp.children().iter().all(|nb| nb.next_cut_orient() == Orientation::Horizontal);
+
+
+                    if !all_children_same_height || sum_of_children_width != node_bp.width() || !all_children_horz_cut_orient{
+                        return false;
+                    }
+                    node_bp.children().iter().all(|nb| children_node_blueprints_fit(nb))
                 }
             }
         }
@@ -71,6 +138,15 @@ pub fn nodes_sorted_descending_area(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
         }
         else{
             prev_area = area;
+        }
+    }
+    return true;
+}
+
+pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool{
+    for value in values {
+        if value.upgrade().is_none() {
+            return false;
         }
     }
     return true;

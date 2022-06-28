@@ -336,7 +336,7 @@ impl<'a> Node<'a> {
 
             let remainder_width_top = node.width - part_size.width();
             let mut part_node_parent = NodeBlueprint::new(part_size.width(), node.height, None, node.next_cut_orient.rotate());
-            let remainder_node_top = NodeBlueprint::new(remainder_width_top, node.height, None, node.next_cut_orient.rotate().rotate());
+            let remainder_node_top = NodeBlueprint::new(remainder_width_top, node.height, None, node.next_cut_orient.rotate());
 
             let remainder_height_bottom = node.height - part_size.height();
 

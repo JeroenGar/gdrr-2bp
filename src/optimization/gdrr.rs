@@ -8,7 +8,7 @@ use std::rc::Rc;
 use indexmap::{IndexMap, IndexSet};
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rand::rngs::ThreadRng;
+use rand::rngs::{StdRng, ThreadRng};
 
 use crate::{Instance, PartType};
 use crate::core::cost::Cost;
@@ -105,7 +105,7 @@ impl<'a> GDRR<'a> {
                 local_optimum = None;
                 lahc_history.clear();
             }
-
+            println!("iteration: {} done", n_iterations);
             n_iterations += 1;
         }
     }
@@ -213,7 +213,7 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &IndexSet<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut ThreadRng, config: &Config) -> &'b PartType {
+    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &IndexSet<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'b PartType {
         let mut parttypes_to_consider = parttypes.iter().map(|p| { p.id() }).collect::<Vec<_>>();
         parttypes_to_consider.shuffle(rand);
 
@@ -235,7 +235,7 @@ impl<'a> GDRR<'a> {
         instance.get_parttype(selected_parttype_id)
     }
 
-    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: i128, rand: &mut ThreadRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: i128, rand: &mut StdRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
         let insertion_options = insertion_option_cache.get_for_parttype(parttype);
         match insertion_options {
             Some(options) => {
