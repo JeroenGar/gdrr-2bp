@@ -10,5 +10,5 @@ pub fn select_lowest(range: Range<usize>, blink_chance: f32, rand: &mut StdRng) 
             return i;
         }
     }
-    return range_end;
+    return range_end - 1;
 }

@@ -69,8 +69,8 @@ impl<'a> GDRR<'a> {
         while n_iterations < max_rr_iterations
             && (std::time::Instant::now() - start_time).as_millis() < max_run_time_ms as u128 {
             let mat_limit_budget : i128 = match local_optimum.as_ref() {
-                Some(solution) => mat_limit as i128 - solution.cost().material_cost as i128,
-                None => mat_limit as i128,
+                Some(solution) => mat_limit as i128 - 1 - solution.cost().material_cost as i128,
+                None => mat_limit as i128 - 1 - self.problem.cost().material_cost as i128,
             };
 
             let mat_limit_budget = self.ruin(mat_limit_budget);
@@ -106,7 +106,6 @@ impl<'a> GDRR<'a> {
                 local_optimum = None;
                 lahc_history.clear();
             }
-            println!("iteration: {} done", n_iterations);
             n_iterations += 1;
         }
     }
@@ -246,9 +245,10 @@ impl<'a> GDRR<'a> {
                     if existing_layout_blueprints.len() > 20 {
                         break; //enough blueprints to consider
                     }
-                    if rb!(option.layout().upgrade().unwrap()).is_empty() &&
-                        mat_limit_budget >= rb!(option.layout().upgrade().unwrap()).sheettype().value() as i128 {
-                        new_layout_blueprints.extend(option.get_blueprints());
+                    if rb!(option.layout().upgrade().unwrap()).is_empty() {
+                        if mat_limit_budget >= rb!(option.layout().upgrade().unwrap()).sheettype().value() as i128 {
+                            new_layout_blueprints.extend(option.get_blueprints());
+                        }
                     } else {
                         existing_layout_blueprints.extend(option.get_blueprints());
                     }

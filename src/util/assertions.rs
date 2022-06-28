@@ -14,7 +14,7 @@ use crate::util::macros::{rb,rbm};
 
 
 pub fn node_belongs_to_layout<'a>(node: &Rc<RefCell<Node<'a>>>, layout: &Layout<'a>) -> bool {
-    node_belongs_to_owner(node, layout.top_node())
+    Rc::ptr_eq(node, layout.top_node()) || node_belongs_to_owner(node, layout.top_node())
 }
 
 

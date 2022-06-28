@@ -183,30 +183,29 @@ impl<'a> Problem<'a> {
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
-        let id = solution.id();
-
-        match Some(id) == self.unchanged_layouts_solution_id {
+        match self.unchanged_layouts_solution_id == Some(solution.id()) {
             true => {
                 //A partial restore is possible.
                 let mut layouts_in_problem = HashSet::new();
                 for layout in self.layouts.clone().iter() {
                     //For all layouts in the problem, check which ones occur in the solution
-                    match solution.layouts().contains_key(&rb!(layout).id()){
+                    let layout_id = rb!(layout).id();
+                    match solution.layouts().contains_key(&layout_id){
                         true => {
                             //layout is present in the solution
-                            match self.unchanged_layouts.contains(&id) {
+                            match self.unchanged_layouts.contains(&layout_id) {
                                 true => {
                                     //the layout is unchanged with respect to the solution, nothing needs to change
                                 },
                                 false => {
                                     //layout was changed
                                     self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
-                                    let copy = solution.layouts().get(&id).unwrap().create_deep_copy(id);
+                                    let copy = solution.layouts().get(&layout_id).unwrap().create_deep_copy(layout_id);
                                     let copy = Rc::new(RefCell::new(copy));
                                     self.layouts.push(copy.clone());
                                 }
                             }
-                            layouts_in_problem.insert(id);
+                            layouts_in_problem.insert(layout_id);
                         },
                         false => {
                             //layout is not present in the solution
