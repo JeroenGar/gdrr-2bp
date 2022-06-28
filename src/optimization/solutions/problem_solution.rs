@@ -6,6 +6,7 @@ use crate::core::entities::layout::Layout;
 use crate::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::solutions::solution::Solution;
+use crate::util::macros::{rb,rbm};
 
 pub struct ProblemSolution<'a> {
     instance : &'a Instance,
@@ -22,7 +23,7 @@ impl<'a> ProblemSolution<'a> {
         let mut layouts = IndexMap::new();
 
         for layout in problem.layouts() {
-            let layout_ref = layout.as_ref().borrow();
+            let layout_ref = rb!(layout);
             let layout_id = layout_ref.id();
             if problem.unchanged_layouts().contains(&layout_id){
                 layouts.insert(layout_id, prev_solution.layouts.get(&layout_id).unwrap().clone());
@@ -49,7 +50,7 @@ impl<'a> ProblemSolution<'a> {
         let mut layouts = IndexMap::new();
 
         for layout in problem.layouts() {
-            let layout_ref = layout.as_ref().borrow();
+            let layout_ref = rb!(layout);
             layouts.insert(layout_ref.id(), Rc::new(layout_ref.create_deep_copy(layout_ref.id())));
         }
 

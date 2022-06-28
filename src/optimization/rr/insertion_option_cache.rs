@@ -13,6 +13,7 @@ use crate::core::insertion::insertion_option::InsertionOption;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::multi_map::MultiMap;
+use crate::util::macros::{rb,rbm};
 
 pub struct InsertionOptionCache<'a> {
     option_node_map: MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
@@ -54,12 +55,12 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         });
 
         for layout in layouts.iter() {
-            let layout_ref = layout.as_ref().borrow();
+            let layout_ref = rb!(layout);
             let sorted_empty_nodes = layout_ref.sorted_empty_nodes();
             let mut starting_index = 0;
             for empty_node in sorted_empty_nodes.iter() {
                 let empty_node = empty_node.upgrade().unwrap();
-                let empty_node_ref = empty_node.as_ref().borrow();
+                let empty_node_ref = rb!(empty_node);
                 if sorted_parttypes.get(sorted_parttypes.len() - 1).unwrap().area() > empty_node_ref.area() {
                     //The smallest parttype is larger than this node, there are no possible insertion options left.
                     break;
@@ -88,7 +89,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn add_for_node<I>(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: Weak<RefCell<Layout<'a>>>, parttypes: I)
         where I: Iterator<Item=&'b &'a PartType> {
-        let node_ref = node.as_ref().borrow();
+        let node_ref = rb!(node);
         if node_ref.parttype().is_none() && node_ref.children().is_empty() {
             for parttype in parttypes.into_iter() {
                 let insertion_option = InsertionOptionCache::generate_insertion_option(node, parttype, layout.clone());
@@ -119,7 +120,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     pub fn remove_for_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
-        let layout = layout.as_ref().borrow();
+        let layout = rb!(layout);
         let sorted_empty_nodes = layout.sorted_empty_nodes();
         for empty_node in sorted_empty_nodes.iter() {
             let empty_node = empty_node.upgrade().unwrap();
@@ -128,7 +129,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     fn generate_insertion_option(node: &Rc<RefCell<Node<'a>>>, parttype: &'a PartType, layout: Weak<RefCell<Layout<'a>>>) -> Option<InsertionOption<'a>> {
-        let node_ref = node.as_ref().borrow();
+        let node_ref = rb!(node);
         match parttype.fixed_rotation() {
             Some(fixed_rotation) => {
                 match node_ref.insertion_possible(parttype, *fixed_rotation) {

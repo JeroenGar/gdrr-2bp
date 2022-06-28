@@ -8,6 +8,7 @@ use crate::{Orientation, PartType, Rotation};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
+use crate::util::macros::{rb,rbm};
 
 #[derive(Debug)]
 pub struct InsertionOption<'a> {
@@ -21,6 +22,7 @@ pub struct InsertionOption<'a> {
 
 impl<'a> InsertionOption<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>, layout: Weak<RefCell<Layout<'a>>>) -> Self {
+        debug_assert!(rb!(original_node.upgrade().unwrap()).parent().is_some(),"{:#?}", original_node.upgrade().unwrap());
         Self {
             original_node,
             parttype,

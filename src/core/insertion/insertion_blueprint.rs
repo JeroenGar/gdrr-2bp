@@ -7,6 +7,7 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::PartType;
 use crate::util::assertions;
+use crate::util::macros::{rb,rbm};
 
 #[derive(Debug, Clone)]
 pub struct InsertionBlueprint<'a> {
@@ -20,6 +21,7 @@ pub struct InsertionBlueprint<'a> {
 
 impl<'a> InsertionBlueprint<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint<'a>>, parttype: &'a PartType) -> Self {
+        debug_assert!(rb!(original_node.upgrade().unwrap()).parent().is_some(),"{:#?}", original_node.upgrade().unwrap());
         debug_assert!(assertions::replacements_fit(&original_node, &replacements), "{:#?}", (&original_node, &replacements));
 
         let cost = InsertionBlueprint::calculate_cost(&original_node, &replacements);
@@ -27,7 +29,7 @@ impl<'a> InsertionBlueprint<'a> {
     }
 
     fn calculate_cost(original_node: &Weak<RefCell<Node>>, replacements: &Vec<NodeBlueprint>) -> Cost {
-        let original_cost = original_node.upgrade().unwrap().as_ref().borrow().calculate_cost();
+        let original_cost = rb!(original_node.upgrade().unwrap()).calculate_cost();
         let new_cost : Cost = replacements.iter().map(|replacement| replacement.calculate_cost()).sum();
 
         new_cost - original_cost

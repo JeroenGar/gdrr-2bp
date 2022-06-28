@@ -1,5 +1,7 @@
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::io::empty;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::rc::Weak;
 
@@ -15,6 +17,8 @@ use crate::core::rotation::Rotation;
 use crate::optimization::config::Config;
 use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::assertions;
+use crate::util::macros::{rb,rbm};
+
 
 #[derive(Debug)]
 pub struct Node<'a> {
@@ -39,10 +43,13 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn new_top_node(width : u64, height : u64, next_cut_orient: Orientation) -> Node<'a> {
-        let mut top_node = Node::new(width, height, next_cut_orient);
-        let placeholder_node = Node::new(width, height, next_cut_orient.rotate());
-        top_node.children.push(Rc::new(RefCell::new(placeholder_node)));
+    pub fn new_top_node(width : u64, height : u64, next_cut_orient: Orientation) -> Rc<RefCell<Node<'a>>> {
+        let mut top_node = Rc::new(RefCell::new(
+            Node::new(width, height, next_cut_orient)
+        ));
+        let mut placeholder_node = Node::new(width, height, next_cut_orient.rotate());
+        placeholder_node.parent = Some(Rc::downgrade(&top_node));
+        rbm!(top_node).children.push(Rc::new(RefCell::new(placeholder_node)));
 
         top_node
     }
@@ -64,7 +71,7 @@ impl<'a> Node<'a> {
             Node::new_from_blueprint(child_bp, Rc::downgrade(&node), all_created_nodes)
         }).collect();
 
-        node.as_ref().borrow_mut().children = children;
+        rbm!(node).children = children;
 
         node
     }
@@ -75,36 +82,57 @@ impl<'a> Node<'a> {
         let copy = Rc::new(RefCell::new(copy));
 
         for child in &self.children {
-            let child_copy = child.as_ref().borrow().create_deep_copy(
+            let child_copy = rb!(child).create_deep_copy(
                 Some(Rc::downgrade(&copy)));
-            copy.as_ref().borrow_mut().children.push(child_copy);
+            rbm!(copy).children.push(child_copy);
         }
 
         copy
     }
 
-    pub fn replace_child(&mut self, old_child: &Rc<RefCell<Node<'a>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>) {
-        let old_child_index = self.children.iter().position(|c| Rc::ptr_eq(c, old_child)).unwrap();
-        self.children.remove(old_child_index);
+    pub fn replace_child(node : &Rc<RefCell<Node<'a>>>, old_child: &Rc<RefCell<Node<'a>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>) {
+        let mut node_ref = rbm!(node);
 
-        self.children.extend(replacements);
-        debug_assert!(assertions::children_nodes_fit(self))
+        rbm!(old_child).parent = None;
+        let old_child_index = node_ref.children.iter().position(|c| Rc::ptr_eq(c, old_child)).unwrap();
+        node_ref.children.remove(old_child_index);
+
+        replacements.iter().for_each(|r| {
+            rbm!(r).parent = Some(Rc::downgrade(node));
+        });
+        node_ref.children.extend(replacements);
+
+        debug_assert!(assertions::children_nodes_fit(node_ref.deref()))
     }
 
-    pub fn replace_children(&mut self, old_children: Vec<&Rc<RefCell<Node<'a>>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>){
+    pub fn replace_children(node : &Rc<RefCell<Node<'a>>>, old_children: Vec<&Rc<RefCell<Node<'a>>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>){
+        let mut node_ref = rbm!(node);
+
         for old_child in old_children.iter() {
-            let old_child_index = self.children.iter().position(|c| Rc::ptr_eq(c, old_child)).unwrap();
-            self.children.remove(old_child_index);
+            rbm!(old_child).parent = None;
+            let old_child_index = node_ref.children.iter().position(|c| Rc::ptr_eq(c, old_child)).unwrap();
+            node_ref.children.remove(old_child_index);
         }
-        self.children.extend(replacements);
+
+        replacements.iter().for_each(|r| {
+            rbm!(r).parent = Some(Rc::downgrade(node));
+        });
+        node_ref.children.extend(replacements);
+
+        debug_assert!(assertions::children_nodes_fit(node_ref.deref()))
     }
 
-    pub fn clear_children(&mut self) {
-        self.children.clear();
+    pub fn clear_children(node : &Rc<RefCell<Node<'a>>>) {
+        let mut node_ref = rbm!(node);
+        node_ref.children.iter().for_each(|child| {
+            let mut child_ref = rbm!(child);
+            child_ref.parent = None;
+        });
+        node_ref.children.clear();
     }
 
     pub fn generate_insertion_blueprints(wrapped_node: &Rc<RefCell<Node<'a>>>, insertion_blueprints: &mut Vec<InsertionBlueprint<'a>>, parttype: &'a PartType, rotation: Rotation) {
-        let node = wrapped_node.as_ref().borrow();
+        let node = rb!(wrapped_node);
         debug_assert!(node.insertion_possible(parttype, rotation));
 
         let part_size = match rotation {
@@ -319,7 +347,7 @@ impl<'a> Node<'a> {
             }
             None => {
                 for child in &self.children {
-                    child.as_ref().borrow().get_included_parts(included_parts);
+                    rb!(child).get_included_parts(included_parts);
                 }
             }
         }
@@ -335,7 +363,7 @@ impl<'a> Node<'a> {
             false => {
                 for child in &self.children {
                     children.push(Rc::downgrade(&child));
-                    child.as_ref().borrow().get_all_children(children);
+                    rb!(child).get_all_children(children);
                 }
             }
         }
@@ -350,10 +378,10 @@ impl<'a> Node<'a> {
             }
             false => {
                 for child in &self.children {
-                    if child.as_ref().borrow().parttype.is_some() || !child.as_ref().borrow().children.is_empty() {
+                    if rb!(child).parttype.is_some() || !rb!(child).children.is_empty() {
                         children.push(Rc::downgrade(&child));
                     }
-                    child.as_ref().borrow().get_all_removable_children(children);
+                    rb!(child).get_all_removable_children(children);
                 }
             }
         }
@@ -369,7 +397,7 @@ impl<'a> Node<'a> {
         else {
             let mut cost = Cost::new(0, 0.0, 0);
             for child in &self.children {
-                let child_cost = child.as_ref().borrow().calculate_cost();
+                let child_cost = rb!(child).calculate_cost();
                 cost.add(&child_cost);
             }
             return cost;
@@ -384,7 +412,7 @@ impl<'a> Node<'a> {
         } else {
             let mut usage = 0.0;
             for child in &self.children {
-                let child_ref = child.as_ref().borrow();
+                let child_ref = rb!(child);
                 usage += child_ref.area() as f64 * child_ref.calculate_usage();
             }
             usage /= self.area() as f64;

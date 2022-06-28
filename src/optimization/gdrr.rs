@@ -23,6 +23,7 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::biased_sampler::BiasedSampler;
 use crate::util::blink;
 use crate::util::multi_map::MultiMap;
+use crate::util::macros::{rb,rbm};
 
 pub struct GDRR<'a> {
     config: &'a Config,
@@ -126,7 +127,7 @@ impl<'a> GDRR<'a> {
                 match layout {
                     Some(layout) => {
                         let layout = layout.upgrade().unwrap();
-                        let removable_nodes = layout.as_ref().borrow().get_removable_nodes();
+                        let removable_nodes = rb!(layout).get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
 
                         mat_limit_budget += self.problem.remove_node(&selected_node, &layout) as i128;
@@ -141,13 +142,13 @@ impl<'a> GDRR<'a> {
                 }
                 //Search the worst layout
                 let layout_min_usage = self.problem.layouts().iter().min_by(|a, b| {
-                    let usage_a = a.as_ref().borrow().usage();
-                    let usage_b = b.as_ref().borrow().usage();
+                    let usage_a = rb!(a).usage();
+                    let usage_b = rb!(b).usage();
                     usage_a.partial_cmp(&usage_b).unwrap()
                 }).unwrap().clone();
 
                 //release it and update mat_limit_exceedance
-                mat_limit_budget += self.problem.remove_node(layout_min_usage.as_ref().borrow().top_node(), &layout_min_usage) as i128;
+                mat_limit_budget += self.problem.remove_node(rb!(layout_min_usage).top_node(), &layout_min_usage) as i128;
             }
         }
         mat_limit_budget
@@ -166,7 +167,7 @@ impl<'a> GDRR<'a> {
         let mut layouts_to_consider = Vec::new();
         layouts_to_consider.extend(self.problem.layouts().iter().cloned());
         layouts_to_consider.extend(self.problem.empty_layouts().iter()
-            .filter(|l| { *self.problem.sheettype_qtys().get(l.as_ref().borrow().sheettype().id()).unwrap() > 0 })
+            .filter(|l| { *self.problem.sheettype_qtys().get(rb!(l).sheettype().id()).unwrap() > 0 })
             .cloned());
 
 
@@ -178,7 +179,7 @@ impl<'a> GDRR<'a> {
             let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, self.problem.random(), &self.config, &self.cost_comparator);
 
             if elected_blueprint.is_some() {
-                let elected_blueprint_sheettype_id = elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap().as_ref().borrow().sheettype().id();
+                let elected_blueprint_sheettype_id = rb!(elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap()).sheettype().id();
 
                 let (cache_updates, blueprint_created_new_layout) =
                     self.problem.implement_insertion_blueprint(elected_blueprint.as_ref().unwrap());
@@ -191,7 +192,7 @@ impl<'a> GDRR<'a> {
                     if *self.problem.sheettype_qtys().get(elected_blueprint_sheettype_id).unwrap() == 0 {
                         self.problem.empty_layouts().iter()
                             .filter(|l| {
-                                l.as_ref().borrow().sheettype().id() == elected_blueprint_sheettype_id
+                                rb!(l).sheettype().id() == elected_blueprint_sheettype_id
                             }).for_each(|l| {
                             insertion_option_cache.remove_for_layout(l);
                         });
@@ -245,8 +246,8 @@ impl<'a> GDRR<'a> {
                     if existing_layout_blueprints.len() > 20 {
                         break; //enough blueprints to consider
                     }
-                    if option.layout().upgrade().unwrap().as_ref().borrow().is_empty() &&
-                        mat_limit_budget >= option.layout().upgrade().unwrap().as_ref().borrow().sheettype().value() as i128 {
+                    if rb!(option.layout().upgrade().unwrap()).is_empty() &&
+                        mat_limit_budget >= rb!(option.layout().upgrade().unwrap()).sheettype().value() as i128 {
                         new_layout_blueprints.extend(option.get_blueprints());
                     } else {
                         existing_layout_blueprints.extend(option.get_blueprints());

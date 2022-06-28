@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::{HashSet, LinkedList};
 use std::ops::Deref;
@@ -16,6 +17,7 @@ use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::optimization::solutions::instance_solution::InstanceSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::assertions;
+use crate::util::macros::{rb,rbm};
 
 pub struct Problem<'a> {
     instance: &'a Instance,
@@ -79,17 +81,17 @@ impl<'a> Problem<'a> {
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&blueprint_layout));
 
                 blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates);
-                self.layout_has_changed(blueprint_layout.borrow().id());
+                self.layout_has_changed(rb!(blueprint_layout).id());
 
 
                 cache_updates
             }
             true => {
-                let copy = blueprint_layout.borrow().create_deep_copy(self.next_layout_id());
+                let copy = rb!(blueprint_layout).create_deep_copy(self.next_layout_id());
                 //Create a copy of the insertion blueprint and map it to the copy of the layout
                 let mut insertion_bp_copy = blueprint.clone();
                 //Modify so the blueprint so the original node maps to the respective node of the copied layout
-                let modified_original_node = copy.top_node().as_ref().borrow().children().first().unwrap().clone();
+                let modified_original_node = rb!(copy.top_node()).children().first().unwrap().clone();
                 insertion_bp_copy.set_original_node(Rc::downgrade(&modified_original_node));
                 //wrap the copied layout
                 let copy = Rc::new(RefCell::new(copy));
@@ -99,10 +101,10 @@ impl<'a> Problem<'a> {
                 //Search the layout again in the problem, to please the borrow checker
                 let copy = self.layouts.iter().find(|l| Rc::ptr_eq(l, &copy)).unwrap();
 
-                debug_assert!(assertions::all_weak_references_alive(&copy.borrow().sorted_empty_nodes()));
+                debug_assert!(assertions::all_weak_references_alive(rb!(copy).sorted_empty_nodes()));
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&copy));
-                copy.as_ref().borrow_mut().implement_insertion_blueprint(&insertion_bp_copy, &mut cache_updates);
-                debug_assert!(assertions::all_weak_references_alive(&copy.borrow().sorted_empty_nodes()));
+                rbm!(copy).implement_insertion_blueprint(&insertion_bp_copy, &mut cache_updates);
+                debug_assert!(assertions::all_weak_references_alive(rb!(copy).sorted_empty_nodes()));
 
                 cache_updates
             }
@@ -114,31 +116,31 @@ impl<'a> Problem<'a> {
     }
 
     pub fn remove_node(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: &Rc<RefCell<Layout<'a>>>) -> u64 {
-        debug_assert!(assertions::node_belongs_to_layout(node, layout));
+        debug_assert!(assertions::node_belongs_to_layout(node, rb!(layout).deref()));
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
-        self.layout_has_changed(layout.as_ref().borrow().id());
+        self.layout_has_changed(rb!(layout).id());
 
-        let is_top_node = Rc::ptr_eq(node, layout.as_ref().borrow().top_node());
+        let is_top_node = Rc::ptr_eq(node, rb!(layout).top_node());
 
         match is_top_node {
             true => {
                 //The node to remove is the root node of the layout, so the entire layout is removed
                 self.unregister_layout(layout);
-                layout.as_ref().borrow().sheettype().value()
+                rb!(layout).sheettype().value()
             }
             false => {
                 {
-                    let mut layout_ref = layout.as_ref().borrow_mut();
+                    let mut layout_ref = rbm!(layout);
                     layout_ref.remove_node(node);
                     let mut parts_to_release = Vec::new();
-                    node.as_ref().borrow().get_included_parts(&mut parts_to_release);
+                    rb!(node).get_included_parts(&mut parts_to_release);
                     parts_to_release.iter().for_each(|p| { self.unregister_part(p, 1) });
                 }
 
-                if layout.borrow().is_empty() {
+                if rb!(layout).is_empty() {
                     self.unregister_layout(layout);
-                    layout.as_ref().borrow().sheettype().value()
+                    rb!(layout).sheettype().value()
                 } else {
                     0
                 }
@@ -147,7 +149,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&self) -> Cost {
-        let mut cost = self.layouts.iter().fold(Cost::new(0,0.0,0), |acc, l| acc + l.as_ref().borrow().cost());
+        let mut cost = self.layouts.iter().fold(Cost::new(0,0.0,0), |acc, l| acc + rb!(l).cost());
 
         cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
             .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
@@ -203,8 +205,8 @@ impl<'a> Problem<'a> {
     }
 
     pub fn register_layout(&mut self, layout: Rc<RefCell<Layout<'a>>>) {
-        self.register_sheet(layout.borrow().sheettype(), 1);
-        layout.borrow().get_included_parts().iter().for_each(
+        self.register_sheet(rb!(layout).sheettype(), 1);
+        rb!(layout).get_included_parts().iter().for_each(
             |p| { self.register_part(p, 1) });
 
         self.layouts.push(layout);
@@ -213,8 +215,8 @@ impl<'a> Problem<'a> {
     pub fn unregister_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
         debug_assert!(assertions::layout_belongs_to_problem(layout, self));
 
-        self.unregister_sheet(layout.borrow().sheettype(), 1);
-        layout.borrow().get_included_parts().iter().for_each(
+        self.unregister_sheet(rb!(layout).sheettype(), 1);
+        rb!(layout).get_included_parts().iter().for_each(
             |p| { self.unregister_part(p, 1) });
 
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
@@ -226,7 +228,7 @@ impl<'a> Problem<'a> {
 
     fn reset_unchanged_layouts(&mut self) {
         self.unchanged_layouts = self.layouts.iter().map(
-            |l| l.as_ref().borrow().id()).collect();
+            |l| rb!(l).id()).collect();
     }
 
     fn register_part(&mut self, parttype: &'a PartType, qty: usize) {

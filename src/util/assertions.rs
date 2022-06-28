@@ -8,14 +8,16 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
 use crate::Orientation;
+use crate::util::macros::{rb,rbm};
 
-pub fn node_belongs_to_layout<'a>(node: &Rc<RefCell<Node<'a>>>, layout: &Rc<RefCell<Layout<'a>>>) -> bool {
-    node_belongs_to_owner(node, layout.as_ref().borrow().top_node())
+
+pub fn node_belongs_to_layout<'a>(node: &Rc<RefCell<Node<'a>>>, layout: &Layout<'a>) -> bool {
+    node_belongs_to_owner(node, layout.top_node())
 }
 
 
 pub fn node_belongs_to_owner<'a>(node: &Rc<RefCell<Node<'a>>>, owner_node: &Rc<RefCell<Node<'a>>>) -> bool {
-    let owner_ref = owner_node.as_ref().borrow();
+    let owner_ref = rb!(owner_node);
     match owner_ref.children().is_empty() {
         true => false,
         false => {
@@ -40,25 +42,25 @@ pub fn children_nodes_fit(node: &Node) -> bool {
         false => {
             match node.next_cut_orient() {
                 Orientation::Horizontal => {
-                    let all_children_same_width = node.children().iter().all(|c| c.as_ref().borrow().width() == node.width());
-                    let sum_of_children_height = node.children().iter().map(|c| c.as_ref().borrow().height()).sum::<u64>();
-                    let all_children_vert_cut_orient = node.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Vertical);
+                    let all_children_same_width = node.children().iter().all(|c| rb!(c).width() == node.width());
+                    let sum_of_children_height = node.children().iter().map(|c| rb!(c).height()).sum::<u64>();
+                    let all_children_vert_cut_orient = node.children().iter().all(|c| rb!(c).next_cut_orient() == Orientation::Vertical);
 
                     if !all_children_same_width || sum_of_children_height != node.height() || !all_children_vert_cut_orient {
                         return false;
                     }
-                    node.children().iter().all(|c| children_nodes_fit(c.as_ref().borrow().deref()))
+                    node.children().iter().all(|c| children_nodes_fit(rb!(c).deref()))
                 }
                 Orientation::Vertical => {
-                    let all_children_same_height = node.children().iter().all(|c| c.as_ref().borrow().height() == node.height());
-                    let sum_of_children_width = node.children().iter().map(|c| c.as_ref().borrow().width()).sum::<u64>();
-                    let all_children_horz_cut_orient = node.children().iter().all(|c| c.as_ref().borrow().next_cut_orient() == Orientation::Horizontal);
+                    let all_children_same_height = node.children().iter().all(|c| rb!(c).height() == node.height());
+                    let sum_of_children_width = node.children().iter().map(|c| rb!(c).width()).sum::<u64>();
+                    let all_children_horz_cut_orient = node.children().iter().all(|c| rb!(c).next_cut_orient() == Orientation::Horizontal);
 
 
                     if !all_children_same_height || sum_of_children_width != node.width() || !all_children_horz_cut_orient{
                         return false;
                     }
-                    node.children().iter().all(|c| children_nodes_fit(c.as_ref().borrow().deref()))
+                    node.children().iter().all(|c| children_nodes_fit(rb!(c).deref()))
                 }
             }
         }
@@ -67,7 +69,7 @@ pub fn children_nodes_fit(node: &Node) -> bool {
 
 pub fn replacements_fit(original_node : &Weak<RefCell<Node>>, replacements : &Vec<NodeBlueprint>) -> bool {
     let node = original_node.upgrade().unwrap();
-    let node_ref = node.as_ref().borrow();
+    let node_ref = rb!(node);
 
     if replacements.iter().any(|r| r.next_cut_orient() != node_ref.next_cut_orient()) {
         return false;
@@ -132,7 +134,7 @@ pub fn nodes_sorted_descending_area(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
     let mut prev_area = u64::MAX;
 
     for node in nodes {
-        let area = node.upgrade().unwrap().as_ref().borrow().area();
+        let area = rb!(node.upgrade().unwrap()).area();
         if area > prev_area {
             return false;
         }
@@ -141,6 +143,10 @@ pub fn nodes_sorted_descending_area(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
         }
     }
     return true;
+}
+
+pub fn all_nodes_have_parents(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
+    nodes.iter().all(|n| rb!(n.upgrade().unwrap()).parent().is_some())
 }
 
 pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool{
