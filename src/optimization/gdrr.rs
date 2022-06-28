@@ -108,6 +108,8 @@ impl<'a> GDRR<'a> {
             }
             n_iterations += 1;
         }
+
+        println!("GDRR finished: {:.2} iter/s", (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0));
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {

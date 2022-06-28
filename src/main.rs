@@ -18,8 +18,7 @@ pub mod optimization;
 pub mod core;
 
 fn main() {
-    println!("Hello, world!");
-    let test_file = File::open("assets/1.json").unwrap();
+    let test_file = File::open("assets/500.json").unwrap();
     let config_file = File::open("assets/config.json").unwrap();
 
     let json_instance : JsonInstance = serde_json::from_reader(BufReader::new(test_file)).unwrap();

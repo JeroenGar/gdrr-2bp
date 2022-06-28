@@ -60,8 +60,8 @@ impl<'a> SolutionCollector<'a> {
                 self.best_complete_solution = Some(solution);
             },
             false => {
-                let part_area_excluded_pct = (solution.cost().part_area_excluded * 100) as f64 / solution.instance().total_part_area() as f64;
-                println!("New best incomplete solution: {:.3}%", part_area_excluded_pct);
+                let part_area_included_pct = (solution.instance().total_part_area() - solution.cost().part_area_excluded) as f64 / solution.instance().total_part_area() as f64 * 100.0;
+                println!("New best incomplete solution: {:?} sheets, {:.3}% parts included", solution.layouts().len(), part_area_included_pct);
                 self.best_incomplete_solution = Some(solution);
             }
         };
