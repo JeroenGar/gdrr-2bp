@@ -1,6 +1,6 @@
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
-
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
@@ -13,18 +13,21 @@ pub struct InsertionBlueprint<'a> {
     replacements: Vec<NodeBlueprint<'a>>,
     parttype: &'a PartType,
     cost: Cost,
-    layout: Option<Weak<RefCell<Layout<'a>>>>,
+    layout: Option<Weak<RefCell<Layout<'a>>>>
 }
 
 
 impl<'a> InsertionBlueprint<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint<'a>>, parttype: &'a PartType) -> Self {
         let cost = InsertionBlueprint::calculate_cost(&original_node, &replacements);
-        Self { original_node, replacements, parttype, cost, layout: None }
+        Self { original_node, replacements, parttype, cost, layout : None}
     }
 
     fn calculate_cost(original_node: &Weak<RefCell<Node>>, replacements: &Vec<NodeBlueprint>) -> Cost {
-        todo!()
+        let original_cost = original_node.upgrade().unwrap().as_ref().borrow().calculate_cost();
+        let new_cost : Cost = replacements.iter().map(|replacement| replacement.calculate_cost()).sum();
+
+        new_cost - original_cost
     }
 
     pub fn set_layout(&mut self, layout: Weak<RefCell<Layout<'a>>>) {
@@ -56,8 +59,5 @@ impl<'a> InsertionBlueprint<'a> {
     }
     pub fn set_parttype(&mut self, parttype: &'a PartType) {
         self.parttype = parttype;
-    }
-    pub fn set_cost(&mut self, cost: Cost) {
-        self.cost = cost;
     }
 }

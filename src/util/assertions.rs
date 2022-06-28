@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
@@ -59,4 +59,19 @@ pub fn children_nodes_fit(node: &Rc<RefCell<Node>>) -> bool {
             }
         }
     }
+}
+
+pub fn nodes_sorted_descending_area(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
+    let mut prev_area = u64::MAX;
+
+    for node in nodes {
+        let area = node.upgrade().unwrap().as_ref().borrow().area();
+        if area > prev_area {
+            return false;
+        }
+        else{
+            prev_area = area;
+        }
+    }
+    return true;
 }

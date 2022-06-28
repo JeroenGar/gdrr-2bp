@@ -1,6 +1,11 @@
+use std::sync::RwLock;
+use lazy_static::lazy_static;
 use crate::optimization::config::Config;
 
-pub fn valuate(area : u64, config : &Config) -> f32 {
-    //powf is approximated by the micromath crate
-    f32::powf(area as f32, config.leftover_valuation_power)
+lazy_static! {
+    pub static ref LEFTOVER_VALUATION_POWER: RwLock<f32> = RwLock::new(2.0);
+}
+
+pub fn valuate(area : u64) -> f32 {
+    f32::powf(area as f32, *LEFTOVER_VALUATION_POWER.read().unwrap())
 }

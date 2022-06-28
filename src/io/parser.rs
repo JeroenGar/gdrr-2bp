@@ -15,7 +15,8 @@ pub fn generate_instance(json_instance : &JsonInstance, config : &Config) -> Ins
         (SheetType::new(
             json_sheet.length,
             json_sheet.height,
-            json_sheet.cost
+            json_sheet.cost,
+            None
         ),
          match json_sheet.stock {
              Some(stock) => stock,

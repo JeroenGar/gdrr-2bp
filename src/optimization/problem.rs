@@ -5,7 +5,7 @@ use std::rc::{Rc, Weak};
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::{Instance, PartType, SheetType};
+use crate::{Instance, Orientation, PartType, SheetType};
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
@@ -32,13 +32,13 @@ impl<'a> Problem<'a> {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let layouts = Vec::new();
-        let empty_layouts = Vec::new();
+        let mut empty_layouts = Vec::new();
         let unchanged_layouts = HashSet::new();
         let random = rand::thread_rng();
         let counter_layout_id = 0;
         let counter_solution_id = 0;
 
-        Self {
+        let mut problem = Problem {
             instance,
             parttype_qtys,
             sheettype_qtys,
@@ -48,7 +48,23 @@ impl<'a> Problem<'a> {
             random,
             counter_layout_id,
             counter_solution_id,
+        };
+
+        //Initiate the empty layouts
+        for (sheettype,_) in instance.sheets() {
+            if sheettype.fixed_first_cut_orientation().is_none() || sheettype.fixed_first_cut_orientation().unwrap() == Orientation::Horizontal{
+                let id = problem.next_layout_id();
+                problem.empty_layouts.push(Rc::new(RefCell::new(
+                    Layout::new(sheettype, Orientation::Horizontal, id))));
+            }
+            if sheettype.fixed_first_cut_orientation().is_none() || sheettype.fixed_first_cut_orientation().unwrap() == Orientation::Vertical{
+                let id = problem.next_layout_id();
+                problem.empty_layouts.push(Rc::new(RefCell::new(
+                    Layout::new(sheettype, Orientation::Vertical, id))));
+            }
         }
+
+        problem
     }
 
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> (CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, bool) {
@@ -58,7 +74,6 @@ impl<'a> Problem<'a> {
 
         let cache_updates = match blueprint_creates_new_layout {
             false => {
-                self.register_part(blueprint.parttype(), 1);
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&blueprint_layout));
                 blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates);
 
@@ -85,6 +100,8 @@ impl<'a> Problem<'a> {
                 cache_updates
             }
         };
+
+        self.register_part(blueprint.parttype(), 1);
 
         (cache_updates, blueprint_creates_new_layout)
     }
@@ -190,8 +207,6 @@ impl<'a> Problem<'a> {
     }
 
     fn register_part(&mut self, parttype: &'a PartType, qty: usize) {
-        let id = parttype.id();
-
         self.parttype_qtys[parttype.id()] -= qty;
     }
 
@@ -203,9 +218,7 @@ impl<'a> Problem<'a> {
     }
 
     fn register_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
-        let id = sheettype.id();
-
-        self.sheettype_qtys[id] -= qty;
+        self.sheettype_qtys[sheettype.id()] -= qty;
     }
 
     fn unregister_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {

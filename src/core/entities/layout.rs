@@ -30,14 +30,22 @@ impl<'a> Layout<'a> {
 
         let top_node = Rc::new(RefCell::new(top_node));
 
-        Self {
+        let mut layout = Self {
             id,
             sheettype,
             top_node,
             cached_cost: RefCell::new(None),
             cached_usage: RefCell::new(None),
             sorted_empty_nodes: Vec::new(),
-        }
+        };
+        let mut all_nodes = vec![Rc::downgrade(&layout.top_node)];
+        layout.top_node.as_ref().borrow().get_all_children(&mut all_nodes);
+
+        all_nodes.into_iter().for_each(|node| {
+            layout.register_node(node);
+        });
+
+        layout
     }
 
     pub fn create_deep_copy(&self, id : usize) -> Layout<'a> {
@@ -113,8 +121,8 @@ impl<'a> Layout<'a> {
         self.cached_usage.replace(None);
     }
 
-    fn calculate_cost(&self, config: &Config) -> Cost {
-        let mut cost = self.top_node.as_ref().borrow().calculate_cost(config);
+    fn calculate_cost(&self) -> Cost {
+        let mut cost = self.top_node.as_ref().borrow().calculate_cost();
         cost.material_cost = self.sheettype.value();
 
         cost
@@ -188,14 +196,10 @@ impl<'a> Layout<'a> {
 
     fn register_part(&mut self, parttype: &PartType) {
         self.invalidate_caches();
-
-        todo!()
     }
 
     fn unregister_part(&mut self, parttype: &PartType) {
         self.invalidate_caches();
-
-        todo!()
     }
 
     pub fn get_included_parts(&self) -> Vec<&'a PartType> {
@@ -209,15 +213,15 @@ impl<'a> Layout<'a> {
         self.top_node.as_ref().borrow().is_empty()
     }
 
-    pub fn get_cost(&self, config: &Config) -> Cost {
+    pub fn get_cost(&self) -> Cost {
         let mut cached_cost = self.cached_cost.borrow_mut();
         match cached_cost.as_ref() {
             Some(cost) => {
-                debug_assert!(*cost == self.calculate_cost(config));
+                debug_assert!(*cost == self.calculate_cost());
                 cost.clone()
             }
             None => {
-                let cost = self.calculate_cost(config);
+                let cost = self.calculate_cost();
                 cached_cost.replace(cost.clone());
                 cost
             }
@@ -240,7 +244,8 @@ impl<'a> Layout<'a> {
     }
 
     pub fn get_sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
-        todo!()
+        debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes));
+        &self.sorted_empty_nodes
     }
 
     pub fn get_removable_nodes(&self) -> Vec<Weak<RefCell<Node<'a>>>> {

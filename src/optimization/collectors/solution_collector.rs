@@ -13,8 +13,16 @@ pub struct SolutionCollector<'a> {
 
 
 impl<'a> SolutionCollector<'a> {
-    pub fn new() -> Self {
-        todo!()
+    pub fn new(cost_comparator : fn(&Cost, &Cost) -> Ordering, material_limit : u64) -> Self {
+        let best_complete_solution = None;
+        let best_incomplete_solution = None;
+
+        Self {
+            best_complete_solution,
+            best_incomplete_solution,
+            cost_comparator,
+            material_limit
+        }
     }
 
     pub fn report_instance_solution(&mut self, solution : InstanceSolution<'a>){

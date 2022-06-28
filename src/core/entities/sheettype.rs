@@ -1,5 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::AtomicUsize;
+use crate::Orientation;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SheetType {
@@ -7,15 +8,17 @@ pub struct SheetType {
     width: u64,
     height: u64,
     value: u64,
+    fixed_first_cut_orientation : Option<Orientation>
 }
 
 impl SheetType {
-    pub fn new(width: u64, height: u64, value: u64) -> SheetType {
+    pub fn new(width: u64, height: u64, value: u64, fixed_first_cut_orientation : Option<Orientation>) -> SheetType {
         SheetType {
             id: None,
             width,
             height,
             value,
+            fixed_first_cut_orientation
         }
     }
 
@@ -38,6 +41,10 @@ impl SheetType {
 
     pub fn value(&self) -> u64 {
         self.value
+    }
+
+    pub fn fixed_first_cut_orientation(&self) -> Option<Orientation> {
+        self.fixed_first_cut_orientation
     }
 }
 

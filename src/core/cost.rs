@@ -1,3 +1,6 @@
+use std::ops::{Add, Sub};
+use std::iter::Sum;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cost {
     pub material_cost: u64,
@@ -24,5 +27,37 @@ impl Cost {
         self.leftover_value -= other.leftover_value;
         self.part_area_included -= other.part_area_included;
         self.part_area_excluded -= other.part_area_excluded;
+    }
+}
+
+impl Add for Cost {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            material_cost : self.material_cost + rhs.material_cost,
+            leftover_value : self.leftover_value + rhs.leftover_value,
+            part_area_included : self.part_area_included + rhs.part_area_included,
+            part_area_excluded : self.part_area_excluded + rhs.part_area_excluded,
+        }
+    }
+}
+
+impl Sub for Cost {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        Self {
+            material_cost : self.material_cost - rhs.material_cost,
+            leftover_value : self.leftover_value - rhs.leftover_value,
+            part_area_included : self.part_area_included - rhs.part_area_included,
+            part_area_excluded : self.part_area_excluded - rhs.part_area_excluded,
+        }
+    }
+}
+
+impl Sum for Cost {
+    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+        iter.fold(Self::new(0, 0.0, 0, 0), |acc, cost| acc + cost)
     }
 }
