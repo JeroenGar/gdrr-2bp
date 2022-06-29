@@ -45,7 +45,7 @@ fn main() {
 
     let mut handles = Vec::new();
 
-    for i in 0..2 {
+    for i in 0..config.n_threads {
         let instance_thread = instance.clone();
         let config_thread = config.clone();
         let thread_name = format!("T{}", i);

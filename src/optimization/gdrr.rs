@@ -22,6 +22,8 @@ use crate::util::{assertions, blink};
 use crate::util::biased_sampler::BiasedSampler;
 use crate::util::macros::{rb, rbm, timed_println};
 use crate::util::multi_map::MultiMap;
+use crate::util::util;
+use colored::*;
 
 pub struct GDRR<'a> {
     config: &'a Config,
@@ -125,6 +127,7 @@ impl<'a> GDRR<'a> {
                  (n_accepted as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
                 n_improved
         );
+        timed_println!("{}: {}", "Final solution".bright_yellow().bold(), util::solution_stats_string(self.solution_collector.best_complete_solution().as_ref().unwrap()));
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {

@@ -45,12 +45,12 @@ impl<'a> SolutionCollector<'a> {
             true => {
                 self.best_incomplete_solution = None;
                 self.material_limit = solution.cost().material_cost;
-                timed_println!("{}: sheets: {:?}, usage: {:.3}%", "<COMPLETE>  ".blue().bold(), solution.layouts().len(), solution.usage() * 100.0);
+                timed_println!("{}: usage: {:.3}%, sheets: {:?}", "COMPLETE  ".cyan().bold(), solution.usage() * 100.0, solution.layouts().len());
                 self.best_complete_solution = Some(solution.clone());
             },
             false => {
                 let part_area_included_pct = (solution.instance().total_part_area() - solution.cost().part_area_excluded) as f64 / solution.instance().total_part_area() as f64 * 100.0;
-                timed_println!("{}: sheets: {:?}, parts included: {:.3}%", "<INCOMPLETE>", solution.layouts().len(), part_area_included_pct);
+                timed_println!("{}: usage: {:.3}%, sheets: {:?}, included: {:.3}%", "incomplete".bright_green(), solution.usage() * 100.0, solution.layouts().len(), part_area_included_pct);
                 self.best_incomplete_solution = Some(solution.clone());
             }
         };

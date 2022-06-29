@@ -9,7 +9,8 @@ pub struct Config {
     pub max_rr_iterations : usize,
     pub leftover_valuation_power: f32,
     pub history_length: usize,
-    pub rotation_allowed : bool
+    pub rotation_allowed : bool,
+    pub n_threads : usize
 }
 
 impl Config {
