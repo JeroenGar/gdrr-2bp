@@ -7,6 +7,5 @@ lazy_static! {
 }
 
 pub fn valuate(area : u64) -> f32 {
-    //f32::powf(area as f32, *LEFTOVER_VALUATION_POWER.read().unwrap())
-    (area * area) as f32
+    f32::powf(area as f32, *LEFTOVER_VALUATION_POWER.read().unwrap())
 }

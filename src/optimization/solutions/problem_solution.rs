@@ -10,6 +10,7 @@ use crate::util::assertions;
 use crate::util::macros::{rb,rbm};
 use std::ops::Deref;
 
+#[derive(Debug, Clone)]
 pub struct ProblemSolution<'a> {
     instance : &'a Instance,
     layouts : IndexMap<usize, Rc<Layout<'a>>>,

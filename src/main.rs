@@ -20,6 +20,7 @@ pub mod optimization;
 pub mod core;
 
 static EPOCH : Lazy<Instant> = Lazy::new(Instant::now);
+const DETERMINISTIC_MODE : bool = true; //fixes seed
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -34,9 +35,13 @@ fn main() {
         *leftover_valuator_write_lock = config.leftover_valuation_power;
     }
 
+
+
     let instance = parser::generate_instance(&json_instance, &config);
     timed_println!("Starting optimization of {} parts of {} different types", instance.total_part_qty(), instance.parts().len());
     let mut gdrr = GDRR::new(&instance, &config);
+
+
 
     gdrr.lahc();
 
