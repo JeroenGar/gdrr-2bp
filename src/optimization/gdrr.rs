@@ -118,7 +118,7 @@ impl<'a> GDRR<'a> {
             }
             n_iterations += 1;
 
-            debug_assert!(lahc_history.len() == self.config.history_length, "{}", lahc_history.len());
+            debug_assert!(lahc_history.len() <= self.config.history_length, "{}", lahc_history.len());
         }
         timed_println!("GDRR finished: {:.2} iter/s, {:.2} acc/s, {} impr",
                  (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
