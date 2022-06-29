@@ -17,7 +17,8 @@ pub struct ProblemSolution<'a> {
     cost : Cost,
     id : usize,
     parttype_qtys : Vec<usize>,
-    sheettype_qtys : Vec<usize>
+    sheettype_qtys : Vec<usize>,
+    usage : f64
 }
 
 impl<'a> ProblemSolution<'a> {
@@ -45,13 +46,16 @@ impl<'a> ProblemSolution<'a> {
         let parttype_qtys = problem.parttype_qtys().clone();
         let sheettype_qtys = problem.sheettype_qtys().clone();
 
+        let usage = problem.usage();
+
         Self {
             instance : problem.instance(),
             layouts,
             cost,
             id,
             parttype_qtys,
-            sheettype_qtys
+            sheettype_qtys,
+            usage
         }
     }
 
@@ -66,13 +70,16 @@ impl<'a> ProblemSolution<'a> {
         let parttype_qtys = problem.parttype_qtys().clone();
         let sheettype_qtys = problem.sheettype_qtys().clone();
 
+        let usage = problem.usage();
+
         Self {
             instance : problem.instance(),
             layouts,
             cost,
             id,
             parttype_qtys,
-            sheettype_qtys
+            sheettype_qtys,
+            usage
         }
     }
 
@@ -116,5 +123,9 @@ impl<'a> Solution<'a> for ProblemSolution<'a>{
 
     fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
+    }
+
+    fn usage(&self) -> f64 {
+        self.usage
     }
 }

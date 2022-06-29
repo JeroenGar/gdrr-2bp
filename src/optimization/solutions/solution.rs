@@ -20,5 +20,7 @@ pub trait Solution<'a>{
         self.cost().part_area_excluded == 0
     }
 
+    fn usage(&self) -> f64;
+
 
 }

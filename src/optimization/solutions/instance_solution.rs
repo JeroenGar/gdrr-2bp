@@ -54,5 +54,7 @@ impl<'a> Solution<'a> for InstanceSolution<'a> {
         &self.sheettype_qtys
     }
 
-
+    fn usage(&self) -> f64 {
+        todo!()
+    }
 }

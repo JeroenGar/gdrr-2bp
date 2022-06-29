@@ -1,6 +1,8 @@
-use std::env;
+use std::{env, thread};
 use std::fs::File;
 use std::io::{BufReader};
+use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Instant;
 use once_cell::sync::Lazy;
 
@@ -20,7 +22,7 @@ pub mod optimization;
 pub mod core;
 
 static EPOCH : Lazy<Instant> = Lazy::new(Instant::now);
-const DETERMINISTIC_MODE : bool = true; //fixes seed
+const DETERMINISTIC_MODE : bool = false; //fixes seed
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -35,16 +37,31 @@ fn main() {
         *leftover_valuator_write_lock = config.leftover_valuation_power;
     }
 
-
-
     let instance = parser::generate_instance(&json_instance, &config);
     timed_println!("Starting optimization of {} parts of {} different types", instance.total_part_qty(), instance.parts().len());
-    let mut gdrr = GDRR::new(&instance, &config);
 
+    let instance = Arc::new(instance);
+    let config = Arc::new(config);
 
+    let mut handles = Vec::new();
 
-    gdrr.lahc();
+    for i in 0..2 {
+        let instance_thread = instance.clone();
+        let config_thread = config.clone();
+        let thread_name = format!("T{}", i);
+        let handle = thread::Builder::new().name(thread_name).spawn(move || {
+            let mut gdrr = GDRR::new(&instance_thread, &config_thread);
+            gdrr.lahc();
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        match handle {
+            Ok(handle) => handle.join().unwrap(),
+            Err(e) => panic!("Error: {}", e)
+        }
+    }
 
     timed_println!("Done");
-
 }

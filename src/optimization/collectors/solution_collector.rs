@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use colored::*;
 use crate::core::cost::Cost;
 use crate::optimization::solutions::instance_solution::InstanceSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
@@ -44,12 +45,12 @@ impl<'a> SolutionCollector<'a> {
             true => {
                 self.best_incomplete_solution = None;
                 self.material_limit = solution.cost().material_cost;
-                timed_println!("New best complete solution: {:?} sheets, {:?} material value", solution.layouts().len(), solution.cost().material_cost);
+                timed_println!("{}: sheets: {:?}, usage: {:.3}%", "<COMPLETE>  ".blue().bold(), solution.layouts().len(), solution.usage() * 100.0);
                 self.best_complete_solution = Some(solution.clone());
             },
             false => {
                 let part_area_included_pct = (solution.instance().total_part_area() - solution.cost().part_area_excluded) as f64 / solution.instance().total_part_area() as f64 * 100.0;
-                timed_println!("New best incomplete solution: {:?} sheets, {:.3}% parts included", solution.layouts().len(), part_area_included_pct);
+                timed_println!("{}: sheets: {:?}, parts included: {:.3}%", "<INCOMPLETE>", solution.layouts().len(), part_area_included_pct);
                 self.best_incomplete_solution = Some(solution.clone());
             }
         };

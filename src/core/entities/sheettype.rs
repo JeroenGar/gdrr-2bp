@@ -43,6 +43,10 @@ impl SheetType {
         self.value
     }
 
+    pub fn area(&self) -> u64 {
+        self.width * self.height
+    }
+
     pub fn fixed_first_cut_orientation(&self) -> Option<Orientation> {
         self.fixed_first_cut_orientation
     }

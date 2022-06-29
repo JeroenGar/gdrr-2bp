@@ -1,13 +1,13 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
+use rand::{SeedableRng, thread_rng};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 
-use crate::{Instance, Orientation, PartType, SheetType};
+use crate::{DETERMINISTIC_MODE, Instance, Orientation, PartType, SheetType};
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
@@ -16,7 +16,7 @@ use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::optimization::solutions::instance_solution::InstanceSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::assertions;
-use crate::util::macros::{rb,rbm};
+use crate::util::macros::{rb, rbm};
 
 pub struct Problem<'a> {
     instance: &'a Instance,
@@ -25,7 +25,7 @@ pub struct Problem<'a> {
     layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     empty_layouts: Vec<Rc<RefCell<Layout<'a>>>>,
     unchanged_layouts: HashSet<usize>,
-    unchanged_layouts_solution_id : Option<usize>,
+    unchanged_layouts_solution_id: Option<usize>,
     random: StdRng,
     counter_layout_id: usize,
     counter_solution_id: usize,
@@ -39,7 +39,10 @@ impl<'a> Problem<'a> {
         let empty_layouts = Vec::new();
         let unchanged_layouts = HashSet::new();
         let unchanged_layouts_solution_id = None;
-        let random = StdRng::seed_from_u64(0);
+        let random = match DETERMINISTIC_MODE {
+            true => StdRng::seed_from_u64(0),
+            false => StdRng::from_rng(thread_rng()).unwrap()
+        };
         let counter_layout_id = 0;
         let counter_solution_id = 0;
 
@@ -57,13 +60,13 @@ impl<'a> Problem<'a> {
         };
 
         //Initiate the empty layouts
-        for (sheettype,_) in instance.sheets() {
-            if sheettype.fixed_first_cut_orientation().is_none() || sheettype.fixed_first_cut_orientation().unwrap() == Orientation::Horizontal{
+        for (sheettype, _) in instance.sheets() {
+            if sheettype.fixed_first_cut_orientation().is_none() || sheettype.fixed_first_cut_orientation().unwrap() == Orientation::Horizontal {
                 let id = problem.next_layout_id();
                 problem.empty_layouts.push(Rc::new(RefCell::new(
                     Layout::new(sheettype, Orientation::Horizontal, id))));
             }
-            if sheettype.fixed_first_cut_orientation().is_none() || sheettype.fixed_first_cut_orientation().unwrap() == Orientation::Vertical{
+            if sheettype.fixed_first_cut_orientation().is_none() || sheettype.fixed_first_cut_orientation().unwrap() == Orientation::Vertical {
                 let id = problem.next_layout_id();
                 problem.empty_layouts.push(Rc::new(RefCell::new(
                     Layout::new(sheettype, Orientation::Vertical, id))));
@@ -151,7 +154,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&self) -> Cost {
-        let mut cost = self.layouts.iter().fold(Cost::new(0,0.0,0), |acc, l| acc + rb!(l).cost());
+        let mut cost = self.layouts.iter().fold(Cost::new(0, 0.0, 0), |acc, l| acc + rb!(l).cost());
 
         cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
             .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
@@ -159,7 +162,7 @@ impl<'a> Problem<'a> {
         cost
     }
 
-    pub fn create_solution(&mut self, old_solution: &Option<ProblemSolution<'a>>, cached_cost : Option<Cost>) -> ProblemSolution<'a>{
+    pub fn create_solution(&mut self, old_solution: &Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
         debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
         let id = self.next_solution_id();
         let solution = match old_solution {
@@ -189,13 +192,13 @@ impl<'a> Problem<'a> {
                 for layout in self.layouts.clone().iter() {
                     //For all layouts in the problem, check which ones occur in the solution
                     let layout_id = rb!(layout).id();
-                    match solution.layouts().contains_key(&layout_id){
+                    match solution.layouts().contains_key(&layout_id) {
                         true => {
                             //layout is present in the solution
                             match self.unchanged_layouts.contains(&layout_id) {
                                 true => {
                                     //the layout is unchanged with respect to the solution, nothing needs to change
-                                },
+                                }
                                 false => {
                                     //layout was changed
                                     self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
@@ -205,7 +208,7 @@ impl<'a> Problem<'a> {
                                 }
                             }
                             layouts_in_problem.insert(layout_id);
-                        },
+                        }
                         false => {
                             //layout is not present in the solution
                             self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
@@ -220,12 +223,11 @@ impl<'a> Problem<'a> {
                         self.layouts.push(copy.clone());
                     }
                 }
-
-            },
+            }
             false => {
                 //The id of the solution does not match unchanged_layouts_solution_id, a partial restore is not possible
                 self.layouts.clear();
-                for (id,layout) in solution.layouts().iter() {
+                for (id, layout) in solution.layouts().iter() {
                     let copy = layout.create_deep_copy(*id);
                     let copy = Rc::new(RefCell::new(copy));
                     self.layouts.push(copy.clone());
@@ -242,8 +244,18 @@ impl<'a> Problem<'a> {
     }
 
     pub fn restore_from_instance_solution(&mut self, solution: &InstanceSolution<'a>) {
-
         todo!()
+    }
+
+    pub fn usage(&self) -> f64 {
+        let total_included_part_area = self.instance().parts().iter().map(
+            |(parttype, qty)| {parttype.area() * (*qty - self.parttype_qtys.get(parttype.id()).unwrap()) as u64}
+        ).sum::<u64>();
+        let total_used_sheet_area = self.layouts().iter().map(
+            |layout| {rb!(layout).sheettype().area()}
+        ).sum::<u64>();
+
+        total_included_part_area as f64 / total_used_sheet_area as f64
     }
 
     pub fn instance(&self) -> &'a Instance {
@@ -282,11 +294,11 @@ impl<'a> Problem<'a> {
         self.layouts.retain(|l| !Rc::ptr_eq(l, layout));
     }
 
-    fn layout_has_changed(&mut self, l_id : usize){
+    fn layout_has_changed(&mut self, l_id: usize) {
         self.unchanged_layouts.remove(&l_id);
     }
 
-    fn reset_unchanged_layouts(&mut self, unchanged_layouts_solution_id : usize){
+    fn reset_unchanged_layouts(&mut self, unchanged_layouts_solution_id: usize) {
         self.unchanged_layouts = self.layouts.iter().map(
             |l| rb!(l).id()).collect();
         self.unchanged_layouts_solution_id = Some(unchanged_layouts_solution_id);
