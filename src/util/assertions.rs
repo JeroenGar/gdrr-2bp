@@ -199,7 +199,7 @@ pub fn nodes_match(node1 : &Node, node2 : &Node) -> bool {
     return true;
 }
 
-pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &InsertionOptionCache<'a>, parttypes : &IndexSet<&'a PartType>) -> bool{
+pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &InsertionOptionCache<'a>, parttypes : &Vec<&'a PartType>) -> bool{
     let mut layouts_to_consider = Vec::new();
     layouts_to_consider.extend(problem.layouts().iter().map(|l| {l.clone()}));
     layouts_to_consider.extend(problem.empty_layouts().iter()
@@ -215,7 +215,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
 
     for (i,q) in problem.parttype_qtys().iter().enumerate(){
         let parttype = problem.instance().get_parttype(i);
-        match (q, parttypes.contains(parttype)) {
+        match (q, parttypes.contains(&parttype)) {
             (0,false) => {
                 let ioc_options = ioc.get_for_parttype(&parttype);
                 let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);

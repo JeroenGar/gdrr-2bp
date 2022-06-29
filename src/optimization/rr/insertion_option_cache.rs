@@ -29,7 +29,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, parttypes: &IndexSet<&'a PartType>)
+    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, parttypes: &Vec<&'a PartType>)
     {
         cache_updates.invalidated().iter().for_each(|node| {
             match node.upgrade() {

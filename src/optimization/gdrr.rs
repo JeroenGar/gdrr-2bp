@@ -173,7 +173,7 @@ impl<'a> GDRR<'a> {
     }
 
     fn recreate(&mut self, mut mat_limit_budget: i128, max_part_area_excluded: u64) {
-        let mut parttypes_to_consider: IndexSet<&PartType> = self.problem.parttype_qtys().iter().enumerate()
+        let mut parttypes_to_consider: Vec<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(i, q)| { **q > 0 })
             .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
 
@@ -220,7 +220,7 @@ impl<'a> GDRR<'a> {
                 if *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
                     //if the parttype is not needed anymore, remove it from the cache
                     insertion_option_cache.remove_for_parttype(elected_parttype);
-                    parttypes_to_consider.remove(elected_parttype);
+                    parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
                 }
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
 
@@ -229,7 +229,8 @@ impl<'a> GDRR<'a> {
                 part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
                     * elected_parttype.area();
                 insertion_option_cache.remove_for_parttype(elected_parttype);
-                parttypes_to_consider.remove(elected_parttype);
+
+                parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
 
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
             }
@@ -237,7 +238,7 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &IndexSet<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'b PartType {
+    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &Vec<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'b PartType {
         let mut parttypes_to_consider = parttypes.iter().map(|p| { p.id() }).collect::<Vec<_>>();
         parttypes_to_consider.shuffle(rand);
 
