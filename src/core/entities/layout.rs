@@ -83,7 +83,9 @@ impl<'a> Layout<'a> {
         cache_updates.add_invalidated(Rc::downgrade(&original_node));
         all_created_nodes.iter().for_each(
             |node| {
-                cache_updates.add_new(node.clone());
+                if rb!(node.upgrade().unwrap()).is_empty() {
+                    cache_updates.add_new(node.clone());
+                }
             }
         );
 
@@ -315,8 +317,10 @@ impl<'a> Layout<'a> {
     }
 
     pub fn sorted_empty_nodes(&self) -> &Vec<Weak<RefCell<Node<'a>>>> {
-        debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| rb!(n.upgrade().unwrap()).area()).collect::<Vec<_>>());
         debug_assert!(assertions::all_nodes_have_parents(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| n.upgrade().unwrap()).collect::<Vec<_>>());
+        debug_assert!(assertions::cached_empty_nodes_correct(self, &self.sorted_empty_nodes));
+        debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| rb!(n.upgrade().unwrap()).area()).collect::<Vec<_>>());
+
         &self.sorted_empty_nodes
     }
 

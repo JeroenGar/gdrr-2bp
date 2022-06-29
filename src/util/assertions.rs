@@ -3,13 +3,15 @@ use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
+use indexmap::IndexSet;
 
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
+use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::solutions::solution::Solution;
-use crate::Orientation;
+use crate::{Orientation, PartType};
 use crate::util::macros::{rb,rbm};
 
 
@@ -194,5 +196,111 @@ pub fn nodes_match(node1 : &Node, node2 : &Node) -> bool {
             return false;
         }
     }
+    return true;
+}
+
+pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &InsertionOptionCache<'a>, parttypes : &IndexSet<&'a PartType>) -> bool{
+    let mut layouts_to_consider = Vec::new();
+    layouts_to_consider.extend(problem.layouts().iter().map(|l| {l.clone()}));
+    layouts_to_consider.extend(problem.empty_layouts().iter()
+        .filter(|l| { *problem.sheettype_qtys().get(rb!(l).sheettype().id()).unwrap() > 0 })
+        .map(|l| {l.clone()}));
+
+    let mut fresh_ioc = InsertionOptionCache::new();
+
+    fresh_ioc.add_for_parttypes(
+        parttypes.iter(),
+                &layouts_to_consider
+    );
+
+    for (i,q) in problem.parttype_qtys().iter().enumerate(){
+        let parttype = problem.instance().get_parttype(i);
+        match (q, parttypes.contains(parttype)) {
+            (0,false) => {
+                let ioc_options = ioc.get_for_parttype(&parttype);
+                let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
+
+                if ioc_options.is_some() || fresh_ioc_options.is_some() {
+                    return false;
+                }
+            }
+            (0,true) => {
+                return false;
+            }
+            (_,true) => {
+                let ioc_options = ioc.get_for_parttype(&parttype);
+                let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
+                if ioc_options.is_none() || fresh_ioc_options.is_none() {
+                    dbg!(ioc_options);
+                    dbg!(fresh_ioc_options);
+                    return false;
+                }
+
+                let ioc_len = ioc_options.unwrap().len();
+                let fresh_ioc_len = fresh_ioc_options.unwrap().len();
+
+                if ioc_len != fresh_ioc_len {
+                    dbg!(ioc_options);
+                    dbg!(fresh_ioc_options);
+                    return false;
+                }
+            }
+            (_,_) => ()
+        }
+    }
+
+    let borrowed_layouts = layouts_to_consider.iter().map(|l| rb!(l)).collect::<Vec<Ref<Layout>>>();
+    for node in borrowed_layouts.iter().map(|l| { l.sorted_empty_nodes() }).flatten() {
+        let ioc_options = ioc.get_for_node(&node.upgrade().unwrap());
+        let fresh_ioc_options = fresh_ioc.get_for_node(&node.upgrade().unwrap());
+
+        match (ioc_options, fresh_ioc_options) {
+            (None, None) => (),
+            (Some(ioc_options), Some(fresh_ioc_options)) => {
+                let ioc_len = ioc_options.len();
+                let fresh_ioc_len = fresh_ioc_options.len();
+
+                if ioc_len != fresh_ioc_len {
+                    return false;
+                }
+            }
+            (Some(ioc_options),None) => {
+                if !ioc_options.is_empty() {
+                    dbg!(node.upgrade().unwrap());
+                    dbg!(ioc_options);
+                    dbg!(fresh_ioc_options);
+                    return false;
+                }
+            }
+            (_,_) => {
+                dbg!(node.upgrade().unwrap());
+                dbg!(ioc_options);
+                dbg!(fresh_ioc_options);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+pub fn cached_empty_nodes_correct<'a>(layout : &Layout<'a>, cached_empty_nodes : &Vec<Weak<RefCell<Node<'a>>>>) -> bool {
+    let mut all_children = Vec::new();
+    rb!(layout.top_node()).get_all_children(&mut all_children);
+    let all_empty_children = all_children.iter().filter(|n| {
+        rb!(n.upgrade().unwrap()).is_empty()
+    }).collect::<Vec<_>>();
+
+    if all_empty_children.len() != cached_empty_nodes.len() {
+        return false;
+    }
+
+    for empty_node in all_empty_children {
+        if !cached_empty_nodes.iter().any(|n| {
+            Weak::ptr_eq(empty_node, n)
+        }) {
+            return false;
+        }
+    }
+
     return true;
 }

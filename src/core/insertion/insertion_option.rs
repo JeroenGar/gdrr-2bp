@@ -1,4 +1,5 @@
 use std::cell::{Ref, RefCell};
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::rc::Weak;
 
@@ -10,7 +11,6 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::util::macros::{rb,rbm};
 
-#[derive(Debug)]
 pub struct InsertionOption<'a> {
     original_node: Weak<RefCell<Node<'a>>>,
     parttype: &'a PartType,
@@ -93,3 +93,9 @@ impl PartialEq for InsertionOption<'_> {
 }
 
 impl Eq for InsertionOption<'_> {}
+
+impl<'a> Debug for InsertionOption<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "InsertionOption {{ original_node: {:?}, parttype: {:?}, rotation: {:?}, layout: {:?}}}", self.original_node().upgrade().unwrap(), self.parttype(), self.rotation(), self.layout().upgrade().unwrap().borrow().id())
+    }
+}

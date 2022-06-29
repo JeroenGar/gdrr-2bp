@@ -21,7 +21,7 @@ use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::biased_sampler::BiasedSampler;
-use crate::util::blink;
+use crate::util::{assertions, blink};
 use crate::util::multi_map::MultiMap;
 use crate::util::macros::{rb,rbm, timed_println};
 
@@ -185,6 +185,7 @@ impl<'a> GDRR<'a> {
 
         //Generate insertion options for all relevant parttypes and layouts
         insertion_option_cache.add_for_parttypes(parttypes_to_consider.iter(), &layouts_to_consider);
+        debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider));
 
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
             let elected_parttype = GDRR::select_next_parttype(&self.instance, &parttypes_to_consider, &insertion_option_cache, self.problem.random(), &self.config);
@@ -210,17 +211,23 @@ impl<'a> GDRR<'a> {
                         });
                     }
                 }
+                if *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
+                    //if the parttype is not needed anymore, remove it from the cache
+                    insertion_option_cache.remove_for_parttype(elected_parttype);
+                    parttypes_to_consider.remove(elected_parttype);
+                }
+                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
+
             } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem
                 part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
                     * elected_parttype.area();
-            }
-
-            if elected_blueprint.is_none() || *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
-                //if the parttype could not be added, or if the parttype is not needed anymore, remove it from the cache
                 insertion_option_cache.remove_for_parttype(elected_parttype);
                 parttypes_to_consider.remove(elected_parttype);
+
+                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
             }
+
         }
     }
 

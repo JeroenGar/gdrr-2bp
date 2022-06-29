@@ -1,7 +1,9 @@
 use std::cell::RefCell;
+use std::fmt::Debug;
 use std::rc::Weak;
 
 use crate::core::entities::layout::Layout;
+use crate::core::entities::node::Node;
 
 pub struct CacheUpdates<'a, T> {
     invalidated: Vec<T>,
@@ -41,5 +43,15 @@ impl<'a, T> CacheUpdates<'a, T> {
 
     pub fn layout(&self) -> &Weak<RefCell<Layout<'a>>> {
         &self.layout
+    }
+}
+
+
+impl<'a> Debug for CacheUpdates<'a, Weak<RefCell<Node<'a>>>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "CacheUpdates {{ invalidated: {:#?}, new_entries: {:#?} }}",
+               self.invalidated.iter().map(|n| n.upgrade()).collect::<Vec<_>>(),
+               self.new_entries.iter().map(|n| n.upgrade()).collect::<Vec<_>>()
+        )
     }
 }

@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
+use std::io::empty;
 use std::rc::{Rc, Weak};
 
 use by_address::ByAddress;
@@ -49,6 +50,9 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         where I: Iterator<Item=&'b &'a PartType>
     {
         let mut sorted_parttypes: Vec<&&PartType> = Vec::from_iter(parttypes);
+        if sorted_parttypes.is_empty() {
+            return;
+        }
         //sort by decreasing area
         sorted_parttypes.sort_by(|a, b| {
             a.area().cmp(&b.area()).reverse()
@@ -69,8 +73,8 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                     let parttype = *sorted_parttypes.get(i).unwrap();
 
                     if empty_node_ref.area() < parttype.area() {
-                        //The smallest parttype is larger than this node, there are no possible insertion options left.
-                        starting_index += i + 1;
+                        //The empty node is smaller than this parttype. For the next (smaller) empty node, start searching from next index
+                        starting_index = i + 1;
                     } else {
                         let insertion_option = InsertionOptionCache::generate_insertion_option(&empty_node, parttype, Rc::downgrade(layout));
                         match insertion_option {
