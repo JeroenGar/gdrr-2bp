@@ -1,3 +1,4 @@
+use std::env;
 use std::fs::File;
 use std::io::{BufReader};
 use std::time::Instant;
@@ -21,10 +22,11 @@ pub mod core;
 static EPOCH : Lazy<Instant> = Lazy::new(Instant::now);
 
 fn main() {
-    let test_file = File::open("assets/1.json").unwrap();
-    let config_file = File::open("assets/config.json").unwrap();
+    let args: Vec<String> = env::args().collect();
+    let input = File::open(args.get(1).expect("first cmd argument needs to be path to input file")).expect("input file could not be opened");
+    let config_file = File::open(args.get(2).expect("second cmd argument needs to be path to config")).expect("config file could not be opened");
 
-    let json_instance : JsonInstance = serde_json::from_reader(BufReader::new(test_file)).unwrap();
+    let json_instance : JsonInstance = serde_json::from_reader(BufReader::new(input)).unwrap();
     let config : Config = serde_json::from_reader(BufReader::new(config_file)).unwrap();
 
     {
