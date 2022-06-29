@@ -3,21 +3,21 @@ use std::hash::Hash;
 use indexmap::{IndexMap, IndexSet};
 
 pub struct MultiMap<K: Hash + Eq, V> {
-    map: IndexMap<K, IndexSet<V>>,
+    map: IndexMap<K, Vec<V>>,
 }
 
-impl<K: Hash + Eq, V: Hash + Eq> MultiMap<K, V> {
+impl<K: Hash + Eq, V : Eq> MultiMap<K, V> {
     pub fn new() -> Self {
         let map = IndexMap::new();
         Self { map }
     }
 
     pub fn insert(&mut self, key: K, value: V) {
-        let values = self.map.entry(key).or_insert(IndexSet::new());
-        values.insert(value);
+        let values = self.map.entry(key).or_insert(Vec::new());
+        values.push(value);
     }
 
-    pub fn insert_all(&mut self, key: K, values: IndexSet<V>) {
+    pub fn insert_all(&mut self, key: K, values: Vec<V>) {
         if self.map.contains_key(&key) {
             self.map.get_mut(&key).unwrap().extend(values);
         } else {
@@ -25,7 +25,7 @@ impl<K: Hash + Eq, V: Hash + Eq> MultiMap<K, V> {
         }
     }
 
-    pub fn get(&self, key: &K) -> Option<&IndexSet<V>> {
+    pub fn get(&self, key: &K) -> Option<&Vec<V>> {
         self.map.get(key)
     }
 
@@ -33,14 +33,16 @@ impl<K: Hash + Eq, V: Hash + Eq> MultiMap<K, V> {
         self.map.contains_key(key)
     }
 
-    pub fn remove_all(&mut self, key: &K) -> Option<IndexSet<V>> {
+    pub fn remove_all(&mut self, key: &K) -> Option<Vec<V>> {
         self.map.remove(key)
     }
 
     pub fn remove(&mut self, key: &K, value: &V) -> bool {
         match self.map.get_mut(key) {
             Some(values) => {
-                values.remove(value)
+                let value_index = values.iter().position(|v| v == value).unwrap();
+                values.remove(value_index);
+                true
             }
             None => false
         }

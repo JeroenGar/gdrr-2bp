@@ -162,11 +162,11 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn get_for_parttype(&self, parttype: &'a PartType) -> Option<&IndexSet<Rc<InsertionOption<'a>>>> {
+    pub fn get_for_parttype(&self, parttype: &'a PartType) -> Option<&Vec<Rc<InsertionOption<'a>>>> {
         self.option_parttype_map.get(&parttype)
     }
 
-    pub fn get_for_node(&self, node: &Rc<RefCell<Node<'a>>>) -> Option<&IndexSet<Rc<InsertionOption<'a>>>> {
+    pub fn get_for_node(&self, node: &Rc<RefCell<Node<'a>>>) -> Option<&Vec<Rc<InsertionOption<'a>>>> {
         self.option_node_map.get(&ByAddress(node.clone()))
     }
 }
