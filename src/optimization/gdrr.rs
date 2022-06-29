@@ -24,6 +24,7 @@ use crate::util::macros::{rb, rbm, timed_println};
 use crate::util::multi_map::MultiMap;
 use crate::util::util;
 use colored::*;
+use crate::util::assertions::insertion_option_cache_is_valid;
 
 pub struct GDRR<'a> {
     config: &'a Config,
@@ -221,6 +222,11 @@ impl<'a> GDRR<'a> {
                     insertion_option_cache.remove_for_parttype(elected_parttype);
                     parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
                 }
+
+                if insertion_option_cache.is_empty() {
+                    break;
+                }
+
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
             } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem

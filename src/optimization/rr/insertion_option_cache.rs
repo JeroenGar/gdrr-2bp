@@ -110,16 +110,26 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     pub fn remove_for_parttype(&mut self, parttype: &'a PartType) {
-        for insert_opt in self.option_parttype_map.get(&parttype).unwrap() {
-            self.option_node_map.remove(&ByAddress(insert_opt.original_node().upgrade().unwrap()), insert_opt);
+        match self.option_parttype_map.get(&parttype){
+            Some(options) => {
+                for insert_opt in options {
+                    self.option_node_map.remove(&ByAddress(insert_opt.original_node().upgrade().unwrap()), insert_opt);
+                }
+            }
+            None => ()
         }
         self.option_parttype_map.remove_all(&parttype);
     }
 
     pub fn remove_for_node(&mut self, node: &Rc<RefCell<Node<'a>>>) {
-        for insert_opt in self.option_node_map.get(&ByAddress(node.clone())).unwrap() {
-            self.option_parttype_map.remove(&insert_opt.parttype(), insert_opt);
-        };
+        match self.option_node_map.get(&ByAddress(node.clone())) {
+            Some(options) => {
+                for insert_opt in options {
+                    self.option_parttype_map.remove(&insert_opt.parttype(), insert_opt);
+                }
+            }
+            None => ()
+        }
         self.option_node_map.remove_all(&ByAddress(node.clone()));
     }
 
@@ -168,5 +178,9 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn get_for_node(&self, node: &Rc<RefCell<Node<'a>>>) -> Option<&Vec<Rc<InsertionOption<'a>>>> {
         self.option_node_map.get(&ByAddress(node.clone()))
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.option_parttype_map.is_empty() && self.option_node_map.is_empty()
     }
 }

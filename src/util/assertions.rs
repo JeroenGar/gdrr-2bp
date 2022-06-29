@@ -211,6 +211,10 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
                 &layouts_to_consider
     );
 
+    if ioc.is_empty() && fresh_ioc.is_empty() {
+        return true;
+    }
+
     for (i,q) in problem.parttype_qtys().iter().enumerate(){
         let parttype = problem.instance().get_parttype(i);
         match (q, parttypes.contains(&parttype)) {
@@ -228,16 +232,16 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
             (_,true) => {
                 let ioc_options = ioc.get_for_parttype(&parttype);
                 let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
-                if ioc_options.is_none() || fresh_ioc_options.is_none() {
-                    dbg!(ioc_options);
-                    dbg!(fresh_ioc_options);
-                    return false;
-                }
+                let n_ioc_options = match ioc_options {
+                    Some(ioc_options) => ioc_options.len(),
+                    None => 0
+                };
+                let n_fresh_ioc_options = match fresh_ioc_options {
+                    Some(fresh_ioc_options) => fresh_ioc_options.len(),
+                    None => 0
+                };
 
-                let ioc_len = ioc_options.unwrap().len();
-                let fresh_ioc_len = fresh_ioc_options.unwrap().len();
-
-                if ioc_len != fresh_ioc_len {
+                if n_ioc_options != n_fresh_ioc_options {
                     dbg!(ioc_options);
                     dbg!(fresh_ioc_options);
                     return false;

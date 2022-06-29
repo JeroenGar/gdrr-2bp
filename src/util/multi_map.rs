@@ -47,4 +47,8 @@ impl<K: Hash + Eq, V : Eq> MultiMap<K, V> {
             None => false
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty() || self.map.values().all(|values| values.is_empty())
+    }
 }
