@@ -59,17 +59,15 @@ impl<'a> GDRR<'a> {
         let max_rr_iterations = self.config.max_rr_iterations;
         let max_run_time = self.config.max_run_time;
 
+        let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area());
+
         let mut lahc_history: VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length);
+        lahc_history.push_back(empty_problem_cost.clone());
         let mut n_iterations = 0;
         let mut n_accepted = 0;
         let mut n_improved = 0;
         let mut mat_limit = self.solution_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
-        let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area());
-        for i in 0..self.config.history_length{
-            lahc_history.push_back(empty_problem_cost.clone());
-        }
-
 
         while n_iterations < max_rr_iterations
             && (std::time::Instant::now() - start_time).as_secs() < max_run_time as u64 {
@@ -88,7 +86,7 @@ impl<'a> GDRR<'a> {
 
             let cost = self.problem.cost();
 
-            if (self.cost_comparator)(&cost, lahc_history.front().unwrap_or(&empty_problem_cost)) <= Ordering::Equal ||
+            if (self.cost_comparator)(&cost, lahc_history.front().unwrap()) <= Ordering::Equal ||
                 (local_optimum.is_some() && (self.cost_comparator)(&cost, local_optimum.as_ref().unwrap().cost()) <= Ordering::Equal) {
                 //Solution is better or equivalent to the last entry in the history queue or the local optimum.
 
@@ -98,13 +96,17 @@ impl<'a> GDRR<'a> {
 
                 if (self.cost_comparator)(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
                     //Current local optimum is better than the last value of the history queue
-                    lahc_history.push_back(cost.clone());
+                    for _ in 0..(self.config.history_length - lahc_history.len()) {
+                        lahc_history.push_back(cost.clone());
+                    }
                     self.solution_collector.report_problem_solution(local_optimum.as_ref().unwrap());
                     n_improved += 1;
                 }
                 else{
                     //Current local optimum is not better, add the best cost to the history queue
-                    lahc_history.push_back(lahc_history.back().unwrap().clone());
+                    for _ in 0..(self.config.history_length - lahc_history.len()) {
+                        lahc_history.push_back(lahc_history.back().unwrap().clone());
+                    }
                 }
                 n_accepted += 1;
             } else {
@@ -115,9 +117,7 @@ impl<'a> GDRR<'a> {
                 mat_limit = self.solution_collector.material_limit();
                 local_optimum = None;
                 lahc_history.clear();
-                for i in 0..self.config.history_length{
-                    lahc_history.push_back(empty_problem_cost.clone());
-                }
+                lahc_history.push_back(empty_problem_cost.clone());
             }
             n_iterations += 1;
 
