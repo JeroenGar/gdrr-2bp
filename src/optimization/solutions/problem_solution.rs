@@ -6,7 +6,9 @@ use crate::core::entities::layout::Layout;
 use crate::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::solutions::solution::Solution;
+use crate::util::assertions;
 use crate::util::macros::{rb,rbm};
+use std::ops::Deref;
 
 pub struct ProblemSolution<'a> {
     instance : &'a Instance,
@@ -32,6 +34,12 @@ impl<'a> ProblemSolution<'a> {
                 layouts.insert(layout_id, Rc::new(layout_ref.create_deep_copy(layout_id)));
             }
         }
+
+        debug_assert!(layouts.iter().all(|(id,l)| {
+            let top_node = l.as_ref().top_node();
+            let top_node = rb!(top_node);
+            assertions::children_nodes_fit(top_node.deref())
+        }));
 
         let parttype_qtys = problem.parttype_qtys().clone();
         let sheettype_qtys = problem.sheettype_qtys().clone();

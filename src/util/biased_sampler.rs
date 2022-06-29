@@ -33,22 +33,36 @@ impl<T> BiasedSampler<T> {
         }
     }
 
-    pub fn sample(&self, random: &mut StdRng) -> Option<&Weak<T>> {
+    pub fn sample(&self, random: &mut StdRng) -> Option<Rc<T>> {
         if self.entries.is_empty() {
             return None;
         }
 
-        let mut samples: Vec<&Weak<T>> = Vec::with_capacity(self.n_samples);
+        let mut samples: Vec<Rc<T>> = Vec::with_capacity(self.n_samples);
         for _ in 0..self.n_samples {
-            samples.push(&self.entries.get(random.gen_range(0..self.entries.len())).unwrap());
+            samples.push(self.entries.get(random.gen_range(0..self.entries.len())).unwrap().upgrade().unwrap());
         }
-        samples.sort_by(|a, b| (self.comparator)(&a.upgrade().unwrap(), &b.upgrade().unwrap()).reverse());
+        samples.sort_by(|a, b| (self.comparator)(&a, &b).reverse());
         let random_f64 = random.gen::<f64>();
         for i in 0..self.chance_vec.len() {
             if random_f64 <= self.chance_vec[i] {
-                return Some(samples[i]);
+                return Some(samples.remove(i));
             }
         }
-        return Some(samples[self.chance_vec.len() - 1]);
+        return Some(samples.remove(self.chance_vec.len() - 1));
+    }
+
+
+    pub fn entries(&self) -> &Vec<Weak<T>> {
+        &self.entries
+    }
+    pub fn comparator(&self) -> fn(&T, &T) -> Ordering {
+        self.comparator
+    }
+    pub fn n_samples(&self) -> usize {
+        self.n_samples
+    }
+    pub fn chance_vec(&self) -> &Vec<f64> {
+        &self.chance_vec
     }
 }

@@ -66,6 +66,9 @@ impl<'a> GDRR<'a> {
         let mut mat_limit = self.solution_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
         let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area());
+        for i in 0..self.config.history_length{
+            lahc_history.push_back(empty_problem_cost.clone());
+        }
 
 
         while n_iterations < max_rr_iterations
@@ -76,9 +79,9 @@ impl<'a> GDRR<'a> {
             };
 
             let mat_limit_budget = self.ruin(mat_limit_budget);
-            let max_part_area_not_included = match lahc_history.len() == self.config.history_length {
-                true => lahc_history.front().unwrap().part_area_excluded,
-                false => u64::MAX,
+            let max_part_area_not_included = match local_optimum.as_ref() {
+                Some(local_optimum) => u64::max(lahc_history.front().unwrap().part_area_excluded, local_optimum.cost().part_area_excluded),
+                None => lahc_history.front().unwrap().part_area_excluded
             };
 
             self.recreate(mat_limit_budget, max_part_area_not_included);
@@ -90,18 +93,17 @@ impl<'a> GDRR<'a> {
                 //Solution is better or equivalent to the last entry in the history queue or the local optimum.
 
                 local_optimum = Some(self.problem.create_solution(&local_optimum, Some(cost.clone())));
-                if lahc_history.len() == self.config.history_length {
-                    lahc_history.pop_front();
-                }
 
-                //Current local optimum is better than the last value of the history queue
+                lahc_history.pop_front();
+
                 if (self.cost_comparator)(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
+                    //Current local optimum is better than the last value of the history queue
                     lahc_history.push_back(cost.clone());
                     self.solution_collector.report_problem_solution(local_optimum.as_ref().unwrap());
                     n_improved += 1;
                 }
                 else{
-                    //If the current cost is not better, add the best cost to the history queue
+                    //Current local optimum is not better, add the best cost to the history queue
                     lahc_history.push_back(lahc_history.back().unwrap().clone());
                 }
                 n_accepted += 1;
@@ -113,8 +115,13 @@ impl<'a> GDRR<'a> {
                 mat_limit = self.solution_collector.material_limit();
                 local_optimum = None;
                 lahc_history.clear();
+                for i in 0..self.config.history_length{
+                    lahc_history.push_back(empty_problem_cost.clone());
+                }
             }
             n_iterations += 1;
+
+            debug_assert!(lahc_history.len() == self.config.history_length, "{}", lahc_history.len());
         }
         timed_println!("GDRR finished: {:.2} iter/s, {:.2} acc/s, {} impr",
                  (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
@@ -138,7 +145,6 @@ impl<'a> GDRR<'a> {
 
                 match layout {
                     Some(layout) => {
-                        let layout = layout.upgrade().unwrap();
                         let removable_nodes = rb!(layout).get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
 
