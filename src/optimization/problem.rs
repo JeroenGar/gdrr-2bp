@@ -1,10 +1,9 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::collections::{HashSet, LinkedList};
+use std::collections::{HashSet};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-use indexmap::{IndexMap, IndexSet};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -37,7 +36,7 @@ impl<'a> Problem<'a> {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let layouts = Vec::new();
-        let mut empty_layouts = Vec::new();
+        let empty_layouts = Vec::new();
         let unchanged_layouts = HashSet::new();
         let unchanged_layouts_solution_id = None;
         let random = StdRng::seed_from_u64(0);

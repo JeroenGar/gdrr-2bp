@@ -64,7 +64,7 @@ impl<'a> Layout<'a> {
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>) {
         debug_assert!(assertions::node_belongs_to_layout(&blueprint.original_node().upgrade().unwrap(),self));
         let original_node = blueprint.original_node().upgrade().unwrap();
-        let mut parent_node = rbm!(original_node).parent().as_ref().unwrap().upgrade().unwrap();
+        let parent_node = rbm!(original_node).parent().as_ref().unwrap().upgrade().unwrap();
 
         //convert the NodeBlueprints to Nodes
         let mut replacements = Vec::new();
@@ -125,7 +125,7 @@ impl<'a> Layout<'a> {
 
          */
 
-        let mut parent_node = rb!(node).parent().as_ref().unwrap().upgrade().unwrap();
+        let parent_node = rb!(node).parent().as_ref().unwrap().upgrade().unwrap();
         //Check if there is an empty_node present
         let empty_node = rb!(parent_node).children().iter().find(|node: &&Rc<RefCell<Node>>| {
             rb!(node).is_empty()

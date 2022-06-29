@@ -2,10 +2,8 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
-use std::path::Iter;
 use std::rc::Rc;
 
-use indexmap::{IndexMap, IndexSet};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::rngs::{StdRng, ThreadRng};
@@ -20,10 +18,10 @@ use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
-use crate::util::biased_sampler::BiasedSampler;
 use crate::util::{assertions, blink};
+use crate::util::biased_sampler::BiasedSampler;
+use crate::util::macros::{rb, rbm, timed_println};
 use crate::util::multi_map::MultiMap;
-use crate::util::macros::{rb,rbm, timed_println};
 
 pub struct GDRR<'a> {
     config: &'a Config,
@@ -71,7 +69,7 @@ impl<'a> GDRR<'a> {
 
         while n_iterations < max_rr_iterations
             && (std::time::Instant::now() - start_time).as_secs() < max_run_time as u64 {
-            let mat_limit_budget : i128 = match local_optimum.as_ref() {
+            let mat_limit_budget: i128 = match local_optimum.as_ref() {
                 Some(solution) => mat_limit as i128 - 1 - solution.cost().material_cost as i128,
                 None => mat_limit as i128 - 1 - self.problem.cost().material_cost as i128,
             };
@@ -101,8 +99,7 @@ impl<'a> GDRR<'a> {
                     }
                     self.solution_collector.report_problem_solution(local_optimum.as_ref().unwrap());
                     n_improved += 1;
-                }
-                else{
+                } else {
                     //Current local optimum is not better, add the best cost to the history queue
                     for _ in 0..(self.config.history_length - lahc_history.len()) {
                         lahc_history.push_back(lahc_history.back().unwrap().clone());
@@ -135,7 +132,6 @@ impl<'a> GDRR<'a> {
 
         if mat_limit_budget >= 0 {
             for _i in 0..n_nodes_to_remove {
-
                 let biased_sampler = BiasedSampler::new_default(
                     self.problem.layouts().iter().map(|l| { Rc::downgrade(l) }).collect(),
                     |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().usage().partial_cmp(&b.borrow().usage()).unwrap().reverse() },
@@ -194,7 +190,7 @@ impl<'a> GDRR<'a> {
         debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider));
 
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
-            let elected_parttype = GDRR::select_next_parttype(&self.instance, &parttypes_to_consider, &insertion_option_cache, self.problem.random(), &self.config);
+            let elected_parttype = GDRR::select_next_parttype(&self.instance, &mut parttypes_to_consider, &insertion_option_cache, self.problem.random(), &self.config);
             let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, self.problem.random(), &self.config, &self.cost_comparator);
 
             if elected_blueprint.is_some() {
@@ -223,7 +219,6 @@ impl<'a> GDRR<'a> {
                     parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
                 }
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
-
             } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem
                 part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
@@ -234,33 +229,29 @@ impl<'a> GDRR<'a> {
 
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
             }
-
         }
     }
 
-    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &Vec<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'b PartType {
-        let mut parttypes_to_consider = parttypes.iter().map(|p| { p.id() }).collect::<Vec<_>>();
-        parttypes_to_consider.shuffle(rand);
+    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &mut Vec<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'b PartType {
+        parttypes.shuffle(rand);
+        let n_options: Vec<usize> = parttypes.iter().map(|p| {
+            match insertion_option_cache.get_for_parttype(*p) {
+                Some(options) => {
+                    options.len()
+                }
+                None => {
+                    0
+                }
+            }
+        }).collect();
 
-        parttypes_to_consider.sort_by(|a, b| {
-            let a_insertion_options = match insertion_option_cache.get_for_parttype(instance.get_parttype(*a)) {
-                Some(options) => options.len(),
-                None => 0
-            };
-            let b_insertion_options = match insertion_option_cache.get_for_parttype(instance.get_parttype(*b)) {
-                Some(options) => options.len(),
-                None => 0
-            };
-            a_insertion_options.cmp(&b_insertion_options)
-        });
-
-        let selected_index = blink::select_lowest(0..parttypes_to_consider.len(), config.blink_rate, rand);
-        let selected_parttype_id = parttypes_to_consider[selected_index];
+        let selected_index = blink::select_lowest_entry(&n_options, config.blink_rate, rand);
+        let selected_parttype_id = parttypes[selected_index].id();
 
         instance.get_parttype(selected_parttype_id)
     }
 
-    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mut mat_limit_budget: i128, rand: &mut StdRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mat_limit_budget: i128, rand: &mut StdRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
         let insertion_options = insertion_option_cache.get_for_parttype(parttype);
         match insertion_options {
             Some(options) => {
@@ -287,7 +278,7 @@ impl<'a> GDRR<'a> {
                             cost_comparator(a.cost(), b.cost())
                         });
                         //Select the best (blinked) one
-                        let selected_blinked_index = blink::select_lowest(0..existing_layout_blueprints.len(), config.blink_rate, rand);
+                        let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, rand);
                         Some(existing_layout_blueprints.remove(selected_blinked_index))
                     }
                     true => {

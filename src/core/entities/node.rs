@@ -43,7 +43,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn new_top_node(width : u64, height : u64, next_cut_orient: Orientation) -> Rc<RefCell<Node<'a>>> {
-        let mut top_node = Rc::new(RefCell::new(
+        let top_node = Rc::new(RefCell::new(
             Node::new(width, height, next_cut_orient)
         ));
         let mut placeholder_node = Node::new(width, height, next_cut_orient.rotate());
@@ -54,7 +54,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn new_from_blueprint(blueprint: &NodeBlueprint<'a>, parent: Weak<RefCell<Node<'a>>>, all_created_nodes: &mut Vec<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
-        let mut node = Node {
+        let node = Node {
             width: blueprint.width(),
             height: blueprint.height(),
             children: Vec::new(),
@@ -63,7 +63,7 @@ impl<'a> Node<'a> {
             next_cut_orient: blueprint.next_cut_orient(),
         };
 
-        let mut node = Rc::new(RefCell::new(node));
+        let node = Rc::new(RefCell::new(node));
         all_created_nodes.push(Rc::downgrade(&node));
 
         let children = blueprint.children().iter().map(|child_bp| {
@@ -76,7 +76,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn create_deep_copy(&self, parent: Option<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
-        let mut copy = Node {
+        let copy = Node {
             width : self.width,
             height : self.height,
             children : Vec::new(),

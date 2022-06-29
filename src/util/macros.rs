@@ -22,8 +22,6 @@ macro_rules! timed_println {
     };
 }
 
-use std::time::Instant;
-
 pub(crate) use rb;
 pub(crate) use rbm;
 pub(crate) use timed_println;
