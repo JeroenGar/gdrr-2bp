@@ -3,6 +3,7 @@ use crate::core::cost::Cost;
 use crate::optimization::solutions::instance_solution::InstanceSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
+use crate::util::macros::{timed_println};
 
 pub struct SolutionCollector<'a> {
     best_complete_solution : Option<InstanceSolution<'a>>,
@@ -56,12 +57,12 @@ impl<'a> SolutionCollector<'a> {
             true => {
                 self.best_incomplete_solution = None;
                 self.material_limit = solution.cost().material_cost;
-                println!("New best complete solution: {:?} sheets, {:?} material value", solution.layouts().len(), solution.cost().material_cost);
+                timed_println!("New best complete solution: {:?} sheets, {:?} material value", solution.layouts().len(), solution.cost().material_cost);
                 self.best_complete_solution = Some(solution);
             },
             false => {
                 let part_area_included_pct = (solution.instance().total_part_area() - solution.cost().part_area_excluded) as f64 / solution.instance().total_part_area() as f64 * 100.0;
-                println!("New best incomplete solution: {:?} sheets, {:.3}% parts included", solution.layouts().len(), part_area_included_pct);
+                timed_println!("New best incomplete solution: {:?} sheets, {:.3}% parts included", solution.layouts().len(), part_area_included_pct);
                 self.best_incomplete_solution = Some(solution);
             }
         };

@@ -1,7 +1,9 @@
 
 use std::fs::File;
 use std::io::{BufReader};
+use std::time::Instant;
 use indexmap::IndexMap;
+use once_cell::sync::Lazy;
 
 use crate::core::{entities::parttype::PartType, leftover_valuator, orientation::Orientation};
 use crate::core::entities::sheettype::SheetType;
@@ -11,14 +13,17 @@ use crate::io::parser;
 use crate::optimization::config::Config;
 use crate::optimization::gdrr::GDRR;
 use crate::optimization::instance::Instance;
+use crate::util::macros::{rb, rbm,timed_println};
 
 pub mod util;
 pub mod io;
 pub mod optimization;
 pub mod core;
 
+static EPOCH : Lazy<Instant> = Lazy::new(Instant::now);
+
 fn main() {
-    let test_file = File::open("assets/500.json").unwrap();
+    let test_file = File::open("assets/BEIBAN2.json").unwrap();
     let config_file = File::open("assets/config.json").unwrap();
 
     let json_instance : JsonInstance = serde_json::from_reader(BufReader::new(test_file)).unwrap();
@@ -30,10 +35,11 @@ fn main() {
     }
 
     let instance = parser::generate_instance(&json_instance, &config);
+    timed_println!("Starting optimization of {} parts", instance.total_part_qty());
     let mut gdrr = GDRR::new(&instance, &config);
 
     gdrr.lahc();
 
-    println!("done");
+    timed_println!("Done");
 
 }

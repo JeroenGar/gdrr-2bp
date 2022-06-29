@@ -8,7 +8,7 @@ use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint
 use crate::core::entities::node::Node;
 use crate::optimization::config::Config;
 use crate::optimization::rr::cache_updates::CacheUpdates;
-use crate::Orientation;
+use crate::{EPOCH, Orientation};
 use crate::util::assertions;
 use crate::util::macros::{rb, rbm};
 

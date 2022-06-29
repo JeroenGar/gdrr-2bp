@@ -23,7 +23,7 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::biased_sampler::BiasedSampler;
 use crate::util::blink;
 use crate::util::multi_map::MultiMap;
-use crate::util::macros::{rb,rbm};
+use crate::util::macros::{rb,rbm, timed_println};
 
 pub struct GDRR<'a> {
     config: &'a Config,
@@ -57,26 +57,28 @@ impl<'a> GDRR<'a> {
         let start_time = std::time::Instant::now();
 
         let max_rr_iterations = self.config.max_rr_iterations;
-        let max_run_time_ms = self.config.max_run_time_ms;
+        let max_run_time = self.config.max_run_time;
 
         let mut lahc_history: VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length);
         let mut n_iterations = 0;
+        let mut n_accepted = 0;
+        let mut n_improved = 0;
         let mut mat_limit = self.solution_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
         let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area());
 
 
         while n_iterations < max_rr_iterations
-            && (std::time::Instant::now() - start_time).as_millis() < max_run_time_ms as u128 {
+            && (std::time::Instant::now() - start_time).as_secs() < max_run_time as u64 {
             let mat_limit_budget : i128 = match local_optimum.as_ref() {
                 Some(solution) => mat_limit as i128 - 1 - solution.cost().material_cost as i128,
                 None => mat_limit as i128 - 1 - self.problem.cost().material_cost as i128,
             };
 
             let mat_limit_budget = self.ruin(mat_limit_budget);
-            let max_part_area_not_included = match lahc_history.front() {
-                Some(cost) => cost.part_area_excluded,
-                None => u64::MAX,
+            let max_part_area_not_included = match lahc_history.len() == self.config.history_length {
+                true => lahc_history.front().unwrap().part_area_excluded,
+                false => u64::MAX,
             };
 
             self.recreate(mat_limit_budget, max_part_area_not_included);
@@ -88,15 +90,21 @@ impl<'a> GDRR<'a> {
                 //Solution is better or equivalent to the last entry in the history queue or the local optimum.
 
                 local_optimum = Some(self.problem.create_solution(&local_optimum, Some(cost.clone())));
+                if lahc_history.len() == self.config.history_length {
+                    lahc_history.pop_front();
+                }
 
                 //Current local optimum is better than the last value of the history queue
                 if (self.cost_comparator)(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
-                    if lahc_history.len() == self.config.history_length {
-                        lahc_history.pop_front();
-                    }
                     lahc_history.push_back(cost.clone());
                     self.solution_collector.report_problem_solution(local_optimum.as_ref().unwrap());
+                    n_improved += 1;
                 }
+                else{
+                    //If the current cost is not better, add the best cost to the history queue
+                    lahc_history.push_back(lahc_history.back().unwrap().clone());
+                }
+                n_accepted += 1;
             } else {
                 self.problem.restore_from_problem_solution(local_optimum.as_ref().unwrap());
             }
@@ -108,8 +116,11 @@ impl<'a> GDRR<'a> {
             }
             n_iterations += 1;
         }
-
-        println!("GDRR finished: {:.2} iter/s", (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0));
+        timed_println!("GDRR finished: {:.2} iter/s, {:.2} acc/s, {} impr",
+                 (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
+                 (n_accepted as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
+                n_improved
+        );
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {

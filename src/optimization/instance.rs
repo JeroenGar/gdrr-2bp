@@ -7,7 +7,8 @@ use crate::core::entities::sheettype::SheetType;
 pub struct Instance {
     parts: Vec<(PartType, usize)>,
     sheets: Vec<(SheetType, usize)>,
-    total_part_area : u64
+    total_part_area : u64,
+    total_part_qty : usize
 }
 
 impl Instance {
@@ -21,11 +22,13 @@ impl Instance {
         });
 
         let total_part_area = parts.iter().map(|(parttype, qty)| parttype.area() * (*qty as u64)).sum();
+        let total_part_qty = parts.iter().map(|(_,qty)| *qty).sum();
 
         Self {
             parts,
             sheets,
-            total_part_area
+            total_part_area,
+            total_part_qty
         }
     }
 
@@ -57,5 +60,10 @@ impl Instance {
 
     pub fn total_part_area(&self) -> u64 {
         self.total_part_area
+    }
+
+
+    pub fn total_part_qty(&self) -> usize {
+        self.total_part_qty
     }
 }
