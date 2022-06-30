@@ -78,7 +78,7 @@ fn main() {
         gdrr_thread_handlers.push(handle.expect("could not spawn thread"));
     }
 
-    let mut global_sol_collector = GlobalSolCollector::new(instance, config,u64::MAX, tx_syncs, rx_solution_report);
+    let mut global_sol_collector = GlobalSolCollector::new(instance, config, tx_syncs, rx_solution_report);
 
     global_sol_collector.monitor(gdrr_thread_handlers);
 

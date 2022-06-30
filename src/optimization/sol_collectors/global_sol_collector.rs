@@ -25,7 +25,7 @@ pub struct GlobalSolCollector {
     best_incomplete_solution: Option<SendableSolution>,
     best_incomplete_cost: Option<Cost>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
-    material_limit: u64,
+    material_limit: Option<u64>,
     tx_syncs: Vec<Sender<SyncMessage>>,
     rx_solution_report: Receiver<SolutionReportMessage>,
 }
@@ -33,11 +33,11 @@ pub struct GlobalSolCollector {
 impl GlobalSolCollector {
     pub fn new(instance: Arc<Instance>,
                config : Arc<Config>,
-               material_limit: u64,
                tx_syncs: Vec<Sender<SyncMessage>>,
                rx_solution_report: Receiver<SolutionReportMessage>,
 
     ) -> Self {
+        let material_limit = None;
         let best_complete_solution = None;
         let best_incomplete_solution = None;
         let best_incomplete_cost = None;
@@ -120,12 +120,12 @@ impl GlobalSolCollector {
     }
 
     fn report_new_complete_solution(&mut self, thread_name: String, solution: SendableSolution) {
-        if solution.cost().material_cost < self.material_limit {
+        if solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX) {
             if self.best_complete_solution.is_none()
                 || solution.cost().material_cost < self.best_complete_solution.as_ref().unwrap().cost().material_cost {
                 self.best_incomplete_cost = None;
                 self.best_incomplete_solution = None;
-                self.material_limit = solution.cost().material_cost;
+                self.material_limit = Some(solution.cost().material_cost);
                 timed_println!("[{}]\t{}{}", thread_name, "<complete>\t".cyan().bold(), util::solution_stats_string(&solution).cyan().bold());
                 self.best_complete_solution = Some(solution.clone());
 
@@ -148,7 +148,7 @@ impl GlobalSolCollector {
     }
 
     fn report_new_incomplete_cost(&mut self, thread_name : String, stats: SolutionStats){
-        if stats.cost.material_cost < self.material_limit {
+        if stats.cost.material_cost < self.material_limit.unwrap_or(u64::MAX) {
             if self.best_incomplete_cost.is_none()
                 || (self.cost_comparator)(&stats.cost, &self.best_incomplete_cost.as_ref().unwrap()) == Ordering::Less {
                 timed_println!("[{}]\t{}{}", thread_name, "<incomplete>\t".bright_green(), util::compact_stats_string(&stats));
