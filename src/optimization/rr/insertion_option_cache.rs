@@ -58,11 +58,14 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
             a.area().cmp(&b.area()).reverse()
         });
 
+
         for layout in layouts.iter() {
             let layout_ref = rb!(layout);
             let sorted_empty_nodes = layout_ref.sorted_empty_nodes();
             let mut starting_index = 0;
+
             for empty_node in sorted_empty_nodes.iter() {
+                let mut generated_insertion_options = Vec::new();
                 let empty_node = empty_node.upgrade().unwrap();
                 let empty_node_ref = rb!(empty_node);
                 if sorted_parttypes.get(sorted_parttypes.len() - 1).unwrap().area() > empty_node_ref.area() {
@@ -80,13 +83,18 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                         match insertion_option {
                             Some(insertion_option) => {
                                 let insertion_option = Rc::new(insertion_option);
-                                self.option_node_map.insert(ByAddress(empty_node.clone()), insertion_option.clone());
-                                self.option_parttype_map.insert(parttype, insertion_option.clone());
+                                generated_insertion_options.push(insertion_option.clone());
                             }
                             None => {}
                         }
                     }
                 }
+                //update the maps
+                for insertion_option in &generated_insertion_options {
+                    let parttype = insertion_option.parttype();
+                    self.option_parttype_map.insert(parttype, insertion_option.clone());
+                }
+                self.option_node_map.insert_all(ByAddress(empty_node.clone()), generated_insertion_options);
             }
         }
     }

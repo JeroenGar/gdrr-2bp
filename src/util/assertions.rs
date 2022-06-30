@@ -275,10 +275,20 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
                 }
             }
             (_,_) => {
-                dbg!(node.upgrade().unwrap());
-                dbg!(ioc_options);
-                dbg!(fresh_ioc_options);
-                return false;
+                let ioc_options_len = match ioc_options {
+                    Some(ioc_options) => ioc_options.len(),
+                    None => 0
+                };
+                let fresh_ioc_options_len = match fresh_ioc_options {
+                    Some(fresh_ioc_options) => fresh_ioc_options.len(),
+                    None => 0
+                };
+                if ioc_options_len != 0 || fresh_ioc_options_len != 0 {
+                    dbg!(node.upgrade().unwrap());
+                    dbg!(ioc_options);
+                    dbg!(fresh_ioc_options);
+                    return false;
+                }
             }
         }
     }
