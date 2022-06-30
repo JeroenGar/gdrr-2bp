@@ -2,24 +2,28 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
+use crate::core::entities::sendable_layout::SendableLayout;
 use crate::Instance;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
+use crate::util::macros::{rb,rbm};
 
 #[derive(Debug, Clone)]
-pub struct InstanceSolution<'a> {
+pub struct SendableSolution<'a> {
     instance : &'a Instance,
-    layouts : IndexMap<usize, Rc<Layout<'a>>>,
+    layouts : Vec<SendableLayout>,
     cost : Cost,
+    usage : f64,
     parttype_qtys : Vec<usize>,
     sheettype_qtys : Vec<usize>
 }
 
-impl<'a> InstanceSolution<'a>{
-    pub fn new(problem_solution : &ProblemSolution<'a>) -> InstanceSolution<'a>{
+impl<'a> SendableSolution<'a>{
+    pub fn new(problem_solution : &ProblemSolution<'a>) -> SendableSolution<'a>{
         let instance = problem_solution.instance();
-        let layouts = problem_solution.layouts().clone();
+        let layouts = problem_solution.layouts().iter().map(|(id, l)| SendableLayout::new(l)).collect();
         let cost = problem_solution.cost().clone();
+        let usage = problem_solution.usage();
         let parttype_qtys = problem_solution.parttype_qtys().clone();
         let sheettype_qtys = problem_solution.sheettype_qtys().clone();
 
@@ -27,34 +31,28 @@ impl<'a> InstanceSolution<'a>{
             instance,
             layouts,
             cost,
+            usage,
             parttype_qtys,
             sheettype_qtys
         }
     }
 }
 
-impl<'a> Solution<'a> for InstanceSolution<'a> {
+
+impl<'a> Solution for SendableSolution<'a> {
     fn cost(&self) -> &Cost {
         &self.cost
     }
-
-    fn instance(&self) -> &Instance {
-        self.instance
+    fn n_layouts(&self) -> usize {
+        self.layouts.len()
     }
-
-    fn layouts(&self) -> &IndexMap<usize, Rc<Layout<'a>>> {
-        &self.layouts
-    }
-
     fn parttype_qtys(&self) -> &Vec<usize> {
         &self.parttype_qtys
     }
-
     fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
     }
-
     fn usage(&self) -> f64 {
-        todo!()
+        self.usage
     }
 }

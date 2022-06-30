@@ -1,16 +1,9 @@
-use std::rc::Rc;
-use downcast_rs::DowncastSync;
-use indexmap::IndexMap;
 use crate::core::cost::Cost;
-use crate::core::entities::layout::Layout;
-use crate::Instance;
 
-pub trait Solution<'a>{
+pub trait Solution{
     fn cost(&self) -> &Cost;
 
-    fn instance(&self) -> &Instance;
-
-    fn layouts(&self) -> &IndexMap<usize, Rc<Layout<'a>>>;
+    fn n_layouts(&self) -> usize;
 
     fn parttype_qtys(&self) -> &Vec<usize>;
 
@@ -21,6 +14,4 @@ pub trait Solution<'a>{
     }
 
     fn usage(&self) -> f64;
-
-
 }

@@ -12,7 +12,7 @@ use crate::util::macros::{rb,rbm};
 #[derive(Debug, Clone)]
 pub struct InsertionBlueprint<'a> {
     original_node: Weak<RefCell<Node<'a>>>,
-    replacements: Vec<NodeBlueprint<'a>>,
+    replacements: Vec<NodeBlueprint>,
     parttype: &'a PartType,
     cost: Cost,
     layout: Option<Weak<RefCell<Layout<'a>>>>
@@ -20,7 +20,7 @@ pub struct InsertionBlueprint<'a> {
 
 
 impl<'a> InsertionBlueprint<'a> {
-    pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint<'a>>, parttype: &'a PartType) -> Self {
+    pub fn new(original_node: Weak<RefCell<Node<'a>>>, replacements: Vec<NodeBlueprint>, parttype: &'a PartType) -> Self {
         debug_assert!(rb!(original_node.upgrade().unwrap()).parent().is_some(),"{:#?}", original_node.upgrade().unwrap());
         debug_assert!(assertions::replacements_fit(&original_node, &replacements), "{:#?}", (&original_node, &replacements));
 
@@ -39,7 +39,7 @@ impl<'a> InsertionBlueprint<'a> {
         self.layout = Some(layout);
     }
 
-    pub fn replacements(&self) -> &Vec<NodeBlueprint<'a>> {
+    pub fn replacements(&self) -> &Vec<NodeBlueprint> {
         &self.replacements
     }
     pub fn parttype(&self) -> &'a PartType {
@@ -59,7 +59,7 @@ impl<'a> InsertionBlueprint<'a> {
     pub fn set_original_node(&mut self, original_node: Weak<RefCell<Node<'a>>>) {
         self.original_node = original_node;
     }
-    pub fn set_replacements(&mut self, replacements: Vec<NodeBlueprint<'a>>) {
+    pub fn set_replacements(&mut self, replacements: Vec<NodeBlueprint>) {
         self.replacements = replacements;
     }
     pub fn set_parttype(&mut self, parttype: &'a PartType) {

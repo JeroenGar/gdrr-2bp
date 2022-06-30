@@ -8,8 +8,8 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
-use crate::optimization::solutions::solution::Solution;
 use crate::{Orientation, PartType};
+use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::macros::{rb,rbm};
 
 
@@ -160,7 +160,7 @@ pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool{
     return true;
 }
 
-pub fn problem_matches_solution(problem : &Problem, solution : &dyn Solution) -> bool {
+pub fn problem_matches_solution(problem : &Problem, solution : &ProblemSolution) -> bool {
     for layout in problem.layouts().iter() {
         let sol_layout = solution.layouts().get(&rb!(layout).id()).unwrap();
         match layouts_match(rb!(layout).deref(), rb!(sol_layout).deref()) {

@@ -13,8 +13,9 @@ use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::optimization::rr::cache_updates::CacheUpdates;
-use crate::optimization::solutions::instance_solution::InstanceSolution;
+use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
+use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
 use crate::util::macros::{rb, rbm};
 
@@ -85,7 +86,7 @@ impl<'a> Problem<'a> {
             false => {
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&blueprint_layout));
 
-                blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates);
+                blueprint_layout.borrow_mut().implement_insertion_blueprint(blueprint, &mut cache_updates, self.instance);
                 self.layout_has_changed(rb!(blueprint_layout).id());
 
 
@@ -108,7 +109,7 @@ impl<'a> Problem<'a> {
 
                 debug_assert!(assertions::all_weak_references_alive(rb!(copy).sorted_empty_nodes()));
                 let mut cache_updates = CacheUpdates::new(Rc::downgrade(&copy));
-                rbm!(copy).implement_insertion_blueprint(&insertion_bp_copy, &mut cache_updates);
+                rbm!(copy).implement_insertion_blueprint(&insertion_bp_copy, &mut cache_updates, self.instance);
                 debug_assert!(assertions::all_weak_references_alive(rb!(copy).sorted_empty_nodes()));
 
                 cache_updates
@@ -243,7 +244,7 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::problem_matches_solution(self, solution));
     }
 
-    pub fn restore_from_instance_solution(&mut self, solution: &InstanceSolution<'a>) {
+    pub fn restore_from_instance_solution(&mut self, solution: &SendableSolution<'a>) {
         todo!()
     }
 

@@ -8,7 +8,7 @@ use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint
 use crate::core::entities::node::Node;
 use crate::optimization::config::Config;
 use crate::optimization::rr::cache_updates::CacheUpdates;
-use crate::{EPOCH, Orientation};
+use crate::{EPOCH, Instance, Orientation};
 use crate::util::assertions;
 use crate::util::macros::{rb, rbm};
 
@@ -61,7 +61,7 @@ impl<'a> Layout<'a> {
     }
 
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>) {
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, instance : &'a Instance) {
         debug_assert!(assertions::node_belongs_to_layout(&blueprint.original_node().upgrade().unwrap(),self));
         let original_node = blueprint.original_node().upgrade().unwrap();
         let parent_node = rbm!(original_node).parent().as_ref().unwrap().upgrade().unwrap();
@@ -70,7 +70,7 @@ impl<'a> Layout<'a> {
         let mut replacements = Vec::new();
         let mut all_created_nodes = Vec::new();
         for node_blueprint in blueprint.replacements().iter() {
-            let node = Node::new_from_blueprint(node_blueprint, Rc::downgrade(&parent_node), &mut all_created_nodes);
+            let node = Node::new_from_blueprint(node_blueprint, Rc::downgrade(&parent_node), &mut all_created_nodes, instance);
             replacements.push(node);
         }
         //(un)register applicable nodes

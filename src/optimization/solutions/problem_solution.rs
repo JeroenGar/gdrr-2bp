@@ -5,10 +5,10 @@ use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::Instance;
 use crate::optimization::problem::Problem;
-use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
 use crate::util::macros::{rb,rbm};
 use std::ops::Deref;
+use crate::optimization::solutions::solution::Solution;
 
 #[derive(Debug, Clone)]
 pub struct ProblemSolution<'a> {
@@ -90,41 +90,24 @@ impl<'a> ProblemSolution<'a> {
     pub fn layouts(&self) -> &IndexMap<usize, Rc<Layout<'a>>> {
         &self.layouts
     }
-    pub fn cost(&self) -> &Cost {
-        &self.cost
-    }
     pub fn id(&self) -> usize {
         self.id
     }
-    pub fn parttype_qtys(&self) -> &Vec<usize> {
-        &self.parttype_qtys
-    }
-    pub fn sheettype_qtys(&self) -> &Vec<usize> {
-        &self.sheettype_qtys
-    }
 }
 
-impl<'a> Solution<'a> for ProblemSolution<'a>{
+impl<'a> Solution for ProblemSolution<'a>{
     fn cost(&self) -> &Cost {
         &self.cost
     }
-
-    fn instance(&self) -> &Instance {
-        self.instance
+    fn n_layouts(&self) -> usize {
+        self.layouts.len()
     }
-
-    fn layouts(&self) -> &IndexMap<usize, Rc<Layout<'a>>> {
-        &self.layouts
-    }
-
     fn parttype_qtys(&self) -> &Vec<usize> {
         &self.parttype_qtys
     }
-
     fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
     }
-
     fn usage(&self) -> f64 {
         self.usage
     }

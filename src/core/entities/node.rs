@@ -7,7 +7,7 @@ use std::rc::Weak;
 use by_address::ByAddress;
 use indexmap::IndexMap;
 
-use crate::{Orientation, PartType};
+use crate::{Instance, Orientation, PartType};
 use crate::core::cost::Cost;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
@@ -53,13 +53,16 @@ impl<'a> Node<'a> {
         top_node
     }
 
-    pub fn new_from_blueprint(blueprint: &NodeBlueprint<'a>, parent: Weak<RefCell<Node<'a>>>, all_created_nodes: &mut Vec<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
+    pub fn new_from_blueprint(blueprint: &NodeBlueprint, parent: Weak<RefCell<Node<'a>>>, all_created_nodes: &mut Vec<Weak<RefCell<Node<'a>>>>, instance : &'a Instance) -> Rc<RefCell<Node<'a>>> {
         let node = Node {
             width: blueprint.width(),
             height: blueprint.height(),
             children: Vec::new(),
             parent: Some(parent),
-            parttype: blueprint.parttype(),
+            parttype: match blueprint.parttype_id(){
+                Some(id) => Some(instance.get_parttype(id)),
+                None => None
+            },
             next_cut_orient: blueprint.next_cut_orient(),
         };
 
@@ -67,7 +70,7 @@ impl<'a> Node<'a> {
         all_created_nodes.push(Rc::downgrade(&node));
 
         let children = blueprint.children().iter().map(|child_bp| {
-            Node::new_from_blueprint(child_bp, Rc::downgrade(&node), all_created_nodes)
+            Node::new_from_blueprint(child_bp, Rc::downgrade(&node), all_created_nodes, instance)
         }).collect();
 
         rbm!(node).children = children;

@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use colored::*;
 use crate::core::cost::Cost;
-use crate::optimization::solutions::instance_solution::InstanceSolution;
+use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::macros::{timed_println};

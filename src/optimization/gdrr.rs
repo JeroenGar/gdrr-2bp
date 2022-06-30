@@ -24,6 +24,7 @@ use crate::util::macros::{rb, rbm, timed_println};
 use crate::util::multi_map::MultiMap;
 use crate::util::util;
 use colored::*;
+use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions::insertion_option_cache_is_valid;
 
 pub struct GDRR<'a> {
