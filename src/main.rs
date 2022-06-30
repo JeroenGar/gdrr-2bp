@@ -71,7 +71,7 @@ fn main() {
 
 
         let handle = thread::Builder::new().name(thread_name).spawn(move || {
-            let local_sol_collector = LocalSolCollector::new(u64::MAX, rx_sync, tx_solution_report_thread);
+            let local_sol_collector = LocalSolCollector::new(rx_sync, tx_solution_report_thread);
             let mut gdrr = GDRR::new(&instance_thread, &config_thread, local_sol_collector);
             gdrr.lahc();
         });

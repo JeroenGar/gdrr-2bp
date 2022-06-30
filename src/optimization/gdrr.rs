@@ -114,6 +114,9 @@ impl<'a> GDRR<'a> {
                 lahc_history.push_back(empty_problem_cost.clone());
             }
             n_iterations += 1;
+            if n_iterations % 1000 == 0 {
+                self.local_sol_collector.rx_sync();
+            }
 
             debug_assert!(lahc_history.len() <= self.config.history_length, "{}", lahc_history.len());
         }

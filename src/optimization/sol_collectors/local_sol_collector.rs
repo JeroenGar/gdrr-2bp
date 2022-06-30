@@ -15,29 +15,27 @@ pub struct LocalSolCollector<'a> {
     best_complete_solution: Option<ProblemSolution<'a>>,
     best_incomplete_solution: Option<ProblemSolution<'a>>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
-    material_limit: u64,
+    material_limit: Option<u64>,
     rx_sync: Receiver<SyncMessage>,
     tx_solution_report: Sender<SolutionReportMessage>,
-    incumbent_complete: Option<Cost>,
-    incumbent_incomplete: Option<Cost>,
-    terminate: bool,
     best_complete_transferred: bool,
-    best_incomplete_transferred: bool
+    best_incomplete_transferred: bool,
+    terminate: bool,
+
 }
 
 
 impl<'a> LocalSolCollector<'a> {
-    pub fn new(material_limit: u64,
-               rx_sync: Receiver<SyncMessage>,
+    pub fn new(rx_sync: Receiver<SyncMessage>,
                tx_solution_report: Sender<SolutionReportMessage>) -> Self {
         let best_complete_solution = None;
         let best_incomplete_solution = None;
         let cost_comparator = crate::COST_COMPARATOR;
-        let incumbent_complete = None;
-        let incumbent_incomplete = None;
+        let material_limit = None;
+        let best_complete_transferred = false;
+        let best_incomplete_transferred = false;
         let terminate = false;
-        let best_complete_tx = false;
-        let best_incomplete_tx = false;
+
 
         Self {
             best_complete_solution,
@@ -46,11 +44,9 @@ impl<'a> LocalSolCollector<'a> {
             material_limit,
             rx_sync,
             tx_solution_report,
-            incumbent_complete,
-            incumbent_incomplete,
+            best_complete_transferred,
+            best_incomplete_transferred,
             terminate,
-            best_complete_transferred: best_complete_tx,
-            best_incomplete_transferred: best_incomplete_tx,
         }
     }
 
@@ -58,13 +54,13 @@ impl<'a> LocalSolCollector<'a> {
         self.rx_sync();
         match &self.best_incomplete_solution {
             None => {
-                if solution.cost().material_cost < self.material_limit {
+                if solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX) {
                     self.accept_solution(solution);
                     self.tx_solution_report();
                 }
             }
             Some(best_incomplete_solution) => {
-                debug_assert!(solution.cost().material_cost < self.material_limit);
+                debug_assert!(solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX));
                 if (self.cost_comparator)(&solution.cost(), &best_incomplete_solution.cost()) == Ordering::Less {
                     self.accept_solution(solution);
                     self.tx_solution_report();
@@ -87,20 +83,14 @@ impl<'a> LocalSolCollector<'a> {
         };
     }
 
-    fn rx_sync(&mut self) {
+    pub fn rx_sync(&mut self) {
         while let Ok(message) = self.rx_sync.try_recv() {
             match message {
-                SyncMessage::NewIncumbentIncomplete(reported_cost) => {
-                    //timed_thread_println!("rx {:.3}%", reported_cost.part_area_fraction_included() * 100.0);
-                    self.incumbent_incomplete = Some(reported_cost);
-                }
-                SyncMessage::NewIncumbentComplete(reported_cost) => {
-                    timed_thread_println!("syncing matlimit: {}", reported_cost.material_cost);
-                    if reported_cost.material_cost < self.material_limit {
-                        self.lower_matlimit(reported_cost.material_cost);
+                SyncMessage::SyncMatLimit(mat_limit) => {
+                    if mat_limit < self.material_limit.unwrap_or(u64::MAX) {
+                        timed_thread_println!("Syncing lower matlimit: {}", mat_limit);
+                        self.lower_matlimit(mat_limit);
                     }
-                    self.incumbent_complete = Some(reported_cost);
-                    self.incumbent_incomplete = None;
                 }
                 SyncMessage::Terminate => {
                     timed_thread_println!("{}", "Terminate received".red());
@@ -114,15 +104,21 @@ impl<'a> LocalSolCollector<'a> {
         match self.best_incomplete_solution.as_ref() {
             Some(best_incomplete_solution) => {
                 if !self.best_incomplete_transferred {
-                    if self.incumbent_incomplete.is_none() ||
-                        (self.cost_comparator)(best_incomplete_solution.cost(), &self.incumbent_incomplete.as_ref().unwrap()) == Ordering::Less {
-                        let thread_name = std::thread::current().name().unwrap().parse().unwrap();
-                        let cost = best_incomplete_solution.cost().clone();
-                        timed_thread_println!("{}", "Sending solution stats");
-                        self.tx_solution_report.send(
+                    let thread_name = std::thread::current().name().unwrap().parse().unwrap();
+                    let cost = best_incomplete_solution.cost().clone();
+                    let message = match self.material_limit {
+                        Some(_) => {
+                            //timed_thread_println!("{}", "Sending solution stats");
                             SolutionReportMessage::NewIncompleteStats(thread_name, SolutionStats::new(cost, best_incomplete_solution.usage(), best_incomplete_solution.n_layouts()))
-                        ).expect("Failed to send solution report message");
-                    }
+                        }
+                        None => {
+                            //timed_thread_println!("{}", "Sending full incomplete solution");
+                            let sendable_solution = SendableSolution::new(&best_incomplete_solution);
+                            SolutionReportMessage::NewIncompleteSolution(thread_name, sendable_solution)
+                        }
+                    };
+                    self.tx_solution_report.send(message).expect("Failed to send solution report message");
+
                     self.best_incomplete_transferred = true;
                 }
             }
@@ -131,15 +127,13 @@ impl<'a> LocalSolCollector<'a> {
         match self.best_complete_solution.as_ref() {
             Some(best_complete_solution) => {
                 if !self.best_complete_transferred {
-                    if self.incumbent_complete.is_none() ||
-                        best_complete_solution.cost().material_cost < self.incumbent_complete.as_ref().unwrap().material_cost {
-                        let thread_name = std::thread::current().name().unwrap().parse().unwrap();
-                        let sendable_solution = SendableSolution::new(best_complete_solution);
-                        timed_thread_println!("{}", "Sending full solution".green());
-                        self.tx_solution_report.send(
-                            SolutionReportMessage::NewCompleteSolution(thread_name, sendable_solution)
-                        ).expect("Failed to send solution report message");
-                    }
+                    let thread_name = std::thread::current().name().unwrap().parse().unwrap();
+                    let sendable_solution = SendableSolution::new(best_complete_solution);
+                    //timed_thread_println!("{}", "Sending full solution".green());
+                    self.tx_solution_report.send(
+                        SolutionReportMessage::NewCompleteSolution(thread_name, sendable_solution)
+                    ).expect("Failed to send solution report message");
+
                     self.best_complete_transferred = true;
                 }
             }
@@ -148,8 +142,8 @@ impl<'a> LocalSolCollector<'a> {
     }
 
     fn lower_matlimit(&mut self, material_limit: u64) {
-        debug_assert!(material_limit <= self.material_limit);
-        self.material_limit = material_limit;
+        debug_assert!(material_limit <= self.material_limit.unwrap_or(u64::MAX));
+        self.material_limit = Some(material_limit);
         self.best_incomplete_solution = None;
     }
 
@@ -164,7 +158,7 @@ impl<'a> LocalSolCollector<'a> {
     }
 
     pub fn material_limit(&self) -> u64 {
-        self.material_limit
+        self.material_limit.unwrap_or(u64::MAX)
     }
 
 

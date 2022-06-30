@@ -22,6 +22,7 @@ pub struct GlobalSolCollector {
     instance: Arc<Instance>,
     config : Arc<Config>,
     best_complete_solution: Option<SendableSolution>,
+    best_incomplete_solution: Option<SendableSolution>,
     best_incomplete_cost: Option<Cost>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
     material_limit: u64,
@@ -38,6 +39,7 @@ impl GlobalSolCollector {
 
     ) -> Self {
         let best_complete_solution = None;
+        let best_incomplete_solution = None;
         let best_incomplete_cost = None;
         let cost_comparator = crate::COST_COMPARATOR;
 
@@ -45,6 +47,7 @@ impl GlobalSolCollector {
             instance,
             config,
             best_complete_solution,
+            best_incomplete_solution,
             best_incomplete_cost,
             cost_comparator,
             material_limit,
@@ -74,6 +77,9 @@ impl GlobalSolCollector {
                     SolutionReportMessage::NewIncompleteStats(thread_name, stats) => {
                         self.report_new_incomplete_cost(thread_name, stats);
                     },
+                    SolutionReportMessage::NewIncompleteSolution(thread_name, solution) => {
+                        self.report_new_incomplete_solution(thread_name, solution);
+                    }
                     _ => { panic!("unexpected message type"); }
                 }
             }
@@ -118,13 +124,25 @@ impl GlobalSolCollector {
             if self.best_complete_solution.is_none()
                 || solution.cost().material_cost < self.best_complete_solution.as_ref().unwrap().cost().material_cost {
                 self.best_incomplete_cost = None;
+                self.best_incomplete_solution = None;
                 self.material_limit = solution.cost().material_cost;
                 timed_println!("[{}]\t{}{}", thread_name, "<complete>\t".cyan().bold(), util::solution_stats_string(&solution).cyan().bold());
                 self.best_complete_solution = Some(solution.clone());
 
                 for tx_sync in &self.tx_syncs {
-                    tx_sync.send(SyncMessage::NewIncumbentComplete(solution.cost().clone())).expect("Error sending new best complete solution message");
+                    tx_sync.send(SyncMessage::SyncMatLimit(solution.cost().material_cost)).expect("Error sending sync matlimit message");
                 }
+            }
+        }
+    }
+
+    fn report_new_incomplete_solution(&mut self, thread_name : String, solution: SendableSolution){
+        if self.best_complete_solution.is_none(){
+            if self.best_incomplete_solution.is_none()
+                || (self.cost_comparator)(&solution.cost(), &self.best_incomplete_solution.as_ref().unwrap().cost()) == Ordering::Less {
+                let part_area_included_pct = (self.instance.total_part_area() - solution.cost().part_area_excluded) as f64 / self.instance.total_part_area() as f64 * 100.0;
+                timed_println!("[{}]\t{}{}", thread_name, "<incomplete>\t".bright_green(), util::solution_stats_string(&solution));
+                self.best_incomplete_solution = Some(solution.clone());
             }
         }
     }
@@ -135,15 +153,6 @@ impl GlobalSolCollector {
                 || (self.cost_comparator)(&stats.cost, &self.best_incomplete_cost.as_ref().unwrap()) == Ordering::Less {
                 timed_println!("[{}]\t{}{}", thread_name, "<incomplete>\t".bright_green(), util::compact_stats_string(&stats));
                 self.best_incomplete_cost = Some(stats.cost.clone());
-
-                for tx_sync in &self.tx_syncs {
-                    match tx_sync.send(SyncMessage::NewIncumbentIncomplete(stats.cost.clone())) {
-                        Ok(_) => {},
-                        Err(e) => {
-                            println!("Error sending new best incomplete solution message: {}", e);
-                        }
-                    }
-                }
             }
         }
     }
