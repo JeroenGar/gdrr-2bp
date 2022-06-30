@@ -52,13 +52,13 @@ impl NodeBlueprint {
 
     pub fn calculate_cost(&self) -> Cost {
         if self.parttype_id.is_some() {
-            return Cost::new(0, 0.0, 0);
+            return Cost::new(0, 0.0, 0, 0);
         }
         else if self.children.is_empty() {
-            return Cost::new(0, leftover_valuator::valuate(self.area()), 0);
+            return Cost::new(0, leftover_valuator::valuate(self.area()), 0, 0);
         }
         else {
-            let mut cost = Cost::new(0, 0.0, 0);
+            let mut cost = Cost::new(0, 0.0, 0, 0);
             for child in &self.children {
                 let child_cost = child.calculate_cost();
                 cost.add(&child_cost);

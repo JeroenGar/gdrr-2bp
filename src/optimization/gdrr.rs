@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use colored::*;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::rngs::{StdRng, ThreadRng};
@@ -13,45 +14,38 @@ use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::insertion_option::InsertionOption;
-use crate::optimization::collectors::solution_collector::SolutionCollector;
 use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
+use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
+use crate::optimization::solutions::solution::Solution;
 use crate::util::{assertions, blink};
+use crate::util::assertions::insertion_option_cache_is_valid;
 use crate::util::biased_sampler::BiasedSampler;
-use crate::util::macros::{rb, rbm, timed_println};
+use crate::util::macros::{rb, rbm, timed_println, timed_thread_println};
 use crate::util::multi_map::MultiMap;
 use crate::util::util;
-use colored::*;
-use crate::optimization::solutions::solution::Solution;
-use crate::util::assertions::insertion_option_cache_is_valid;
 
 pub struct GDRR<'a> {
     config: &'a Config,
     instance: &'a Instance,
     problem: Problem<'a>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
-    solution_collector: SolutionCollector<'a>,
+    local_sol_collector: LocalSolCollector<'a>,
 }
 
 
 impl<'a> GDRR<'a> {
-    pub fn new(instance: &'a Instance, config: &'a Config) -> Self {
+    pub fn new(instance: &'a Instance, config: &'a Config, local_sol_collector: LocalSolCollector<'a>) -> Self {
         let problem = Problem::new(instance);
-        let cost_comparator = |a: &Cost, b: &Cost| {
-            match a.part_area_excluded.cmp(&b.part_area_excluded) {
-                Ordering::Equal => a.leftover_value.partial_cmp(&b.leftover_value).unwrap().reverse(),
-                other => other
-            }
-        };
-        let solution_listener = SolutionCollector::new(cost_comparator.clone(), u64::MAX);
+        let cost_comparator = crate::COST_COMPARATOR;
         Self {
             config,
             instance,
             problem,
             cost_comparator,
-            solution_collector: solution_listener,
+            local_sol_collector,
         }
     }
 
@@ -61,18 +55,17 @@ impl<'a> GDRR<'a> {
         let max_rr_iterations = self.config.max_rr_iterations;
         let max_run_time = self.config.max_run_time;
 
-        let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area());
+        let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area(), 0);
 
         let mut lahc_history: VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length);
         lahc_history.push_back(empty_problem_cost.clone());
         let mut n_iterations = 0;
         let mut n_accepted = 0;
         let mut n_improved = 0;
-        let mut mat_limit = self.solution_collector.material_limit();
+        let mut mat_limit = self.local_sol_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
 
-        while n_iterations < max_rr_iterations
-            && (std::time::Instant::now() - start_time).as_secs() < max_run_time as u64 {
+        while n_iterations < max_rr_iterations && !self.local_sol_collector.terminate() {
             let mat_limit_budget: i128 = match local_optimum.as_ref() {
                 Some(solution) => mat_limit as i128 - 1 - solution.cost().material_cost as i128,
                 None => mat_limit as i128 - 1 - self.problem.cost().material_cost as i128,
@@ -101,7 +94,7 @@ impl<'a> GDRR<'a> {
                     for _ in 0..(self.config.history_length - lahc_history.len()) {
                         lahc_history.push_back(cost.clone());
                     }
-                    self.solution_collector.report_problem_solution(local_optimum.as_ref().unwrap());
+                    self.local_sol_collector.report_problem_solution(local_optimum.as_ref().unwrap());
                     n_improved += 1;
                 } else {
                     //Current local optimum is not better, add the best cost to the history queue
@@ -114,8 +107,8 @@ impl<'a> GDRR<'a> {
                 self.problem.restore_from_problem_solution(local_optimum.as_ref().unwrap());
             }
 
-            if self.solution_collector.material_limit() < mat_limit {
-                mat_limit = self.solution_collector.material_limit();
+            if self.local_sol_collector.material_limit() < mat_limit {
+                mat_limit = self.local_sol_collector.material_limit();
                 local_optimum = None;
                 lahc_history.clear();
                 lahc_history.push_back(empty_problem_cost.clone());
@@ -124,12 +117,19 @@ impl<'a> GDRR<'a> {
 
             debug_assert!(lahc_history.len() <= self.config.history_length, "{}", lahc_history.len());
         }
-        timed_println!("GDRR finished: {:.2} iter/s, {:.2} acc/s, {} impr",
+        timed_thread_println!("{}:\t ({:.2} iter/s, {:.2} acc/s, {} impr)",
+                "GDRR finished".bright_magenta(),
                  (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
                  (n_accepted as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
                 n_improved
         );
-        timed_println!("{}: {}", "Final solution".bright_yellow().bold(), util::solution_stats_string(self.solution_collector.best_complete_solution().as_ref().unwrap()));
+        timed_thread_println!("{}:\t {}", "Final incomp".bright_yellow(),
+            match self.local_sol_collector.best_incomplete_solution().as_ref() {
+                Some(sol) => {
+                    util::solution_stats_string(sol)
+                }
+                None => "()".to_string()
+            });
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {

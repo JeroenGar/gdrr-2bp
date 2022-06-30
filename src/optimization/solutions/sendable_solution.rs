@@ -9,8 +9,7 @@ use crate::optimization::solutions::solution::Solution;
 use crate::util::macros::{rb,rbm};
 
 #[derive(Debug, Clone)]
-pub struct SendableSolution<'a> {
-    instance : &'a Instance,
+pub struct SendableSolution {
     layouts : Vec<SendableLayout>,
     cost : Cost,
     usage : f64,
@@ -18,9 +17,8 @@ pub struct SendableSolution<'a> {
     sheettype_qtys : Vec<usize>
 }
 
-impl<'a> SendableSolution<'a>{
-    pub fn new(problem_solution : &ProblemSolution<'a>) -> SendableSolution<'a>{
-        let instance = problem_solution.instance();
+impl SendableSolution{
+    pub fn new(problem_solution : &ProblemSolution) -> SendableSolution{
         let layouts = problem_solution.layouts().iter().map(|(id, l)| SendableLayout::new(l)).collect();
         let cost = problem_solution.cost().clone();
         let usage = problem_solution.usage();
@@ -28,7 +26,6 @@ impl<'a> SendableSolution<'a>{
         let sheettype_qtys = problem_solution.sheettype_qtys().clone();
 
         Self {
-            instance,
             layouts,
             cost,
             usage,
@@ -39,7 +36,7 @@ impl<'a> SendableSolution<'a>{
 }
 
 
-impl<'a> Solution for SendableSolution<'a> {
+impl Solution for SendableSolution {
     fn cost(&self) -> &Cost {
         &self.cost
     }

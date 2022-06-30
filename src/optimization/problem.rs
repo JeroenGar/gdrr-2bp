@@ -155,10 +155,12 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&self) -> Cost {
-        let mut cost = self.layouts.iter().fold(Cost::new(0, 0.0, 0), |acc, l| acc + rb!(l).cost());
+        let mut cost = self.layouts.iter().fold(Cost::new(0, 0.0, 0,0), |acc, l| acc + rb!(l).cost());
 
         cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
             .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
+
+        cost.part_area_included = self.instance.total_part_area() - cost.part_area_excluded;
 
         cost
     }
@@ -244,7 +246,7 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::problem_matches_solution(self, solution));
     }
 
-    pub fn restore_from_instance_solution(&mut self, solution: &SendableSolution<'a>) {
+    pub fn restore_from_instance_solution(&mut self, solution: &SendableSolution) {
         todo!()
     }
 
