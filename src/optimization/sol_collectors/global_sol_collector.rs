@@ -58,6 +58,7 @@ impl GlobalSolCollector {
 
     pub fn monitor(&mut self, gdrr_thread_handlers: Vec<thread::JoinHandle<()>>) {
         let start_time = std::time::Instant::now();
+        let max_run_time = self.config.max_run_time.unwrap_or(usize::MAX);
         let running = Arc::new(AtomicBool::new(true));
         let r = running.clone();
 
@@ -66,7 +67,7 @@ impl GlobalSolCollector {
         }).expect("Error setting Ctrl-C handler");
 
         while running.load(atomic::Ordering::SeqCst) &&
-            (time::Instant::now() - start_time).as_secs() < self.config.max_run_time as u64 {
+            (time::Instant::now() - start_time).as_secs() < max_run_time as u64 {
             thread::sleep(MONITOR_INTERVAL);
 
             while let Ok(message) = self.rx_solution_report.try_recv() {

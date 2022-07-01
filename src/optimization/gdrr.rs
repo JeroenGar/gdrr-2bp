@@ -52,8 +52,8 @@ impl<'a> GDRR<'a> {
     pub fn lahc(&'a mut self) {
         let start_time = std::time::Instant::now();
 
-        let max_rr_iterations = self.config.max_rr_iterations;
-        let max_run_time = self.config.max_run_time;
+        let max_rr_iterations = self.config.max_rr_iterations.unwrap_or(usize::MAX);
+        let max_run_time = self.config.max_run_time.unwrap_or(usize::MAX);
 
         let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area(), 0);
 

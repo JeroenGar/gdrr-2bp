@@ -87,12 +87,9 @@ fn main() {
 
     global_sol_collector.monitor(gdrr_thread_handlers);
 
-
-
     let mut json_solution = match (global_sol_collector.best_complete_solution().as_ref(),global_sol_collector.best_incomplete_solution().as_ref()){
         (Some(best_complete_solution), _) => {
             Some(parser::generate_json_solution(&json_instance, best_complete_solution, &config_file_path))
-
         },
         (None, Some(best_incomplete_solution)) => {
             Some(parser::generate_json_solution(&json_instance, best_incomplete_solution, &config_file_path))
@@ -108,6 +105,6 @@ fn main() {
         timed_println!("Solution written to {}", result_file_path.display());
     }
     else{
-        timed_println!("No solution found");
+        timed_println!("No solution written");
     }
 }
