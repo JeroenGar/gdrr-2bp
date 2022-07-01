@@ -16,7 +16,7 @@ use crate::util::macros::timed_println;
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 use crate::util::util;
 
-const MONITOR_INTERVAL: Duration = time::Duration::from_millis(100);
+const MONITOR_INTERVAL: Duration = time::Duration::from_millis(10);
 
 pub struct GlobalSolCollector {
     instance: Arc<Instance>,
@@ -126,7 +126,7 @@ impl GlobalSolCollector {
                 self.best_incomplete_cost = None;
                 self.best_incomplete_solution = None;
                 self.material_limit = Some(solution.cost().material_cost);
-                timed_println!("[{}]\t{}{}", thread_name, "<complete>\t\t".cyan().bold(), util::solution_stats_string(&solution).cyan().bold());
+                timed_println!("[{}]\t{}{}", thread_name, "<complete>\t".cyan().bold(), util::solution_stats_string(&solution).cyan().bold());
                 self.best_complete_solution = Some(solution.clone());
 
                 for tx_sync in &self.tx_syncs {

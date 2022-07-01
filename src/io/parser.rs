@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde_json::json;
@@ -5,10 +6,11 @@ use serde_json::json;
 use crate::{Instance, JsonInstance, Orientation, PartType, SheetType};
 use crate::core::entities::sendable_layout::SendableLayout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
-use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution};
+use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution, JsonSolutionStats};
 use crate::io::json_format::JsonCPNodeType::Structure;
 use crate::optimization::config::Config;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
+use crate::optimization::solutions::solution::Solution;
 use crate::Rotation::Default;
 
 pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> Instance {
@@ -49,7 +51,7 @@ pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> I
     Instance::new(parts, sheets)
 }
 
-pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableSolution) -> JsonSolution {
+pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableSolution, config_path : &PathBuf) -> JsonSolution {
     let name = json_instance.name.clone();
     let sheettypes = json_instance.sheettypes.clone();
     let parttypes = json_instance.parttypes.clone();
@@ -58,11 +60,21 @@ pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableS
         |l| { convert_layout_to_json_cp(l) }
     ).collect::<Vec<JsonCP>>();
 
+    let statistics = JsonSolutionStats{
+        usage_pct : (solution.usage() * 100.0) as f32,
+        part_area_included_pct : (solution.cost().part_area_fraction_included() * 100.0) as f32,
+        n_objects_used : solution.n_layouts(),
+        material_cost : solution.cost().material_cost,
+        run_time_ms : crate::EPOCH.elapsed().as_millis() as usize,
+        config_path : config_path.to_str().unwrap().to_string()
+    };
+
     JsonSolution{
         name,
         sheettypes,
         parttypes,
-        cutting_patterns
+        cutting_patterns,
+        statistics
     }
 }
 

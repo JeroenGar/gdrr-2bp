@@ -20,6 +20,9 @@ pub struct JsonSolution {
     pub parttypes: Vec<JsonPartType>,
     #[serde(rename = "CuttingPatterns")]
     pub cutting_patterns: Vec<JsonCP>,
+    #[serde(rename = "Statistics")]
+    pub statistics: JsonSolutionStats,
+
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -78,5 +81,16 @@ pub enum JsonCPNodeType {
     Structure,
     Item,
     Leftover,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "PascalCase")]
+pub struct JsonSolutionStats {
+    pub usage_pct : f32,
+    pub part_area_included_pct : f32,
+    pub n_objects_used : usize,
+    pub material_cost : u64,
+    pub run_time_ms : usize,
+    pub config_path : String,
 }
 

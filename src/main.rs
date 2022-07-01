@@ -91,11 +91,11 @@ fn main() {
 
     let mut json_solution = match (global_sol_collector.best_complete_solution().as_ref(),global_sol_collector.best_incomplete_solution().as_ref()){
         (Some(best_complete_solution), _) => {
-            Some(parser::generate_json_solution(&json_instance, best_complete_solution))
+            Some(parser::generate_json_solution(&json_instance, best_complete_solution, &config_file_path))
 
         },
         (None, Some(best_incomplete_solution)) => {
-            Some(parser::generate_json_solution(&json_instance, best_incomplete_solution))
+            Some(parser::generate_json_solution(&json_instance, best_incomplete_solution, &config_file_path))
         },
         (None, None) => {
             None
