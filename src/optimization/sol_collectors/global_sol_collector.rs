@@ -126,7 +126,7 @@ impl GlobalSolCollector {
                 self.best_incomplete_cost = None;
                 self.best_incomplete_solution = None;
                 self.material_limit = Some(solution.cost().material_cost);
-                timed_println!("[{}]\t{}{}", thread_name, "<complete>\t".cyan().bold(), util::solution_stats_string(&solution).cyan().bold());
+                timed_println!("[{}]\t{}{}", thread_name, "<complete>\t\t".cyan().bold(), util::solution_stats_string(&solution).cyan().bold());
                 self.best_complete_solution = Some(solution.clone());
 
                 for tx_sync in &self.tx_syncs {
@@ -155,5 +155,19 @@ impl GlobalSolCollector {
                 self.best_incomplete_cost = Some(stats.cost.clone());
             }
         }
+    }
+
+
+    pub fn best_complete_solution(&self) -> &Option<SendableSolution> {
+        &self.best_complete_solution
+    }
+    pub fn best_incomplete_solution(&self) -> &Option<SendableSolution> {
+        &self.best_incomplete_solution
+    }
+    pub fn best_incomplete_cost(&self) -> &Option<Cost> {
+        &self.best_incomplete_cost
+    }
+    pub fn material_limit(&self) -> Option<u64> {
+        self.material_limit
     }
 }

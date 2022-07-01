@@ -33,6 +33,10 @@ impl SendableSolution{
             sheettype_qtys
         }
     }
+
+    pub fn layouts(&self) -> &Vec<SendableLayout> {
+        &self.layouts
+    }
 }
 
 

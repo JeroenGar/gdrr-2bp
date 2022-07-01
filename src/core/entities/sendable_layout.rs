@@ -25,4 +25,18 @@ impl SendableLayout{
     pub fn convert_to_layout(&self, instance : &Instance) -> Layout{
         todo!();
     }
+
+
+    pub fn sheettype_id(&self) -> usize {
+        self.sheettype_id
+    }
+    pub fn top_node(&self) -> &NodeBlueprint {
+        &self.top_node
+    }
+    pub fn cost(&self) -> &Cost {
+        &self.cost
+    }
+    pub fn usage(&self) -> f64 {
+        self.usage
+    }
 }

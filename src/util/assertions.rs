@@ -8,7 +8,7 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
-use crate::{Orientation, PartType};
+use crate::{Orientation, PartType, SheetType};
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::util::macros::{rb,rbm};
 
@@ -314,5 +314,23 @@ pub fn cached_empty_nodes_correct<'a>(layout : &Layout<'a>, cached_empty_nodes :
         }
     }
 
+    return true;
+}
+
+pub fn instance_parttypes_and_sheettypes_are_correct(parttypes : &Vec<(PartType,usize)>, sheettypes : &Vec<(SheetType,usize)>) -> bool{
+    let mut id = 0;
+    for (parttype,qty) in parttypes {
+        if parttype.id() != id {
+            return false;
+        }
+        id += 1;
+    }
+    let mut id = 0;
+    for (sheettype,qty) in sheettypes {
+        if sheettype.id() != id {
+            return false;
+        }
+        id += 1;
+    }
     return true;
 }

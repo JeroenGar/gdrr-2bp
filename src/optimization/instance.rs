@@ -2,6 +2,7 @@ use std::iter::Map;
 
 use crate::core::entities::parttype::PartType;
 use crate::core::entities::sheettype::SheetType;
+use crate::util::assertions;
 
 #[derive(Debug)]
 pub struct Instance {
@@ -13,13 +14,7 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(mut parts: Vec<(PartType, usize)>, mut sheets: Vec<(SheetType, usize)>) -> Self {
-        //Assign IDs to parttypes and sheettypes
-        parts.iter_mut().enumerate().for_each(|(i, (parttype, qty))| {
-            parttype.set_id(i);
-        });
-        sheets.iter_mut().enumerate().for_each(|(i, (sheettype, qty))| {
-            sheettype.set_id(i);
-        });
+        assert!(assertions::instance_parttypes_and_sheettypes_are_correct(&parts, &sheets));
 
         let total_part_area = parts.iter().map(|(parttype, qty)| parttype.area() * (*qty as u64)).sum();
         let total_part_qty = parts.iter().map(|(_,qty)| *qty).sum();

@@ -4,7 +4,7 @@ use crate::Orientation;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SheetType {
-    id: Option<usize>,
+    id: usize,
     width: u64,
     height: u64,
     value: u64,
@@ -12,9 +12,9 @@ pub struct SheetType {
 }
 
 impl SheetType {
-    pub fn new(width: u64, height: u64, value: u64, fixed_first_cut_orientation : Option<Orientation>) -> SheetType {
+    pub fn new(id : usize, width: u64, height: u64, value: u64, fixed_first_cut_orientation : Option<Orientation>) -> SheetType {
         SheetType {
-            id: None,
+            id,
             width,
             height,
             value,
@@ -23,13 +23,8 @@ impl SheetType {
     }
 
     pub fn id(&self) -> usize {
-        self.id.unwrap()
+        self.id
     }
-
-    pub fn set_id(&mut self, id: usize) {
-        self.id = Some(id);
-    }
-
 
     pub fn width(&self) -> u64 {
         self.width

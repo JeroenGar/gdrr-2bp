@@ -7,7 +7,7 @@ use crate::Rotation;
 
 #[derive(Debug)]
 pub struct PartType {
-    id: Option<usize>,
+    id: usize,
     width: u64,
     height: u64,
     fixed_rotation: Option<Rotation>,
@@ -16,9 +16,9 @@ pub struct PartType {
 }
 
 impl PartType {
-    pub fn new(width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType {
+    pub fn new(id : usize, width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType {
         PartType {
-            id: None,
+            id,
             width,
             height,
             fixed_rotation,
@@ -28,11 +28,7 @@ impl PartType {
     }
 
     pub fn id(&self) -> usize {
-        self.id.unwrap()
-    }
-
-    pub fn set_id(&mut self, id: usize) {
-        self.id = Some(id);
+        self.id
     }
 
     pub fn width(&self) -> u64 {
@@ -62,26 +58,13 @@ impl PartType {
 
 impl Hash for PartType {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        if self.id.is_some() {
-            self.id.hash(state);
-        } else {
-            self.width.hash(state);
-            self.height.hash(state);
-            self.fixed_rotation.hash(state);
-        }
+        self.id.hash(state);
     }
 }
 
 impl PartialEq for PartType {
     fn eq(&self, other: &PartType) -> bool {
-        return if self.id.is_some() && other.id.is_some() {
-            self.id == other.id
-        } else {
-            self.id == other.id &&
-                self.width == other.width &&
-                self.height == other.height &&
-                self.fixed_rotation == other.fixed_rotation
-        };
+        self.id == other.id
     }
 }
 
