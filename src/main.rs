@@ -7,6 +7,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::time::Instant;
+use std::io::Write;
 
 use once_cell::sync::Lazy;
 
@@ -14,6 +15,7 @@ use crate::core::{entities::parttype::PartType, leftover_valuator, orientation::
 use crate::core::cost::Cost;
 use crate::core::entities::sheettype::SheetType;
 use crate::core::rotation::Rotation;
+use crate::io::html_export::generate_solution;
 use crate::io::json_format::JsonInstance;
 use crate::io::parser;
 use crate::optimization::config::Config;
@@ -42,6 +44,8 @@ fn main() {
     let input_file_path = PathBuf::from(args.get(1).expect("first cmd argument needs to be path to input file"));
     let config_file_path = PathBuf::from(args.get(2).expect("second cmd argument needs to be path to config file"));
     let result_file_path = PathBuf::from(args.get(3).expect("third cmd argument needs to be path to result file"));
+    let html_file_path = PathBuf::from(args.get(4).expect("fourth cmd argument needs to be path to html file"));
+
 
     let input_file = File::open(&input_file_path).expect("input file could not be opened");
     let config_file = File::open(&config_file_path).expect("config file could not be opened");
@@ -101,8 +105,13 @@ fn main() {
 
     if json_solution.is_some() {
         let mut result_file = File::create(&result_file_path).expect("result file could not be created");
-        serde_json::to_writer_pretty(&mut result_file, &json_solution.unwrap()).expect("could not write solution to result file");
-        timed_println!("Solution written to {}", result_file_path.display());
+        serde_json::to_writer_pretty(&mut result_file, json_solution.as_ref().unwrap()).expect("could not write solution to result file");
+        let mut html_file = File::create(&html_file_path).expect("html file could not be created");
+        write!(html_file, "{}", &generate_solution(json_solution.as_ref().unwrap())).expect("html file could not be written");
+
+
+        timed_println!("JSON written to {}", result_file_path.display());
+        timed_println!("HTML written to {}", html_file_path.display());
     }
     else{
         timed_println!("No solution written");

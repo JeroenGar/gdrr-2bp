@@ -287,10 +287,9 @@ impl<'a> Node<'a> {
                 *   *             *   *                          / \
              ---*****          ---*****                         $   *
 
-             This requires two extra available levels and is only allowed if NODE_MUST_HAVE_FULL_PART is disabled
          */
 
-        if node.next_cut_orient == Orientation::Horizontal {
+       if node.next_cut_orient == Orientation::Horizontal {
             let mut copy = NodeBlueprint::new(node.width, node.height, None, node.next_cut_orient);
 
             let remainder_height_top = node.height - part_size.height();

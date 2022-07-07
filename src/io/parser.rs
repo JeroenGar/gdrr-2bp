@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
+use itertools::Itertools;
 
 use serde_json::json;
 
@@ -56,8 +57,9 @@ pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableS
     let sheettypes = json_instance.sheettypes.clone();
     let parttypes = json_instance.parttypes.clone();
 
-    let mut cutting_patterns = solution.layouts().iter().map(
-        |l| { convert_layout_to_json_cp(l) }
+    let mut cutting_patterns = solution.layouts().iter()
+        .sorted_by(|a,b|{a.usage().partial_cmp(&b.usage()).unwrap().reverse()})
+        .map(|l| { convert_layout_to_json_cp(l) }
     ).collect::<Vec<JsonCP>>();
 
     let statistics = JsonSolutionStats{
@@ -81,17 +83,19 @@ pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableS
 pub fn convert_layout_to_json_cp(layout: &SendableLayout) -> JsonCP {
     let object = layout.sheettype_id();
     let root = convert_node_bp_to_json_cp_node(layout.top_node());
+    let usage = layout.usage();
 
     JsonCP{
         object,
-        root
+        root,
+        usage
     }
 }
 
 pub fn convert_node_bp_to_json_cp_node(node: &NodeBlueprint) -> JsonCPNode {
-    let mut children = Vec::new();
-    for child in node.children() {
-        children.push(convert_node_bp_to_json_cp_node(child));
+    let mut json_children = Vec::new();
+    for child in node.children().iter().sorted_by(|a, b| a.calculate_usage().partial_cmp(&b.calculate_usage()).unwrap().reverse()) {
+        json_children.push(convert_node_bp_to_json_cp_node(child));
     }
     let length = node.width();
     let height = node.height();
@@ -122,6 +126,6 @@ pub fn convert_node_bp_to_json_cp_node(node: &NodeBlueprint) -> JsonCPNode {
         orientation,
         node_type,
         item,
-        children
+        children: json_children
     }
 }

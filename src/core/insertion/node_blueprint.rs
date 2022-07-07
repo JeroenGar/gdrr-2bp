@@ -67,6 +67,24 @@ impl NodeBlueprint {
         }
     }
 
+    pub fn calculate_usage(&self) -> f64 {
+        if self.parttype_id.is_some() {
+            1.0
+        } else if self.children.is_empty() {
+            0.0
+        } else {
+            let mut usage = 0.0;
+            for child in &self.children {
+                usage += child.area() as f64 * child.calculate_usage();
+            }
+            usage /= self.area() as f64;
+            debug_assert!(usage <= 1.0);
+            usage
+        }
+    }
+
+
+
     pub fn area(&self) -> u64 {
         self.width * self.height
     }

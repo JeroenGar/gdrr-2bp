@@ -51,6 +51,7 @@ pub struct JsonPartType {
 #[serde(rename_all = "PascalCase")]
 pub struct JsonCP {
     pub object: usize,
+    pub usage: f64,
     pub root : JsonCPNode
 }
 
