@@ -16,7 +16,7 @@ pub fn generate_solution(json_solution: &JsonSolution) -> String {
             }
             body {
                 h1 {
-                    : &json_solution.name;
+                    : format!("Solution {}", &json_solution.name);
                 }
                 h2 {
                     : format!{"{}", "Statistics"}
