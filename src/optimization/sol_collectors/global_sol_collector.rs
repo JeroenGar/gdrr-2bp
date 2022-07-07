@@ -2,13 +2,13 @@ use std::{thread, time};
 use std::cmp::Ordering;
 use std::sync::{Arc, atomic};
 use std::sync::atomic::AtomicBool;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
 use colored::*;
 
-use crate::core::cost::Cost;
 use crate::{Config, Instance};
+use crate::core::cost::Cost;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::optimization::solutions::solution_stats::SolutionStats;
@@ -19,8 +19,8 @@ use crate::util::util;
 const MONITOR_INTERVAL: Duration = time::Duration::from_millis(10);
 
 pub struct GlobalSolCollector {
-    instance: Arc<Instance>,
-    config : Arc<Config>,
+    _instance: Arc<Instance>,
+    config: Arc<Config>,
     best_complete_solution: Option<SendableSolution>,
     best_incomplete_solution: Option<SendableSolution>,
     best_incomplete_cost: Option<Cost>,
@@ -31,11 +31,10 @@ pub struct GlobalSolCollector {
 }
 
 impl GlobalSolCollector {
-    pub fn new(instance: Arc<Instance>,
-               config : Arc<Config>,
+    pub fn new(_instance: Arc<Instance>,
+               config: Arc<Config>,
                tx_syncs: Vec<Sender<SyncMessage>>,
                rx_solution_report: Receiver<SolutionReportMessage>,
-
     ) -> Self {
         let material_limit = None;
         let best_complete_solution = None;
@@ -44,7 +43,7 @@ impl GlobalSolCollector {
         let cost_comparator = crate::COST_COMPARATOR;
 
         Self {
-            instance,
+            _instance,
             config,
             best_complete_solution,
             best_incomplete_solution,
@@ -74,14 +73,13 @@ impl GlobalSolCollector {
                 match message {
                     SolutionReportMessage::NewCompleteSolution(thread_name, solution) => {
                         self.report_new_complete_solution(thread_name, solution);
-                    },
+                    }
                     SolutionReportMessage::NewIncompleteStats(thread_name, stats) => {
                         self.report_new_incomplete_cost(thread_name, stats);
-                    },
+                    }
                     SolutionReportMessage::NewIncompleteSolution(thread_name, solution) => {
                         self.report_new_incomplete_solution(thread_name, solution);
                     }
-                    _ => { panic!("unexpected message type"); }
                 }
             }
             if gdrr_thread_handlers.iter().all(|h| h.is_finished()) {
@@ -92,8 +90,8 @@ impl GlobalSolCollector {
         timed_println!("{}","Terminating global monitor".bold().red());
         //Send the termination signal to all threads
         for tx_sync in &self.tx_syncs {
-            match tx_sync.send(SyncMessage::Terminate){
-                Ok(_) => {},
+            match tx_sync.send(SyncMessage::Terminate) {
+                Ok(_) => {}
                 Err(_) => {}
             }
         }
@@ -102,18 +100,13 @@ impl GlobalSolCollector {
             handler.join().expect("Error joining GDRR thread");
         }
 
-        match (self.best_complete_solution.as_ref(),self.best_incomplete_cost.as_ref()){
-            (Some(best_complete_solution), _) => {
+        match (self.best_complete_solution.as_ref(), self.best_incomplete_cost.as_ref()) {
+            (Some(_best_complete_solution), _) => {
                 timed_println!("{}:\t {}",
                     "Final global solution".cyan().bold(),
                     util::solution_stats_string(self.best_complete_solution.as_ref().unwrap()));
-            },
-            (None, Some(best_incomplete_cost)) => {
-                //todo implement threads can also send full incomplete solutions (at the end or something)
-                /*timed_println!("{}:\t {}",
-                    "Final global (incomplete) solution".green().bold(),
-                    util::solution_stats_string(self.best_incomplete_solution.as_ref().unwrap()));*/
-            },
+            }
+            (None, Some(_best_incomplete_cost)) => {}
             (None, None) => {
                 timed_println!("{}","No Global Solution".bright_red().bold());
             }
@@ -137,18 +130,17 @@ impl GlobalSolCollector {
         }
     }
 
-    fn report_new_incomplete_solution(&mut self, thread_name : String, solution: SendableSolution){
-        if self.best_complete_solution.is_none(){
+    fn report_new_incomplete_solution(&mut self, thread_name: String, solution: SendableSolution) {
+        if self.best_complete_solution.is_none() {
             if self.best_incomplete_solution.is_none()
                 || (self.cost_comparator)(&solution.cost(), &self.best_incomplete_solution.as_ref().unwrap().cost()) == Ordering::Less {
-                let part_area_included_pct = (self.instance.total_part_area() - solution.cost().part_area_excluded) as f64 / self.instance.total_part_area() as f64 * 100.0;
                 timed_println!("[{}]\t{}{}", thread_name, "<incomplete>\t".bright_green(), util::solution_stats_string(&solution));
                 self.best_incomplete_solution = Some(solution.clone());
             }
         }
     }
 
-    fn report_new_incomplete_cost(&mut self, thread_name : String, stats: SolutionStats){
+    fn report_new_incomplete_cost(&mut self, thread_name: String, stats: SolutionStats) {
         if stats.cost.material_cost < self.material_limit.unwrap_or(u64::MAX) {
             if self.best_incomplete_cost.is_none()
                 || (self.cost_comparator)(&stats.cost, &self.best_incomplete_cost.as_ref().unwrap()) == Ordering::Less {

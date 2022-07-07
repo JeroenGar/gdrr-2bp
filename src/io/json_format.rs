@@ -52,7 +52,7 @@ pub struct JsonPartType {
 pub struct JsonCP {
     pub object: usize,
     pub usage: f64,
-    pub root : JsonCPNode
+    pub root: JsonCPNode,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -65,7 +65,7 @@ pub struct JsonCPNode {
     #[serde(rename = "Type")]
     pub node_type: JsonCPNodeType,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub item : Option<usize>,
+    pub item: Option<usize>,
     pub children: Vec<JsonCPNode>,
 }
 
@@ -87,11 +87,11 @@ pub enum JsonCPNodeType {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct JsonSolutionStats {
-    pub usage_pct : f32,
-    pub part_area_included_pct : f32,
-    pub n_objects_used : usize,
-    pub material_cost : u64,
-    pub run_time_ms : usize,
-    pub config_path : String,
+    pub usage_pct: f32,
+    pub part_area_included_pct: f32,
+    pub n_objects_used: usize,
+    pub material_cost: u64,
+    pub run_time_ms: usize,
+    pub config_path: String,
 }
 

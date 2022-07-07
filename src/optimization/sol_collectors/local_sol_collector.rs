@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{Receiver, Sender};
 
 use colored::*;
 
@@ -8,7 +8,7 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::optimization::solutions::solution_stats::SolutionStats;
-use crate::util::macros::{timed_println, timed_thread_println};
+use crate::util::macros::{timed_thread_println};
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 
 pub struct LocalSolCollector<'a> {

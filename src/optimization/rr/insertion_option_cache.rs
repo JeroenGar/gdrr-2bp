@@ -1,20 +1,15 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::io::empty;
 use std::rc::{Rc, Weak};
 
 use by_address::ByAddress;
-use indexmap::IndexSet;
 
 use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
-use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::insertion_option::InsertionOption;
-use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::CacheUpdates;
+use crate::util::macros::{rb};
 use crate::util::multi_map::MultiMap;
-use crate::util::macros::{rb,rbm};
 
 pub struct InsertionOptionCache<'a> {
     option_node_map: MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
@@ -118,7 +113,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     pub fn remove_for_parttype(&mut self, parttype: &'a PartType) {
-        match self.option_parttype_map.get(&parttype){
+        match self.option_parttype_map.get(&parttype) {
             Some(options) => {
                 for insert_opt in options {
                     self.option_node_map.remove(&ByAddress(insert_opt.original_node().upgrade().unwrap()), insert_opt);

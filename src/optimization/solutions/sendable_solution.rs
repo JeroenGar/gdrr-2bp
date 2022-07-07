@@ -1,25 +1,20 @@
-use std::rc::Rc;
-use indexmap::IndexMap;
 use crate::core::cost::Cost;
-use crate::core::entities::layout::Layout;
 use crate::core::entities::sendable_layout::SendableLayout;
-use crate::Instance;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
-use crate::util::macros::{rb,rbm};
 
 #[derive(Debug, Clone)]
 pub struct SendableSolution {
-    layouts : Vec<SendableLayout>,
-    cost : Cost,
-    usage : f64,
-    parttype_qtys : Vec<usize>,
-    sheettype_qtys : Vec<usize>
+    layouts: Vec<SendableLayout>,
+    cost: Cost,
+    usage: f64,
+    parttype_qtys: Vec<usize>,
+    sheettype_qtys: Vec<usize>,
 }
 
-impl SendableSolution{
-    pub fn new(problem_solution : &ProblemSolution) -> SendableSolution{
-        let layouts = problem_solution.layouts().iter().map(|(id, l)| SendableLayout::new(l)).collect();
+impl SendableSolution {
+    pub fn new(problem_solution: &ProblemSolution) -> SendableSolution {
+        let layouts = problem_solution.layouts().iter().map(|(_id, l)| SendableLayout::new(l)).collect();
         let cost = problem_solution.cost().clone();
         let usage = problem_solution.usage();
         let parttype_qtys = problem_solution.parttype_qtys().clone();
@@ -30,7 +25,7 @@ impl SendableSolution{
             cost,
             usage,
             parttype_qtys,
-            sheettype_qtys
+            sheettype_qtys,
         }
     }
 

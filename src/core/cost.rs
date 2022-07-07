@@ -1,5 +1,5 @@
-use std::ops::{Add, Sub};
 use std::iter::Sum;
+use std::ops::{Add, Sub};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cost {
@@ -11,7 +11,7 @@ pub struct Cost {
 
 
 impl Cost {
-    pub fn new(material_cost: u64, leftover_value: f32, part_area_excluded: u64, part_area_included : u64) -> Self {
+    pub fn new(material_cost: u64, leftover_value: f32, part_area_excluded: u64, part_area_included: u64) -> Self {
         Self { material_cost, leftover_value, part_area_excluded, part_area_included }
     }
 
@@ -39,10 +39,10 @@ impl Add for Cost {
 
     fn add(self, rhs: Self) -> Self {
         Self {
-            material_cost : self.material_cost + rhs.material_cost,
-            leftover_value : self.leftover_value + rhs.leftover_value,
-            part_area_excluded : self.part_area_excluded + rhs.part_area_excluded,
-            part_area_included : self.part_area_included + rhs.part_area_included,
+            material_cost: self.material_cost + rhs.material_cost,
+            leftover_value: self.leftover_value + rhs.leftover_value,
+            part_area_excluded: self.part_area_excluded + rhs.part_area_excluded,
+            part_area_included: self.part_area_included + rhs.part_area_included,
         }
     }
 }
@@ -52,10 +52,10 @@ impl Sub for Cost {
 
     fn sub(self, rhs: Self) -> Self {
         Self {
-            material_cost : self.material_cost - rhs.material_cost,
-            leftover_value : self.leftover_value - rhs.leftover_value,
-            part_area_excluded : self.part_area_excluded - rhs.part_area_excluded,
-            part_area_included : self.part_area_included - rhs.part_area_included,
+            material_cost: self.material_cost - rhs.material_cost,
+            leftover_value: self.leftover_value - rhs.leftover_value,
+            part_area_excluded: self.part_area_excluded - rhs.part_area_excluded,
+            part_area_included: self.part_area_included - rhs.part_area_included,
         }
     }
 }

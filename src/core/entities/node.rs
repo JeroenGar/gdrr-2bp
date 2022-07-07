@@ -1,11 +1,7 @@
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
-use std::io::empty;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::rc::Weak;
-use by_address::ByAddress;
-use indexmap::IndexMap;
 
 use crate::{Instance, Orientation, PartType};
 use crate::core::cost::Cost;
@@ -13,11 +9,8 @@ use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::leftover_valuator;
 use crate::core::rotation::Rotation;
-use crate::optimization::config::Config;
-use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::assertions;
-use crate::util::macros::{rb,rbm};
-
+use crate::util::macros::{rb, rbm};
 
 #[derive(Debug)]
 pub struct Node<'a> {
@@ -42,7 +35,7 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn new_top_node(width : u64, height : u64, next_cut_orient: Orientation) -> Rc<RefCell<Node<'a>>> {
+    pub fn new_top_node(width: u64, height: u64, next_cut_orient: Orientation) -> Rc<RefCell<Node<'a>>> {
         let top_node = Rc::new(RefCell::new(
             Node::new(width, height, next_cut_orient)
         ));
@@ -53,13 +46,13 @@ impl<'a> Node<'a> {
         top_node
     }
 
-    pub fn new_from_blueprint(blueprint: &NodeBlueprint, parent: Weak<RefCell<Node<'a>>>, all_created_nodes: &mut Vec<Weak<RefCell<Node<'a>>>>, instance : &'a Instance) -> Rc<RefCell<Node<'a>>> {
+    pub fn new_from_blueprint(blueprint: &NodeBlueprint, parent: Weak<RefCell<Node<'a>>>, all_created_nodes: &mut Vec<Weak<RefCell<Node<'a>>>>, instance: &'a Instance) -> Rc<RefCell<Node<'a>>> {
         let node = Node {
             width: blueprint.width(),
             height: blueprint.height(),
             children: Vec::new(),
             parent: Some(parent),
-            parttype: match blueprint.parttype_id(){
+            parttype: match blueprint.parttype_id() {
                 Some(id) => Some(instance.get_parttype(id)),
                 None => None
             },
@@ -80,12 +73,12 @@ impl<'a> Node<'a> {
 
     pub fn create_deep_copy(&self, parent: Option<Weak<RefCell<Node<'a>>>>) -> Rc<RefCell<Node<'a>>> {
         let copy = Node {
-            width : self.width,
-            height : self.height,
-            children : Vec::new(),
+            width: self.width,
+            height: self.height,
+            children: Vec::new(),
             parent,
-            parttype : self.parttype,
-            next_cut_orient : self.next_cut_orient
+            parttype: self.parttype,
+            next_cut_orient: self.next_cut_orient,
         };
         let copy = Rc::new(RefCell::new(copy));
 
@@ -98,7 +91,7 @@ impl<'a> Node<'a> {
         copy
     }
 
-    pub fn replace_child(node : &Rc<RefCell<Node<'a>>>, old_child: &Rc<RefCell<Node<'a>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>) {
+    pub fn replace_child(node: &Rc<RefCell<Node<'a>>>, old_child: &Rc<RefCell<Node<'a>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>) {
         let mut node_ref = rbm!(node);
 
         rbm!(old_child).parent = None;
@@ -113,7 +106,7 @@ impl<'a> Node<'a> {
         debug_assert!(assertions::children_nodes_fit(node_ref.deref()))
     }
 
-    pub fn replace_children(node : &Rc<RefCell<Node<'a>>>, old_children: Vec<&Rc<RefCell<Node<'a>>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>){
+    pub fn replace_children(node: &Rc<RefCell<Node<'a>>>, old_children: Vec<&Rc<RefCell<Node<'a>>>>, replacements: Vec<Rc<RefCell<Node<'a>>>>) {
         let mut node_ref = rbm!(node);
 
         for old_child in old_children.iter() {
@@ -130,7 +123,7 @@ impl<'a> Node<'a> {
         debug_assert!(assertions::children_nodes_fit(node_ref.deref()))
     }
 
-    pub fn clear_children(node : &Rc<RefCell<Node<'a>>>) {
+    pub fn clear_children(node: &Rc<RefCell<Node<'a>>>) {
         let mut node_ref = rbm!(node);
         node_ref.children.iter().for_each(|child| {
             let mut child_ref = rbm!(child);
@@ -289,7 +282,7 @@ impl<'a> Node<'a> {
 
          */
 
-       if node.next_cut_orient == Orientation::Horizontal {
+        if node.next_cut_orient == Orientation::Horizontal {
             let mut copy = NodeBlueprint::new(node.width, node.height, None, node.next_cut_orient);
 
             let remainder_height_top = node.height - part_size.height();
@@ -376,7 +369,7 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn get_all_removable_children(&self, children : &mut Vec<Weak<RefCell<Node<'a>>>>) {
+    pub fn get_all_removable_children(&self, children: &mut Vec<Weak<RefCell<Node<'a>>>>) {
         debug_assert!(!(self.parttype.is_some() && !self.children.is_empty()));
 
         match self.children.is_empty() {
@@ -397,11 +390,9 @@ impl<'a> Node<'a> {
     pub fn calculate_cost(&self) -> Cost {
         if self.parttype.is_some() {
             return Cost::new(0, 0.0, 0, 0);
-        }
-        else if self.children.is_empty() {
+        } else if self.children.is_empty() {
             return Cost::new(0, leftover_valuator::valuate(self.area()), 0, 0);
-        }
-        else {
+        } else {
             let mut cost = Cost::new(0, 0.0, 0, 0);
             for child in &self.children {
                 let child_cost = rb!(child).calculate_cost();
@@ -428,7 +419,7 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn is_empty(&self) -> bool{
+    pub fn is_empty(&self) -> bool {
         self.parttype.is_none() && self.children.is_empty()
     }
 
@@ -453,7 +444,6 @@ impl<'a> Node<'a> {
     pub fn parent(&self) -> &Option<Weak<RefCell<Node<'a>>>> {
         &self.parent
     }
-
 }
 
 

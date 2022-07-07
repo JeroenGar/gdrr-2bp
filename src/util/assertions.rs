@@ -3,15 +3,14 @@ use std::cell::{Ref, RefCell};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
+use crate::{Orientation, PartType, SheetType};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
-use crate::{Orientation, PartType, SheetType};
 use crate::optimization::solutions::problem_solution::ProblemSolution;
-use crate::util::macros::{rb,rbm};
-
+use crate::util::macros::{rb};
 
 pub fn node_belongs_to_layout<'a>(node: &Rc<RefCell<Node<'a>>>, layout: &Layout<'a>) -> bool {
     Rc::ptr_eq(node, layout.top_node()) || node_belongs_to_owner(node, layout.top_node())
@@ -38,7 +37,6 @@ pub fn layout_belongs_to_problem<'a>(layout: &Rc<RefCell<Layout<'a>>>, problem: 
 }
 
 pub fn children_nodes_fit(node: &Node) -> bool {
-
     match node.children().is_empty() {
         true => true,
         false => {
@@ -59,7 +57,7 @@ pub fn children_nodes_fit(node: &Node) -> bool {
                     let all_children_horz_cut_orient = node.children().iter().all(|c| rb!(c).next_cut_orient() == Orientation::Horizontal);
 
 
-                    if !all_children_same_height || sum_of_children_width != node.width() || !all_children_horz_cut_orient{
+                    if !all_children_same_height || sum_of_children_width != node.width() || !all_children_horz_cut_orient {
                         return false;
                     }
                     node.children().iter().all(|c| children_nodes_fit(rb!(c).deref()))
@@ -69,7 +67,7 @@ pub fn children_nodes_fit(node: &Node) -> bool {
     }
 }
 
-pub fn replacements_fit(original_node : &Weak<RefCell<Node>>, replacements : &Vec<NodeBlueprint>) -> bool {
+pub fn replacements_fit(original_node: &Weak<RefCell<Node>>, replacements: &Vec<NodeBlueprint>) -> bool {
     let node = original_node.upgrade().unwrap();
     let node_ref = rb!(node);
 
@@ -77,7 +75,7 @@ pub fn replacements_fit(original_node : &Weak<RefCell<Node>>, replacements : &Ve
         return false;
     }
 
-    match node_ref.next_cut_orient(){
+    match node_ref.next_cut_orient() {
         Orientation::Horizontal => {
             let all_replacements_same_height = replacements.iter().all(|nb| nb.height() == node_ref.height());
             let sum_of_replacements_width = replacements.iter().map(|nb| nb.width()).sum::<u64>();
@@ -98,10 +96,9 @@ pub fn replacements_fit(original_node : &Weak<RefCell<Node>>, replacements : &Ve
     }
 
     replacements.iter().all(|nb| children_node_blueprints_fit(nb))
-
 }
 
-pub fn children_node_blueprints_fit(node_bp : &NodeBlueprint) -> bool {
+pub fn children_node_blueprints_fit(node_bp: &NodeBlueprint) -> bool {
     match node_bp.children().is_empty() {
         true => true,
         false => {
@@ -122,7 +119,7 @@ pub fn children_node_blueprints_fit(node_bp : &NodeBlueprint) -> bool {
                     let all_children_horz_cut_orient = node_bp.children().iter().all(|nb| nb.next_cut_orient() == Orientation::Horizontal);
 
 
-                    if !all_children_same_height || sum_of_children_width != node_bp.width() || !all_children_horz_cut_orient{
+                    if !all_children_same_height || sum_of_children_width != node_bp.width() || !all_children_horz_cut_orient {
                         return false;
                     }
                     node_bp.children().iter().all(|nb| children_node_blueprints_fit(nb))
@@ -132,26 +129,25 @@ pub fn children_node_blueprints_fit(node_bp : &NodeBlueprint) -> bool {
     }
 }
 
-pub fn nodes_sorted_descending_area(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
+pub fn nodes_sorted_descending_area(nodes: &Vec<Weak<RefCell<Node>>>) -> bool {
     let mut prev_area = u64::MAX;
 
     for node in nodes {
         let area = rb!(node.upgrade().unwrap()).area();
         if area > prev_area {
             return false;
-        }
-        else{
+        } else {
             prev_area = area;
         }
     }
     return true;
 }
 
-pub fn all_nodes_have_parents(nodes : &Vec<Weak<RefCell<Node>>>) -> bool {
+pub fn all_nodes_have_parents(nodes: &Vec<Weak<RefCell<Node>>>) -> bool {
     nodes.iter().all(|n| rb!(n.upgrade().unwrap()).parent().is_some())
 }
 
-pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool{
+pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool {
     for value in values {
         if value.upgrade().is_none() {
             return false;
@@ -160,27 +156,27 @@ pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool{
     return true;
 }
 
-pub fn problem_matches_solution(problem : &Problem, solution : &ProblemSolution) -> bool {
+pub fn problem_matches_solution(problem: &Problem, solution: &ProblemSolution) -> bool {
     for layout in problem.layouts().iter() {
         let sol_layout = solution.layouts().get(&rb!(layout).id()).unwrap();
         match layouts_match(rb!(layout).deref(), rb!(sol_layout).deref()) {
             true => (),
             false => {
-                return false
+                return false;
             }
         }
     }
     return true;
 }
 
-pub fn layouts_match(layout1 : &Layout, layout2 : &Layout) -> bool {
+pub fn layouts_match(layout1: &Layout, layout2: &Layout) -> bool {
     if layout1.sheettype() != layout2.sheettype() {
         return false;
     }
     return nodes_match(rb!(layout1.top_node()).deref(), rb!(layout2.top_node()).deref());
 }
 
-pub fn nodes_match(node1 : &Node, node2 : &Node) -> bool {
+pub fn nodes_match(node1: &Node, node2: &Node) -> bool {
     if node1.width() != node2.width() ||
         node1.height() != node2.height() ||
         node1.children().len() != node2.children().len() ||
@@ -197,28 +193,28 @@ pub fn nodes_match(node1 : &Node, node2 : &Node) -> bool {
     return true;
 }
 
-pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &InsertionOptionCache<'a>, parttypes : &Vec<&'a PartType>) -> bool{
+pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &InsertionOptionCache<'a>, parttypes: &Vec<&'a PartType>) -> bool {
     let mut layouts_to_consider = Vec::new();
-    layouts_to_consider.extend(problem.layouts().iter().map(|l| {l.clone()}));
+    layouts_to_consider.extend(problem.layouts().iter().map(|l| { l.clone() }));
     layouts_to_consider.extend(problem.empty_layouts().iter()
         .filter(|l| { *problem.sheettype_qtys().get(rb!(l).sheettype().id()).unwrap() > 0 })
-        .map(|l| {l.clone()}));
+        .map(|l| { l.clone() }));
 
     let mut fresh_ioc = InsertionOptionCache::new();
 
     fresh_ioc.add_for_parttypes(
         parttypes.iter(),
-                &layouts_to_consider
+        &layouts_to_consider,
     );
 
     if ioc.is_empty() && fresh_ioc.is_empty() {
         return true;
     }
 
-    for (i,q) in problem.parttype_qtys().iter().enumerate(){
+    for (i, q) in problem.parttype_qtys().iter().enumerate() {
         let parttype = problem.instance().get_parttype(i);
         match (q, parttypes.contains(&parttype)) {
-            (0,false) => {
+            (0, false) => {
                 let ioc_options = ioc.get_for_parttype(&parttype);
                 let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
 
@@ -226,10 +222,10 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
                     return false;
                 }
             }
-            (0,true) => {
+            (0, true) => {
                 return false;
             }
-            (_,true) => {
+            (_, true) => {
                 let ioc_options = ioc.get_for_parttype(&parttype);
                 let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
                 let n_ioc_options = match ioc_options {
@@ -247,7 +243,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
                     return false;
                 }
             }
-            (_,_) => ()
+            (_, _) => ()
         }
     }
 
@@ -266,7 +262,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
                     return false;
                 }
             }
-            (Some(ioc_options),None) => {
+            (Some(ioc_options), None) => {
                 if !ioc_options.is_empty() {
                     dbg!(node.upgrade().unwrap());
                     dbg!(ioc_options);
@@ -274,7 +270,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
                     return false;
                 }
             }
-            (_,_) => {
+            (_, _) => {
                 let ioc_options_len = match ioc_options {
                     Some(ioc_options) => ioc_options.len(),
                     None => 0
@@ -295,7 +291,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem : &Problem<'a>, ioc : &Insert
     return true;
 }
 
-pub fn cached_empty_nodes_correct<'a>(layout : &Layout<'a>, cached_empty_nodes : &Vec<Weak<RefCell<Node<'a>>>>) -> bool {
+pub fn cached_empty_nodes_correct<'a>(layout: &Layout<'a>, cached_empty_nodes: &Vec<Weak<RefCell<Node<'a>>>>) -> bool {
     let mut all_children = Vec::new();
     rb!(layout.top_node()).get_all_children(&mut all_children);
     let all_empty_children = all_children.iter().filter(|n| {
@@ -317,16 +313,16 @@ pub fn cached_empty_nodes_correct<'a>(layout : &Layout<'a>, cached_empty_nodes :
     return true;
 }
 
-pub fn instance_parttypes_and_sheettypes_are_correct(parttypes : &Vec<(PartType,usize)>, sheettypes : &Vec<(SheetType,usize)>) -> bool{
+pub fn instance_parttypes_and_sheettypes_are_correct(parttypes: &Vec<(PartType, usize)>, sheettypes: &Vec<(SheetType, usize)>) -> bool {
     let mut id = 0;
-    for (parttype,qty) in parttypes {
+    for (parttype, _qty) in parttypes {
         if parttype.id() != id {
             return false;
         }
         id += 1;
     }
     let mut id = 0;
-    for (sheettype,qty) in sheettypes {
+    for (sheettype, _qty) in sheettypes {
         if sheettype.id() != id {
             return false;
         }

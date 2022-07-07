@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
@@ -7,13 +6,12 @@ use std::rc::Rc;
 use colored::*;
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rand::rngs::{StdRng, ThreadRng};
+use rand::rngs::{StdRng};
 
 use crate::{Instance, PartType};
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
-use crate::core::insertion::insertion_option::InsertionOption;
 use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
@@ -21,10 +19,8 @@ use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::{assertions, blink};
-use crate::util::assertions::insertion_option_cache_is_valid;
 use crate::util::biased_sampler::BiasedSampler;
-use crate::util::macros::{rb, rbm, timed_println, timed_thread_println};
-use crate::util::multi_map::MultiMap;
+use crate::util::macros::{rb, timed_thread_println};
 use crate::util::util;
 
 pub struct GDRR<'a> {
@@ -53,7 +49,6 @@ impl<'a> GDRR<'a> {
         let start_time = std::time::Instant::now();
 
         let max_rr_iterations = self.config.max_rr_iterations.unwrap_or(usize::MAX);
-        let max_run_time = self.config.max_run_time.unwrap_or(usize::MAX);
 
         let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area(), 0);
 
@@ -178,8 +173,8 @@ impl<'a> GDRR<'a> {
 
     fn recreate(&mut self, mut mat_limit_budget: i128, max_part_area_excluded: u64) {
         let mut parttypes_to_consider: Vec<&PartType> = self.problem.parttype_qtys().iter().enumerate()
-            .filter(|(i, q)| { **q > 0 })
-            .map(|(i, q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
+            .filter(|(_i, q)| { **q > 0 })
+            .map(|(i, _q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
 
 
         let mut insertion_option_cache = InsertionOptionCache::new();

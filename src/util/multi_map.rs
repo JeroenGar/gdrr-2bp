@@ -1,12 +1,12 @@
 use std::hash::Hash;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::{IndexMap};
 
 pub struct MultiMap<K: Hash + Eq, V> {
     map: IndexMap<K, Vec<V>>,
 }
 
-impl<K: Hash + Eq, V : Eq> MultiMap<K, V> {
+impl<K: Hash + Eq, V: Eq> MultiMap<K, V> {
     pub fn new() -> Self {
         let map = IndexMap::new();
         Self { map }

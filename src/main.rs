@@ -2,12 +2,11 @@ use std::{env, thread};
 use std::cmp::Ordering;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Write;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::time::Instant;
-use std::io::Write;
 
 use once_cell::sync::Lazy;
 
@@ -41,11 +40,22 @@ const DETERMINISTIC_MODE: bool = false; //fixes seed
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let input_file_path = PathBuf::from(args.get(1).expect("first cmd argument needs to be path to input file"));
-    let config_file_path = PathBuf::from(args.get(2).expect("second cmd argument needs to be path to config file"));
-    let result_file_path = PathBuf::from(args.get(3).expect("third cmd argument needs to be path to result file"));
-    let html_file_path = PathBuf::from(args.get(4).expect("fourth cmd argument needs to be path to html file"));
-
+    let input_file_path = PathBuf::from(args.get(1).expect("First cmd argument needs to be path to input file"));
+    let config_file_path = PathBuf::from(args.get(2).expect("Second cmd argument needs to be path to config file"));
+    let json_solution_path = match args.len() > 3 {
+        true => Some(PathBuf::from(args.get(3).unwrap())),
+        false => {
+            timed_println!("No JSON solution file path defined, not writing JSON file");
+            None
+        }
+    };
+    let html_solution_path = match args.len() > 4 {
+        true => Some(PathBuf::from(args.get(4).unwrap())),
+        false => {
+            timed_println!("No HTML solution file path defined, not writing HTML file");
+            None
+        }
+    };
 
     let input_file = File::open(&input_file_path).expect("input file could not be opened");
     let config_file = File::open(&config_file_path).expect("config file could not be opened");
@@ -59,7 +69,8 @@ fn main() {
     }
 
     let instance = parser::generate_instance(&mut json_instance, &config);
-    timed_println!("Starting optimization of {} parts of {} different types", instance.total_part_qty(), instance.parts().len());
+    timed_println!("Starting optimization of {} parts of {} different types for {} seconds", instance.total_part_qty(), instance.parts().len(), config.max_run_time.unwrap_or(usize::MAX));
+    timed_println!("Press Ctrl+C to terminate manually");
 
     let instance = Arc::new(instance);
     let config = Arc::new(config);
@@ -91,29 +102,30 @@ fn main() {
 
     global_sol_collector.monitor(gdrr_thread_handlers);
 
-    let mut json_solution = match (global_sol_collector.best_complete_solution().as_ref(),global_sol_collector.best_incomplete_solution().as_ref()){
+    let json_solution = match (global_sol_collector.best_complete_solution().as_ref(), global_sol_collector.best_incomplete_solution().as_ref()) {
         (Some(best_complete_solution), _) => {
             Some(parser::generate_json_solution(&json_instance, best_complete_solution, &config_file_path))
-        },
+        }
         (None, Some(best_incomplete_solution)) => {
             Some(parser::generate_json_solution(&json_instance, best_incomplete_solution, &config_file_path))
-        },
+        }
         (None, None) => {
             None
         }
     };
 
     if json_solution.is_some() {
-        let mut result_file = File::create(&result_file_path).expect("result file could not be created");
-        serde_json::to_writer_pretty(&mut result_file, json_solution.as_ref().unwrap()).expect("could not write solution to result file");
-        let mut html_file = File::create(&html_file_path).expect("html file could not be created");
-        write!(html_file, "{}", &generate_solution(json_solution.as_ref().unwrap())).expect("html file could not be written");
-
-
-        timed_println!("JSON written to {}", result_file_path.display());
-        timed_println!("HTML written to {}", html_file_path.display());
-    }
-    else{
-        timed_println!("No solution written");
+        if let Some(json_solution_path) = json_solution_path {
+            let mut json_file = File::create(&json_solution_path).expect("JSON solution file could not be created");
+            serde_json::to_writer_pretty(&mut json_file, json_solution.as_ref().unwrap()).expect("could not write JSON solution");
+            timed_println!("JSON solution written to {}", json_solution_path.display());
+        }
+        if let Some(html_solution_path) = html_solution_path {
+            let mut html_file = File::create(&html_solution_path).expect("HTML solution file could not be created");
+            write!(html_file, "{}", &generate_solution(json_solution.as_ref().unwrap())).expect("could not write HTML solution");
+            timed_println!("HTML solution written to {}", html_solution_path.display());
+        }
+    } else {
+        timed_println!("No solution available");
     }
 }

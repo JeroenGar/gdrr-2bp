@@ -1,12 +1,10 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::ops::Deref;
 use std::rc::Rc;
-use crate::{Instance, Orientation, PartType};
+
+use crate::{Orientation, PartType};
 use crate::core::cost::Cost;
 use crate::core::entities::node::Node;
 use crate::core::leftover_valuator;
-use crate::util::macros::{rb, rbm};
 
 #[derive(Debug, Clone)]
 pub struct NodeBlueprint {
@@ -20,25 +18,25 @@ pub struct NodeBlueprint {
 impl NodeBlueprint {
     pub fn new(width: u64, height: u64, parttype: Option<&PartType>, next_cut_orient: Orientation) -> Self {
         let children = Vec::new();
-        let parttype_id = match parttype{
+        let parttype_id = match parttype {
             Some(parttype) => Some(parttype.id()),
             None => None,
         };
-        Self { width, height, children,parttype_id, next_cut_orient }
+        Self { width, height, children, parttype_id, next_cut_orient }
     }
 
-    pub fn from_node(node : &Rc<RefCell<Node>>) -> Self{
+    pub fn from_node(node: &Rc<RefCell<Node>>) -> Self {
         let node = node.as_ref().borrow();
         let parttype_id = match node.parttype() {
             Some(pt) => Some(pt.id()),
             None => None
         };
-        let mut b_node = Self{
-            width : node.width(),
-            height : node.height(),
-            parttype_id : parttype_id,
-            children : Vec::new(),
-            next_cut_orient : node.next_cut_orient()
+        let mut b_node = Self {
+            width: node.width(),
+            height: node.height(),
+            parttype_id: parttype_id,
+            children: Vec::new(),
+            next_cut_orient: node.next_cut_orient(),
         };
         node.children().iter().for_each(|child| {
             b_node.children.push(NodeBlueprint::from_node(child));
@@ -53,11 +51,9 @@ impl NodeBlueprint {
     pub fn calculate_cost(&self) -> Cost {
         if self.parttype_id.is_some() {
             return Cost::new(0, 0.0, 0, 0);
-        }
-        else if self.children.is_empty() {
+        } else if self.children.is_empty() {
             return Cost::new(0, leftover_valuator::valuate(self.area()), 0, 0);
-        }
-        else {
+        } else {
             let mut cost = Cost::new(0, 0.0, 0, 0);
             for child in &self.children {
                 let child_cost = child.calculate_cost();
@@ -82,7 +78,6 @@ impl NodeBlueprint {
             usage
         }
     }
-
 
 
     pub fn area(&self) -> u64 {

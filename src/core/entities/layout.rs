@@ -1,14 +1,11 @@
-use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
-use std::collections::BinaryHeap;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
+use crate::{Instance, Orientation};
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
-use crate::optimization::config::Config;
 use crate::optimization::rr::cache_updates::CacheUpdates;
-use crate::{EPOCH, Instance, Orientation};
 use crate::util::assertions;
 use crate::util::macros::{rb, rbm};
 
@@ -61,8 +58,8 @@ impl<'a> Layout<'a> {
     }
 
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, instance : &'a Instance) {
-        debug_assert!(assertions::node_belongs_to_layout(&blueprint.original_node().upgrade().unwrap(),self));
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, instance: &'a Instance) {
+        debug_assert!(assertions::node_belongs_to_layout(&blueprint.original_node().upgrade().unwrap(), self));
         let original_node = blueprint.original_node().upgrade().unwrap();
         let parent_node = rbm!(original_node).parent().as_ref().unwrap().upgrade().unwrap();
 
@@ -264,11 +261,11 @@ impl<'a> Layout<'a> {
         }
     }
 
-    fn register_part(&mut self, parttype: &PartType) {
+    fn register_part(&mut self, _parttype: &PartType) {
         self.invalidate_caches();
     }
 
-    fn unregister_part(&mut self, parttype: &PartType) {
+    fn unregister_part(&mut self, _parttype: &PartType) {
         self.invalidate_caches();
     }
 

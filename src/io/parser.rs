@@ -1,14 +1,11 @@
 use std::path::PathBuf;
-use std::sync::Arc;
-use itertools::Itertools;
 
-use serde_json::json;
+use itertools::Itertools;
 
 use crate::{Instance, JsonInstance, Orientation, PartType, SheetType};
 use crate::core::entities::sendable_layout::SendableLayout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution, JsonSolutionStats};
-use crate::io::json_format::JsonCPNodeType::Structure;
 use crate::optimization::config::Config;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
@@ -52,31 +49,31 @@ pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> I
     Instance::new(parts, sheets)
 }
 
-pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableSolution, config_path : &PathBuf) -> JsonSolution {
+pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableSolution, config_path: &PathBuf) -> JsonSolution {
     let name = json_instance.name.clone();
     let sheettypes = json_instance.sheettypes.clone();
     let parttypes = json_instance.parttypes.clone();
 
-    let mut cutting_patterns = solution.layouts().iter()
-        .sorted_by(|a,b|{a.usage().partial_cmp(&b.usage()).unwrap().reverse()})
+    let cutting_patterns = solution.layouts().iter()
+        .sorted_by(|a, b| { a.usage().partial_cmp(&b.usage()).unwrap().reverse() })
         .map(|l| { convert_layout_to_json_cp(l) }
-    ).collect::<Vec<JsonCP>>();
+        ).collect::<Vec<JsonCP>>();
 
-    let statistics = JsonSolutionStats{
-        usage_pct : (solution.usage() * 100.0) as f32,
-        part_area_included_pct : (solution.cost().part_area_fraction_included() * 100.0) as f32,
-        n_objects_used : solution.n_layouts(),
-        material_cost : solution.cost().material_cost,
-        run_time_ms : crate::EPOCH.elapsed().as_millis() as usize,
-        config_path : config_path.to_str().unwrap().to_string()
+    let statistics = JsonSolutionStats {
+        usage_pct: (solution.usage() * 100.0) as f32,
+        part_area_included_pct: (solution.cost().part_area_fraction_included() * 100.0) as f32,
+        n_objects_used: solution.n_layouts(),
+        material_cost: solution.cost().material_cost,
+        run_time_ms: crate::EPOCH.elapsed().as_millis() as usize,
+        config_path: config_path.to_str().unwrap().to_string(),
     };
 
-    JsonSolution{
+    JsonSolution {
         name,
         sheettypes,
         parttypes,
         cutting_patterns,
-        statistics
+        statistics,
     }
 }
 
@@ -85,10 +82,10 @@ pub fn convert_layout_to_json_cp(layout: &SendableLayout) -> JsonCP {
     let root = convert_node_bp_to_json_cp_node(layout.top_node());
     let usage = layout.usage();
 
-    JsonCP{
+    JsonCP {
         object,
         root,
-        usage
+        usage,
     }
 }
 
@@ -100,19 +97,19 @@ pub fn convert_node_bp_to_json_cp_node(node: &NodeBlueprint) -> JsonCPNode {
     let length = node.width();
     let height = node.height();
 
-    let node_type = match (node.parttype_id(),node.children().is_empty()){
-        (None,true) => JsonCPNodeType::Leftover,
+    let node_type = match (node.parttype_id(), node.children().is_empty()) {
+        (None, true) => JsonCPNodeType::Leftover,
         (None, false) => JsonCPNodeType::Structure,
-        (Some(_),true) => JsonCPNodeType::Item,
+        (Some(_), true) => JsonCPNodeType::Item,
         (Some(_), false) => {
             panic!("This should not happen")
-        },
+        }
     };
 
-    let orientation = match (&node_type, node.next_cut_orient()){
-        (JsonCPNodeType::Structure,Orientation::Horizontal) => Some(JsonOrientation::H),
-        (JsonCPNodeType::Structure,Orientation::Vertical) => Some(JsonOrientation::V),
-        (_,_) => None,
+    let orientation = match (&node_type, node.next_cut_orient()) {
+        (JsonCPNodeType::Structure, Orientation::Horizontal) => Some(JsonOrientation::H),
+        (JsonCPNodeType::Structure, Orientation::Vertical) => Some(JsonOrientation::V),
+        (_, _) => None,
     };
 
     let item = match &node_type {
@@ -120,12 +117,12 @@ pub fn convert_node_bp_to_json_cp_node(node: &NodeBlueprint) -> JsonCPNode {
         _ => None,
     };
 
-    JsonCPNode{
+    JsonCPNode {
         length,
         height,
         orientation,
         node_type,
         item,
-        children: json_children
+        children: json_children,
     }
 }

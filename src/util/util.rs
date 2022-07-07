@@ -1,9 +1,7 @@
-use crate::Cost;
-use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::optimization::solutions::solution_stats::SolutionStats;
 
-pub fn solution_stats_string(solution : &dyn Solution) -> String{
+pub fn solution_stats_string(solution: &dyn Solution) -> String {
     format!(
         "(usage: {:.3}%, p_incl: {:.3}%, sheets: {}, mat: {})",
         solution.usage() * 100.0,
@@ -12,7 +10,7 @@ pub fn solution_stats_string(solution : &dyn Solution) -> String{
         solution.cost().material_cost)
 }
 
-pub fn compact_stats_string(stats : &SolutionStats) -> String {
+pub fn compact_stats_string(stats: &SolutionStats) -> String {
     format!(
         "(usage: {:.3}%, p_incl: {:.3}%, sheets: {}, mat: {})",
         stats.usage * 100.0,

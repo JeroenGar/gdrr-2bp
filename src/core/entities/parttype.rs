@@ -1,7 +1,5 @@
 use std::hash::{Hash, Hasher};
-use std::sync::atomic::AtomicUsize;
 
-use crate::core::orientation::Orientation;
 use crate::core::size::Size;
 use crate::Rotation;
 
@@ -16,7 +14,7 @@ pub struct PartType {
 }
 
 impl PartType {
-    pub fn new(id : usize, width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType {
+    pub fn new(id: usize, width: u64, height: u64, fixed_rotation: Option<Rotation>) -> PartType {
         PartType {
             id,
             width,

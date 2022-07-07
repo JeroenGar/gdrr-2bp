@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::ops::Deref;
@@ -13,8 +12,8 @@ use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::optimization::rr::cache_updates::CacheUpdates;
-use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
+use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
 use crate::util::macros::{rb, rbm};
@@ -155,7 +154,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&self) -> Cost {
-        let mut cost = self.layouts.iter().fold(Cost::new(0, 0.0, 0,0), |acc, l| acc + rb!(l).cost());
+        let mut cost = self.layouts.iter().fold(Cost::new(0, 0.0, 0, 0), |acc, l| acc + rb!(l).cost());
 
         cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
             .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
@@ -246,16 +245,16 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::problem_matches_solution(self, solution));
     }
 
-    pub fn restore_from_instance_solution(&mut self, solution: &SendableSolution) {
+    pub fn restore_from_instance_solution(&mut self, _solution: &SendableSolution) {
         todo!()
     }
 
     pub fn usage(&self) -> f64 {
         let total_included_part_area = self.instance().parts().iter().map(
-            |(parttype, qty)| {parttype.area() * (*qty - self.parttype_qtys.get(parttype.id()).unwrap()) as u64}
+            |(parttype, qty)| { parttype.area() * (*qty - self.parttype_qtys.get(parttype.id()).unwrap()) as u64 }
         ).sum::<u64>();
         let total_used_sheet_area = self.layouts().iter().map(
-            |layout| {rb!(layout).sheettype().area()}
+            |layout| { rb!(layout).sheettype().area() }
         ).sum::<u64>();
 
         total_included_part_area as f64 / total_used_sheet_area as f64

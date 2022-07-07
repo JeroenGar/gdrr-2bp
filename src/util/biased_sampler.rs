@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::rc::{Rc, Weak};
 
 use rand::Rng;
-use rand::rngs::{StdRng, ThreadRng};
+use rand::rngs::{StdRng};
 
 const DEFAULT_N_SAMPLES: usize = 3;
 const DEFAULT_CHANCE_ARRAY: [f64; 3] = [0.625, 0.875, 1.0];

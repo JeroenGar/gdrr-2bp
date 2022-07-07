@@ -1,15 +1,15 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{RefCell};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::rc::Weak;
 
 use by_address::ByAddress;
 
-use crate::{Orientation, PartType, Rotation};
+use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
-use crate::util::macros::{rb,rbm};
+use crate::util::macros::{rb};
 
 pub struct InsertionOption<'a> {
     original_node: Weak<RefCell<Node<'a>>>,
@@ -22,7 +22,7 @@ pub struct InsertionOption<'a> {
 
 impl<'a> InsertionOption<'a> {
     pub fn new(original_node: Weak<RefCell<Node<'a>>>, parttype: &'a PartType, rotation: Option<Rotation>, layout: Weak<RefCell<Layout<'a>>>) -> Self {
-        debug_assert!(rb!(original_node.upgrade().unwrap()).parent().is_some(),"{:#?}", original_node.upgrade().unwrap());
+        debug_assert!(rb!(original_node.upgrade().unwrap()).parent().is_some(), "{:#?}", original_node.upgrade().unwrap());
         Self {
             original_node,
             parttype,

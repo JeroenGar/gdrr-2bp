@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use rand::Rng;
-use rand::rngs::{StdRng, ThreadRng};
+use rand::rngs::{StdRng};
 
 pub fn select_lowest_entry(entries: &Vec<usize>, blink_chance: f32, rand: &mut StdRng) -> usize {
     let mut lowest_value = usize::MAX;
