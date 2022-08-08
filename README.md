@@ -98,6 +98,7 @@ cargo run --release \
 ```
 
 Make sure to include the `--release` flag to build the optimized version of the binary. 
-Omitting the flag will result in an unoptimized binary which contains a lot of (expensive) assertions. 
-The algorithm will continue execution until either one of the termination conditions (defined in the config json) are reached, or it is manually terminated (CTRL+C). 
+Omitting the flag will result in an unoptimized binary which also contains a lot of (expensive) assertions. 
+
+The algorithm will continue execution until either, one of the termination conditions (defined in the config json) are reached, or it is manually terminated (CTRL+C). 
 
