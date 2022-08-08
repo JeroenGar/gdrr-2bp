@@ -5,5 +5,5 @@
   "avgNodesRemoved": 6,
   "blinkRate": 0.01,
   "leftoverValuationPower": 2,
-  "historyLength": 500,
+  "historyLength": 500
 }
