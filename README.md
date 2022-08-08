@@ -27,7 +27,7 @@ The algorithm currently has support for:
 
 The input problem files are using the same JSON format as used in [OR-Datasets](https://github.com/Oscar-Oliveira/OR-Datasets/tree/master/Cutting-and-Packing/2D) repository by [
 Óscar Oliveira](https://github.com/Oscar-Oliveira).
-Any file from this repository, or files using the same format, should work. 
+Any file from this repository, or other file using the same format, should work. 
 
 Two examples are provided in the [examples](examples/) folder.
 
