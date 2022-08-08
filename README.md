@@ -39,7 +39,7 @@ A detailed explanation of most of these parameters can be found in the paper.
 ```javascript
 {
     "maxRunTime": 600, //maximum allowed runtime of the algorithm in seconds
-    "nThreads": 1, //number of threads to use
+    "nThreads": 4, //number of threads to use
     "rotationAllowed": true, //if true, 90 degree rotation of parts is allowed (2BP|R|G), false otherwise (2BP|O|G)
     "avgNodesRemoved": 6, //average number of removed nodes per iteration (μ)
     "blinkRate": 0.01, //blink rate (β)
@@ -51,6 +51,12 @@ In addition `maxRRIterations` can also be defined.
 If provided, the algorithm will run until the predefined number of iterations is reached.   
 Both `maxRRIterations` and `maxRunTime` fields are optional. 
 If no termination condition is provided the algorithm will run until an interrupt signal (CTRL+C) is generated. 
+
+Configuring more than 1 thread in instances with only a single type of bin won't make much of an improvement to the end result.
+On the contrary, many threads will result in a reduction of iterations/s per individual thread. 
+Which, in turn, can lead to increased runtimes to reach the same solution quality.
+However, if the instance contains multiple types of bins, it is highly recommended to use multiple threads.
+The diversity in bins used by the different threads will result in a higher overall solution quality.
 
 An example config file can be found in the [examples](examples/) folder.
 
