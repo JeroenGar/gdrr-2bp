@@ -27,7 +27,8 @@ The algorithm currently has support for:
 
 The input problem files are using the same JSON format as used in [OR-Datasets](https://github.com/Oscar-Oliveira/OR-Datasets/tree/master/Cutting-and-Packing/2D) repository by [
 Óscar Oliveira](https://github.com/Oscar-Oliveira).
-Any file from this repository, or files using the same format, should work.  
+Any file from this repository, or files using the same format, should work. 
+
 Two examples are provided in the [examples](examples/) folder.
 
 ## Config JSON
@@ -49,7 +50,8 @@ A detailed explanation of most of these parameters can be found in the paper.
 In addition `maxRRIterations` can also be defined. 
 If provided, the algorithm will run until the predefined number of iterations is reached.   
 Both `maxRRIterations` and `maxRunTime` fields are optional. 
-If no termination condition is provided the algorithm will run until an interrupt signal (CTRL+C) is generated.  
+If no termination condition is provided the algorithm will run until an interrupt signal (CTRL+C) is generated. 
+
 An example config file can be found in the [examples](examples/) folder.
 
 ## Output
@@ -57,18 +59,24 @@ Both a JSON and a visual (HTML) representation of the solution can be generated.
 
 ### JSON
 
-The output JSON format is an extension of the input format. 
+The output JSON format is an extension of the input format.
 All `Items` and `Objects` now contain a `Reference` field, assigning a unique ID to every item/object. 
-The root object has been extended with the fields `CuttingPatterns` and `Statistics`. 
+The root object has been extended with the fields `CuttingPatterns` and `Statistics`.
+
 `CuttingPatterns` contain a hierarchical representation of all the cutting patterns which are part of the final solution. 
-An explanation can be found [here](doc/Solution_Files_Documentation_GDRR.pdf). 
-`Statistics` contains information such as the average bin usage, total runtime etc.  
+A PDF which explains the format can be found [here](doc/Solution_Files_Documentation_GDRR.pdf). 
+`Statistics` contains additional information such as the average bin usage, total runtime etc.  
+
 Examples can be found in the [examples](examples/) folder.
 
 ### HTML
 
-In addition to the JSON solution, the algorithm can also output the final solution in a visual format in the form of an HTML file.  
+In addition to the JSON solution, the algorithm can also output the final solution in a visual format in the form of an HTML file. 
+
 Examples can be found in the [examples](examples/) folder.
+
+## Requirements
+- Rust >= 1.62
 
 ## CLI
 
