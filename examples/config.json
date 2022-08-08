@@ -1,0 +1,9 @@
+{
+  "avgNodesRemoved": 6,
+  "blinkRate": 0.01,
+  "maxRunTime": 600,
+  "leftoverValuationPower": 2,
+  "historyLength": 500,
+  "rotationAllowed": true,
+  "nThreads": 1
+}
