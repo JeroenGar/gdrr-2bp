@@ -108,3 +108,6 @@ Omitting the flag will result in an unoptimized binary which also contains a lot
 
 The algorithm will continue execution until either, one of the termination conditions (defined in the config json) are reached, or it is manually terminated (CTRL+C). 
 
+## TODOs
+
+- write proper documentation of the codebase with rustdoc
