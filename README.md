@@ -52,11 +52,11 @@ If provided, the algorithm will run until the predefined number of iterations is
 Both `maxRRIterations` and `maxRunTime` fields are optional. 
 If no termination condition is provided the algorithm will run until an interrupt signal (CTRL+C) is generated. 
 
-Configuring more than 1 thread in instances with only a single type of bin won't make much of an improvement to the end result.
+Configuring more than 1 thread for instances with only a single type of bin won't make much of an improvement to the end result.
 On the contrary, many threads will result in a reduction of iterations/s per individual thread. 
 Which, in turn, can lead to increased runtimes to reach the same solution quality.
 However, if the instance contains multiple types of bins, it is highly recommended to use multiple threads.
-The diversity in bins used by the different threads will result in a higher overall solution quality.
+The diversity in bins used by the threads will usually result in a higher overall solution quality.
 
 An example config file can be found in the [examples](examples/) folder.
 
