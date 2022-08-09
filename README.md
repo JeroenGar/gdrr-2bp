@@ -1,33 +1,58 @@
 # GDRR-2BP ![workflow](https://github.com/JeroenGar/gdrr-2bp/actions/workflows/rust.yml/badge.svg)
 
-**A Rust implementation of [a goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints]( https://www.sciencedirect.com/science/article/abs/pii/S0377221721009826).**
+**This repo contains a Rust implementation of the algorithm described in [a goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints]( https://www.sciencedirect.com/science/article/abs/pii/S0377221721009826).**
 
-The code used for the experiments in the paper was originally written in Java.
-This code can, due to contractual requirements, unfortunately not be made public.
-However, this reimplementation in Rust closely resembles the original design philosophy and datastructures.
-It is also multiple times faster than the Java implementation.
+The code used in the experiments in the paper was originally written in Java.
+Due to contractual obligations, this codebase can unfortunately not be made public.
+However, this reimplementation closely resembles the original design philosophy and datastructures.
+It is also quite a bit faster than the original implementation.
 
 If this repository helps you in any way, please let me know. 
-I'm very interested to know whether this repo is useful to anyone.
+I'm very interested to know whether this work is useful to anyone.
 
 # Features
 
-The algorithm will minimize the total bin cost required to pack all items.
-In case there are insufficient bins to pack all items, the algorithm will return the solution with the maximum total area of parts packed (max usage of the bins).
+In case there are sufficient bins to pack all items, the algorithm will minimize the total bin cost required to pack all items (complete solution).
+If this is not the case, it will return the solution closest to being complete (with the highest total area of packed items).
 
 The algorithm currently has support for:
 - [x] variable-sized (heterogeneous) bins
 - [x] 90° rotation of items
-- [x] insufficient bins to produce all items
-- [x] individually configurable cost per bin
+- [x] can handle instances with insufficient bins to produce all items
+- [x] configurable cost and stock quantity per bin type
 
 # How to use
+
+## Requirements
+- Rust >= 1.62
+
+## CLI
+
+General usage:
+```bash
+cargo run --release  \
+    [path to input JSON] \
+    [path to config JSON] \
+    [path to write result JSON to (optional)] \
+    [path to write result HTML to (optional)]
+```
+Concrete example:
+```bash
+cargo run --release \
+    examples/large_example_input.json \
+    examples/config.json \
+    examples/large_example_result.json \
+    examples/large_example_result.html
+```
+
+Make sure to include the `--release` flag to build the optimized version of the binary. 
+Omitting the flag will result in an unoptimized binary which also contains a lot of (very expensive) assertions.
 
 ## Input JSON
 
 The input problem files are using the same JSON format as used in [OR-Datasets](https://github.com/Oscar-Oliveira/OR-Datasets/tree/master/Cutting-and-Packing/2D) repository by [
 Óscar Oliveira](https://github.com/Oscar-Oliveira).
-Any file from this repository, or other file using the same format, should work. 
+Any file from this repository, or other file following the same format, should work. 
 
 Two examples are provided in the [examples](examples/) folder.
 
@@ -50,7 +75,7 @@ A detailed explanation of most of these parameters can be found in the paper.
 In addition `maxRRIterations` can also be defined. 
 If provided, the algorithm will run until the predefined number of iterations is reached.   
 Both `maxRRIterations` and `maxRunTime` fields are optional. 
-If no termination condition is provided the algorithm will run until an interrupt signal (CTRL+C) is generated. 
+The algorithm will continue execution until either, one of the termination conditions (defined in the config json) is reached, or it is manually terminated (CTRL+C). 
 
 Configuring more than 1 thread for instances with only a single type of bin won't make much of an improvement to the end result.
 On the contrary, many threads will result in a reduction of iterations/s per individual thread. 
@@ -80,33 +105,6 @@ Examples can be found in the [examples](examples/) folder.
 In addition to the JSON solution, the algorithm can also output the final solution in a visual format in the form of an HTML file. 
 
 Examples can be found in the [examples](examples/) folder.
-
-## Requirements
-- Rust >= 1.62
-
-## CLI
-
-General usage:
-```bash
-cargo run --release  \
-    [path to input JSON] \
-    [path to config JSON] \
-    [path to write result JSON to (optional)] \
-    [path to write result HTML to (optional)]
-```
-Concrete example:
-```bash
-cargo run --release \
-    examples/large_example_input.json \
-    examples/config.json \
-    examples/large_example_result.json \
-    examples/large_example_result.html
-```
-
-Make sure to include the `--release` flag to build the optimized version of the binary. 
-Omitting the flag will result in an unoptimized binary which also contains a lot of (very expensive) assertions. 
-
-The algorithm will continue execution until either, one of the termination conditions (defined in the config json) is reached, or it is manually terminated (CTRL+C). 
 
 ## TODOs
 
