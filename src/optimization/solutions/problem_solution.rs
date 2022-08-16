@@ -12,6 +12,8 @@ use crate::util::assertions;
 use crate::util::macros::{rb};
 
 #[derive(Debug, Clone)]
+/// ProblemSolution represents an immutable snapshot of a Problem at some point in time.
+/// Its primary use is restoring a Problem to a prior state.
 pub struct ProblemSolution<'a> {
     instance: &'a Instance,
     layouts: IndexMap<usize, Rc<Layout<'a>>>,

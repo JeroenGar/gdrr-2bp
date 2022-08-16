@@ -18,6 +18,10 @@ use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
 use crate::util::macros::{rb, rbm};
 
+/// Problem is the main representation of the optimization problem.
+/// A Problem is based on an Instance and contains a collection of Layouts.
+/// Its main purpose is to be easily modifiable
+/// It can create a snapshot of itself in the form of a ProblemSolution and use these to restore itself to a prior state.
 pub struct Problem<'a> {
     instance: &'a Instance,
     parttype_qtys: Vec<usize>,
@@ -76,6 +80,8 @@ impl<'a> Problem<'a> {
         problem
     }
 
+    /// Modifies the problem by inserting an part according to the InsertionBlueprint.
+    /// It returns which updates should be made to the InsertionOptionCache and whether or not a new layout was created.
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> (CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, bool) {
         let blueprint_layout = blueprint.layout().as_ref().unwrap().upgrade().unwrap();
 
