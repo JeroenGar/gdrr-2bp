@@ -344,7 +344,6 @@ impl<'a> Problem<'a> {
         self.counter_solution_id
     }
 
-
     pub fn empty_layouts(&self) -> &Vec<Rc<RefCell<Layout<'a>>>> {
         &self.empty_layouts
     }
@@ -352,7 +351,6 @@ impl<'a> Problem<'a> {
     pub fn counter_layout_id(&self) -> usize {
         self.counter_layout_id
     }
-
 
     pub fn unchanged_layouts(&self) -> &HashSet<usize> {
         &self.unchanged_layouts
