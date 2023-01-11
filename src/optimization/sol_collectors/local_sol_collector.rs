@@ -21,7 +21,6 @@ pub struct LocalSolCollector<'a> {
     best_complete_transferred: bool,
     best_incomplete_transferred: bool,
     terminate: bool,
-
 }
 
 
@@ -160,7 +159,6 @@ impl<'a> LocalSolCollector<'a> {
     pub fn material_limit(&self) -> u64 {
         self.material_limit.unwrap_or(u64::MAX)
     }
-
 
     pub fn terminate(&self) -> bool {
         self.terminate

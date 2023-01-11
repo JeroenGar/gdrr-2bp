@@ -82,6 +82,11 @@ impl GlobalSolCollector {
                     }
                 }
             }
+            if self.material_limit.unwrap_or(u64::MAX) == self._instance.smallest_sheet_value(){
+                timed_println!("Minimum material limit reached");
+                break;
+            }
+
             if gdrr_thread_handlers.iter().all(|h| h.is_finished()) {
                 timed_println!("All GDRR threads have finished execution");
                 break;

@@ -94,7 +94,8 @@ impl<'a> GDRR<'a> {
                 } else {
                     //Current local optimum is not better, add the best cost to the history queue
                     for _ in 0..(self.config.history_length - lahc_history.len()) {
-                        lahc_history.push_back(lahc_history.back().unwrap().clone());
+                        let best = lahc_history.back().unwrap_or(&empty_problem_cost).clone();
+                        lahc_history.push_back(best);
                     }
                 }
                 n_accepted += 1;
@@ -110,7 +111,7 @@ impl<'a> GDRR<'a> {
             }
             n_iterations += 1;
             if n_iterations % 100 == 0 {
-                self.local_sol_collector.rx_sync();
+                self.local_sol_collector.rx_sync()
             }
 
             debug_assert!(lahc_history.len() <= self.config.history_length, "{}", lahc_history.len());
