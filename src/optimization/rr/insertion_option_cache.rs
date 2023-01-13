@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
 use by_address::ByAddress;
+use generational_arena::Index;
 
 use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
@@ -24,7 +25,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<'a, Weak<RefCell<Node<'a>>>>, parttypes: &Vec<&'a PartType>)
+    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<Index>, parttypes: &Vec<&'a PartType>)
     {
         cache_updates.invalidated().iter().for_each(|node| {
             match node.upgrade() {

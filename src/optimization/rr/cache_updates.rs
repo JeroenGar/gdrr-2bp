@@ -1,17 +1,18 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Weak;
+use generational_arena::Index;
 
 use crate::core::entities::node::Node;
 use crate::core::layout_index::LayoutIndex;
 
-pub struct CacheUpdates<'a, T> {
+pub struct CacheUpdates<T> {
     invalidated: Vec<T>,
     new_entries: Vec<T>,
     layout: LayoutIndex,
 }
 
-impl<'a, T> CacheUpdates<'a, T> {
+impl<T> CacheUpdates<T> {
     pub fn new(layout: LayoutIndex) -> Self {
         CacheUpdates {
             invalidated: Vec::new(),
@@ -46,11 +47,11 @@ impl<'a, T> CacheUpdates<'a, T> {
 }
 
 
-impl<'a> Debug for CacheUpdates<'a, Weak<RefCell<Node<'a>>>> {
+impl<T : Debug> Debug for CacheUpdates<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "CacheUpdates {{ invalidated: {:#?}, new_entries: {:#?} }}",
-               self.invalidated.iter().map(|n| n.upgrade()).collect::<Vec<_>>(),
-               self.new_entries.iter().map(|n| n.upgrade()).collect::<Vec<_>>()
+               &self.invalidated,
+               &self.new_entries
         )
     }
 }

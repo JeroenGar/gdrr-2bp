@@ -30,35 +30,32 @@ pub struct Problem<'a> {
     layouts: Arena<Layout<'a>>,
     empty_layouts: Vec<Layout<'a>>,
     random: StdRng,
-    unchanged_layouts: HashSet<Index>,
+    unchanged_layouts: HashSet<usize>,
     solution_id_unchanged_layouts: Option<usize>,
     solution_id_counter: usize,
+    layout_id_counter: usize,
 }
 
 impl<'a> Problem<'a> {
     pub fn new(instance: &'a Instance) -> Self {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
-        let layouts = Arena::new();
-        let empty_layouts = Vec::new();
-        let unchanged_layouts = HashSet::new();
-        let solution_id_unchanged_layouts = None;
         let random = match DETERMINISTIC_MODE {
             true => StdRng::seed_from_u64(0),
             false => StdRng::from_rng(thread_rng()).unwrap()
         };
-        let solution_id_counter = 0;
 
         let mut problem = Problem {
             instance,
             parttype_qtys,
             sheettype_qtys,
-            layouts,
-            empty_layouts,
-            unchanged_layouts,
-            solution_id_unchanged_layouts,
+            layouts : Arena::new(),
+            empty_layouts : Vec::new(),
+            unchanged_layouts : HashSet::new(),
+            solution_id_unchanged_layouts : None,
             random,
-            solution_id_counter
+            solution_id_counter : 0,
+            layout_id_counter : 0,
         };
 
         //Initiate the empty layouts
@@ -66,14 +63,14 @@ impl<'a> Problem<'a> {
             match sheettype.fixed_first_cut_orientation() {
                 Some(orientation) => {
                     problem.empty_layouts.push(
-                        Layout::new(sheettype, orientation)
+                        Layout::new(problem.next_layout_id(), sheettype, orientation)
                     );
                 }
                 None => {
                     problem.empty_layouts.extend(
                         [
-                            Layout::new(sheettype, Orientation::Horizontal),
-                            Layout::new(sheettype, Orientation::Vertical)
+                            Layout::new(problem.next_layout_id(), sheettype, Orientation::Horizontal),
+                            Layout::new(problem.next_layout_id(), sheettype, Orientation::Vertical)
                         ]
                     );
                 }
@@ -85,7 +82,7 @@ impl<'a> Problem<'a> {
 
     /// Modifies the problem by inserting an part according to the InsertionBlueprint.
     /// It returns which updates should be made to the InsertionOptionCache and whether or not a new layout was created.
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> CacheUpdates<'a, Index> {
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> CacheUpdates<Index> {
         self.register_part(blueprint.parttype(), 1);
 
         match blueprint.layout() {
@@ -99,7 +96,7 @@ impl<'a> Problem<'a> {
                 cache_updates
             }
             LayoutIndex::Empty(index) => {
-                let empty_layout = &self.empty_layouts[*index];
+                let empty_layout = &self.empty_layouts[index];
 
                 //Create a copy of the empty layout and register it
                 let copy = self.register_layout(empty_layout.clone_with_id(self.next_layout_id()));
@@ -174,61 +171,54 @@ impl<'a> Problem<'a> {
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
-        match self.solution_id_unchanged_layouts == Some(solution.id()) {
+        match self.unchanged_layouts_solution_id == Some(solution.id()) {
             true => {
                 //A partial restore is possible.
-                let mut unchanged_layouts = vec![];
-                let mut modified_layouts = vec![];
-                let mut absent_layouts = vec![];
-                for (id,_) in self.layouts.iter() {
+
+                //Check all the layouts in the problem and check if they are either modified, unmodified or absent in the solution.
+                let mut present_layout_ids = vec![];
+                let mut changed_layout_indices = vec![];
+                let mut absent_layout_indices = vec![];
+
+                for (index,layout) in self.layouts.iter() {
                     //For all layouts in the problem, check which ones occur in the solution
-                    match solution.layouts().contains_key(&id) {
+                    let layout_id = layout.id();
+                    match solution.layouts().contains_key(&layout_id) {
                         true => {
                             //layout is present in the solution
-                            match self.unchanged_layouts.contains(&id) {
-                                true => {
-                                    //the layout is unchanged with respect to the solution, nothing needs to change
-                                    unchanged_layouts.push(id);
-                                }
-                                false => {
-                                    //the layout has been modified, it needs to be restored
-                                    modified_layouts.push(id);
-                                }
+                            if !self.unchanged_layouts.contains(&layout_id) {
+                                changed_layout_indices.push(index)
                             }
+                            present_layout_ids.push(layout_id);
                         }
                         false => {
-                            //layout is not present in the solution
-                            absent_layouts.push(id);
+                            absent_layout_indices.push(index);
                         }
                     }
                 }
-                absent_layouts.iter().for_each(|id| {
-                    self.layouts.remove(*id);
-                });
-                modified_layouts.iter().for_each(|id| {
-                    let copy = solution.layouts().get(&id)
-                    self.layouts.insert_with(
-                        |id| (solution.layouts().get(&id).unwrap().as_ref().clone(), id)
-                    );
-                });
-
+                for i in absent_layout_indices{
+                    self.layouts.remove(i);
+                }
+                for i in changed_layout_indices {
+                    let layout = self.layouts.remove(i).expect("Layout should be present");
+                    let copy = solution.layouts().get(&layout.id()).unwrap().as_ref().clone();
+                    self.layouts.insert(copy);
+                }
 
                 //Some layouts are present in the solution, but not in the problem
                 for id in solution.layouts().keys() {
-                    if !layouts_in_problem.contains(id) {
-                        let copy = solution.layouts().get(id).unwrap().create_deep_copy(*id);
-                        let copy = Rc::new(RefCell::new(copy));
-                        self.layouts.push(copy.clone());
+                    if !present_layout_ids.contains(id) {
+                        let copy = solution.layouts().get(id).unwrap().as_ref().clone();
+                        self.layouts.insert(copy);
                     }
                 }
             }
             false => {
                 //The id of the solution does not match unchanged_layouts_solution_id, a partial restore is not possible
                 self.layouts.clear();
-                for (id, layout) in solution.layouts().iter() {
-                    let copy = layout.create_deep_copy(*id);
-                    let copy = Rc::new(RefCell::new(copy));
-                    self.layouts.push(copy.clone());
+                for (_, layout) in solution.layouts().iter() {
+                    let copy = layout.as_ref().clone();
+                    self.layouts.insert(copy);
                 }
             }
         }
@@ -270,7 +260,7 @@ impl<'a> Problem<'a> {
         &mut self.random
     }
 
-    pub fn layouts(&self) -> &Vec<Rc<RefCell<Layout<'a>>>> {
+    pub fn layouts(&self) -> &Arena<Layout<'a>> {
         &self.layouts
     }
 
@@ -329,8 +319,8 @@ impl<'a> Problem<'a> {
     }
 
     fn next_layout_id(&mut self) -> usize {
-        self.counter_layout_id += 1;
-        self.counter_layout_id
+        self.layout_id_counter += 1;
+        self.layout_id_counter
     }
 
     fn next_solution_id(&mut self) -> usize {
@@ -338,7 +328,7 @@ impl<'a> Problem<'a> {
         self.solution_id_counter
     }
 
-    pub fn empty_layouts(&self) -> &Vec<Rc<RefCell<Layout<'a>>>> {
+    pub fn empty_layouts(&self) -> &Vec<Layout<'a>> {
         &self.empty_layouts
     }
 

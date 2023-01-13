@@ -12,6 +12,7 @@ use super::{parttype::PartType, sheettype::SheetType};
 
 #[derive(Debug, Clone)]
 pub struct Layout<'a> {
+    id : usize,
     sheettype: &'a SheetType,
     nodes: Arena<Node<'a>>,
     top_node: Index,
@@ -21,11 +22,12 @@ pub struct Layout<'a> {
 }
 
 impl<'a> Layout<'a> {
-    pub fn new(sheettype: &'a SheetType, first_cut_orientation: Orientation) -> Self {
+    pub fn new(id: usize, sheettype: &'a SheetType, first_cut_orientation: Orientation) -> Self {
         let mut nodes = Arena::new();
         let top_node = nodes.insert(Node::new(sheettype.width(), sheettype.height(), first_cut_orientation, None));
 
         let mut layout = Self {
+            id,
             sheettype,
             nodes,
             top_node,
@@ -38,6 +40,13 @@ impl<'a> Layout<'a> {
         layout.register_node(placeholder_node, top_node);
 
         layout
+    }
+
+    pub fn clone_with_id(&self, id : usize) -> Self{
+        Self {
+            id,
+            ..self.clone()
+        }
     }
 
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Index>, instance: &'a Instance) {
@@ -221,8 +230,10 @@ impl<'a> Layout<'a> {
         node_index
     }
 
-    fn unregister_node(&mut self, node_index: Index, removed_parts: Option<&mut Vec<PartType>>) {
+    fn unregister_node(&mut self, node_index: Index, removed_parts: Option<&mut Vec<&'a PartType>>) {
         self.invalidate_caches();
+
+        let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
 
         if let Some(parttype) = node.parttype() {
             if let Some(removed_parts) = removed_parts {
@@ -232,7 +243,6 @@ impl<'a> Layout<'a> {
         }
 
         //All empty nodes need to be removed from the sorted empty nodes list
-        let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
         if node.is_empty() {
             let lower_index = self.sorted_empty_nodes.partition_point(|n|
                 { self.nodes[n].area() > node.area() });
@@ -260,6 +270,7 @@ impl<'a> Layout<'a> {
         }
 
         for child in node.children() {
+            let removed_parts = removed_parts.map(|v| v);
             self.unregister_node(child.clone(), removed_parts);
         }
 
