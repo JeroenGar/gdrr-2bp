@@ -1,5 +1,5 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use generational_arena::{Arena, Index};
+use itertools::Itertools;
 
 use crate::{Orientation, PartType};
 use crate::core::cost::Cost;
@@ -25,23 +25,20 @@ impl NodeBlueprint {
         Self { width, height, children, parttype_id, next_cut_orient }
     }
 
-    pub fn from_node(node: &Rc<RefCell<Node>>) -> Self {
-        let node = node.as_ref().borrow();
+    pub fn from_node(node_index: Index, nodes: &Arena<Node>) -> Self {
+        let node = &nodes[node_index];
+
+        let (width, height) = (node.width(), node.height());
+        let next_cut_orient = node.next_cut_orient();
         let parttype_id = match node.parttype() {
             Some(pt) => Some(pt.id()),
             None => None
         };
-        let mut b_node = Self {
-            width: node.width(),
-            height: node.height(),
-            parttype_id: parttype_id,
-            children: Vec::new(),
-            next_cut_orient: node.next_cut_orient(),
-        };
-        node.children().iter().for_each(|child| {
-            b_node.children.push(NodeBlueprint::from_node(child));
-        });
-        b_node
+        let children = node.children().iter()
+            .map(|child_index| NodeBlueprint::from_node(*child_index, nodes))
+            .collect_vec();
+
+        Self { width, height, parttype_id, children, next_cut_orient }
     }
 
     pub fn add_child(&mut self, child: NodeBlueprint) {

@@ -19,6 +19,7 @@ colored = "2.0.0"
 svg = "0.10.0"
 horrorshow = "0.8.4"
 itertools = "0.10.3"
+generational-arena = "0.2.8"
 
 [profile.release]
 opt-level = 3

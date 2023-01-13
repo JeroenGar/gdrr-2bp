@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
+use generational_arena::{Arena, Index};
 
 use crate::{Orientation, PartType, SheetType};
 use crate::core::entities::layout::Layout;
@@ -30,10 +31,6 @@ pub fn node_belongs_to_owner<'a>(node: &Rc<RefCell<Node<'a>>>, owner_node: &Rc<R
             }
         }
     }
-}
-
-pub fn layout_belongs_to_problem<'a>(layout: &Rc<RefCell<Layout<'a>>>, problem: &Problem<'a>) -> bool {
-    problem.layouts().iter().any(|l| Rc::ptr_eq(l, layout))
 }
 
 pub fn children_nodes_fit(node: &Node) -> bool {
@@ -329,4 +326,8 @@ pub fn instance_parttypes_and_sheettypes_are_correct(parttypes: &Vec<(PartType, 
         id += 1;
     }
     return true;
+}
+
+pub fn no_ghost_nodes_in_arena(arena: &Arena<Node>, top_node: &Index) -> bool {
+    todo!()
 }

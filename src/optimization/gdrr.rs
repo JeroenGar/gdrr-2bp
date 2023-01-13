@@ -274,10 +274,10 @@ impl<'a> GDRR<'a> {
                     }
                     if rb!(option.layout().upgrade().unwrap()).is_empty() {
                         if mat_limit_budget >= rb!(option.layout().upgrade().unwrap()).sheettype().value() as i128 {
-                            new_layout_blueprints.extend(option.get_blueprints());
+                            new_layout_blueprints.extend(option.generate_blueprints());
                         }
                     } else {
-                        existing_layout_blueprints.extend(option.get_blueprints());
+                        existing_layout_blueprints.extend(option.generate_blueprints());
                     }
                 }
                 match existing_layout_blueprints.is_empty() {

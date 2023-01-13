@@ -1,5 +1,6 @@
 use std::ops::Deref;
 use std::rc::Rc;
+use generational_arena::Index;
 
 use indexmap::IndexMap;
 
@@ -16,7 +17,7 @@ use crate::util::macros::{rb};
 /// Its primary use is restoring a Problem to a prior state.
 pub struct ProblemSolution<'a> {
     instance: &'a Instance,
-    layouts: IndexMap<usize, Rc<Layout<'a>>>,
+    layouts: IndexMap<Index, Rc<Layout<'a>>>,
     cost: Cost,
     id: usize,
     parttype_qtys: Vec<usize>,
@@ -88,7 +89,7 @@ impl<'a> ProblemSolution<'a> {
     pub fn instance(&self) -> &'a Instance {
         self.instance
     }
-    pub fn layouts(&self) -> &IndexMap<usize, Rc<Layout<'a>>> {
+    pub fn layouts(&self) -> &IndexMap<Index, Rc<Layout<'a>>> {
         &self.layouts
     }
     pub fn id(&self) -> usize {
