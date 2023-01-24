@@ -10,7 +10,6 @@ use crate::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
-use crate::util::macros::{rb};
 
 #[derive(Debug, Clone)]
 /// ProblemSolution represents an immutable snapshot of a Problem at some point in time.
@@ -29,20 +28,18 @@ impl<'a> ProblemSolution<'a> {
     pub fn new(problem: &Problem<'a>, cost: Cost, id: usize, prev_solution: &ProblemSolution<'a>) -> ProblemSolution<'a> {
         let mut layouts = IndexMap::new();
 
-        for layout in problem.layouts() {
-            let layout_ref = rb!(layout);
-            let layout_id = layout_ref.id();
+        for (_,layout) in problem.layouts() {
+            let layout_id = layout.id();
             if problem.unchanged_layouts().contains(&layout_id) {
                 layouts.insert(layout_id, prev_solution.layouts.get(&layout_id).unwrap().clone());
             } else {
-                layouts.insert(layout_id, Rc::new(layout_ref.create_deep_copy(layout_id)));
+                layouts.insert(layout_id, Rc::new(layout.clone()));
             }
         }
 
         debug_assert!(layouts.iter().all(|(_id, l)| {
-            let top_node = l.as_ref().top_node();
-            let top_node = rb!(top_node);
-            assertions::children_nodes_fit(top_node.deref())
+            let top_node = l.top_node();
+            assertions::children_nodes_fit(top_node, l.nodes())
         }));
 
         let parttype_qtys = problem.parttype_qtys().clone();
@@ -64,9 +61,8 @@ impl<'a> ProblemSolution<'a> {
     pub fn new_force_copy_all(problem: &Problem<'a>, cost: Cost, id: usize) -> ProblemSolution<'a> {
         let mut layouts = IndexMap::new();
 
-        for layout in problem.layouts() {
-            let layout_ref = rb!(layout);
-            layouts.insert(layout_ref.id(), Rc::new(layout_ref.create_deep_copy(layout_ref.id())));
+        for (_,layout) in problem.layouts() {
+            layouts.insert(layout.id(), Rc::new(layout.clone()));
         }
 
         let parttype_qtys = problem.parttype_qtys().clone();

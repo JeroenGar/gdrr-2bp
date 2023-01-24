@@ -15,16 +15,15 @@ impl SendableLayout {
     pub fn new(layout: &Layout) -> Self {
         Self {
             sheettype_id: layout.sheettype().id(),
-            top_node: NodeBlueprint::from_node(&layout.top_node()),
-            cost: layout.cost().clone(),
-            usage: layout.usage(),
+            top_node: NodeBlueprint::from_node(*layout.top_node(), layout.nodes()),
+            cost: layout.cost_immut(false),
+            usage: layout.usage_immut(false),
         }
     }
 
     pub fn convert_to_layout(&self, _instance: &Instance) -> Layout {
         todo!();
     }
-
 
     pub fn sheettype_id(&self) -> usize {
         self.sheettype_id

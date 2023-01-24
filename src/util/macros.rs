@@ -1,15 +1,3 @@
-macro_rules! rb {
-    ($a:expr)=>{
-        $a.as_ref().borrow()
-    };
-}
-
-macro_rules! rbm {
-    ($a:expr)=>{
-        $a.as_ref().borrow_mut()
-    };
-}
-
 macro_rules! timed_println {
     ($($arg:tt)*)=>{
         let duration = crate::EPOCH.elapsed();
@@ -33,7 +21,5 @@ macro_rules! timed_thread_println {
     };
 }
 
-pub(crate) use rb;
-pub(crate) use rbm;
 pub(crate) use timed_println;
 pub(crate) use timed_thread_println;

@@ -11,7 +11,6 @@ use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::leftover_valuator;
 use crate::core::rotation::Rotation;
 use crate::util::assertions;
-use crate::util::macros::{rb, rbm};
 
 #[derive(Debug, Clone)]
 pub struct Node<'a> {
@@ -254,23 +253,6 @@ impl<'a> Node<'a> {
             (None, false) => Cost::empty(), // structure-node
             (None, true) => Cost::empty().add_leftover_value(leftover_valuator::valuate(self.area())), //leftover node
             (Some(_), false) => panic!("Parttype set on node with children"),
-        }
-    }
-
-    pub fn calculate_usage(&self) -> f64 {
-        if self.parttype.is_some() {
-            1.0
-        } else if self.children.is_empty() {
-            0.0
-        } else {
-            let mut usage = 0.0;
-            for child in &self.children {
-                let child_ref = rb!(child);
-                usage += child_ref.area() as f64 * child_ref.calculate_usage();
-            }
-            usage /= self.area() as f64;
-            debug_assert!(usage <= 1.0);
-            usage
         }
     }
 

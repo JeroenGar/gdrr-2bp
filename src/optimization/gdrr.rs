@@ -1,17 +1,16 @@
-use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
-use std::rc::Rc;
 
 use colored::*;
+use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rand::rngs::{StdRng};
+use rand::rngs::StdRng;
 
 use crate::{Instance, PartType};
 use crate::core::cost::Cost;
-use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
+use crate::core::layout_index::LayoutIndex;
 use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
@@ -19,8 +18,8 @@ use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::{assertions, blink};
-use crate::util::biased_sampler::BiasedSampler;
-use crate::util::macros::{rb, timed_thread_println};
+use crate::util::biased_sampler::{BiasedSampler, BiasMode};
+use crate::util::macros::timed_thread_println;
 use crate::util::util;
 
 pub struct GDRR<'a> {
@@ -132,41 +131,56 @@ impl<'a> GDRR<'a> {
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
-        let n_nodes_to_remove = self.problem.random().gen_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
+        let n_nodes_to_remove = self.problem.rng().gen_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
             for _i in 0..n_nodes_to_remove {
-                let biased_sampler = BiasedSampler::new_default(
-                    self.problem.layouts().iter().map(|l| { Rc::downgrade(l) }).collect(),
-                    |a: &RefCell<Layout>, b: &RefCell<Layout>| { a.borrow().usage().partial_cmp(&b.borrow().usage()).unwrap().reverse() },
-                );
+                let entries = self.problem.layouts_mut().iter_mut().map(|(i, l)| (i, l.usage(false))).collect_vec();
+                let biased_sampler = BiasedSampler::new_default(entries, BiasMode::Low);
 
-                let layout = biased_sampler.sample(&mut self.problem.random());
+                let layout_index = biased_sampler.sample(&mut self.problem.rng());
 
-                match layout {
-                    Some(layout) => {
-                        let removable_nodes = rb!(layout).get_removable_nodes();
-                        let selected_node = removable_nodes.choose(&mut self.problem.random()).unwrap().upgrade().unwrap();
+                match layout_index {
+                    Some(layout_index) => {
+                        let removable_nodes = self.problem.layouts()[*layout_index].get_removable_nodes();
+                        let selected_node = removable_nodes.choose(&mut self.problem.rng()).unwrap().clone();
 
-                        mat_limit_budget += self.problem.remove_node(&selected_node, &layout) as i128;
+                        let removed_layout = self.problem.remove_node(selected_node, LayoutIndex::Existing(*layout_index));
+                        if let Some(mut removed_layout) = removed_layout {
+                            mat_limit_budget += removed_layout.sheettype().value() as i128;
+                        }
                     }
-                    None => { break; }
+                    None => {
+                        break;
+                    }
                 }
             }
         } else {
             while mat_limit_budget < 0 {
-                if self.problem.layouts().is_empty() {
-                    break;
-                }
-                //Search the worst layout
-                let layout_min_usage = self.problem.layouts().iter().min_by(|a, b| {
-                    let usage_a = rb!(a).usage();
-                    let usage_b = rb!(b).usage();
-                    usage_a.partial_cmp(&usage_b).unwrap()
-                }).unwrap().clone();
+                //Search the lowest usage layout
+                let min_usage_layout_index = self.problem.layouts_mut().iter_mut()
+                    .map(|(i,l)| (i, l.usage(false)))
+                    .min_by(|(_, a), (_, b)| {
+                        a.partial_cmp(b).unwrap()
+                    })
+                    .map(|(i, _)| i);
 
-                //release it and update mat_limit_exceedance
-                mat_limit_budget += self.problem.remove_node(rb!(layout_min_usage).top_node(), &layout_min_usage) as i128;
+                match min_usage_layout_index {
+                    Some(min_usage_layout_index) => {
+                        let top_node = self.problem.layouts()[min_usage_layout_index].top_node().clone();
+
+                        //release it and update mat_limit_exceedance
+                        let removed_layout = self.problem.remove_node(top_node, LayoutIndex::Existing(min_usage_layout_index));
+                        if let Some(mut removed_layout) = removed_layout {
+                            mat_limit_budget += removed_layout.sheettype().value() as i128;
+                        } else {
+                            panic!("Top node should remove entire layout!");
+                        }
+                    }
+                    None => {
+                        break; //no existing layouts
+                    }
+                }
             }
         }
         mat_limit_budget
@@ -182,39 +196,35 @@ impl<'a> GDRR<'a> {
         let mut part_area_not_included: u64 = 0;
 
         //Collect all the layouts which should be considered during this recreate iteration
-        let mut layouts_to_consider = Vec::new();
-        layouts_to_consider.extend(self.problem.layouts().iter().cloned());
-        layouts_to_consider.extend(self.problem.empty_layouts().iter()
-            .filter(|l| { *self.problem.sheettype_qtys().get(rb!(l).sheettype().id()).unwrap() > 0 })
-            .cloned());
-
+        let layouts_to_consider = self.problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
+            .chain(self.problem.empty_layouts().iter().enumerate()
+                .filter(|(_, l)| {
+                    self.problem.sheettype_qtys()[l.sheettype().id()] > 0
+                })
+                .map(|(i, l)| (LayoutIndex::Empty(i), l))
+            ).collect_vec();
 
         //Generate insertion options for all relevant parttypes and layouts
-        insertion_option_cache.add_for_parttypes(parttypes_to_consider.iter(), &layouts_to_consider);
+        insertion_option_cache.add_for_parttypes(&parttypes_to_consider, &layouts_to_consider);
         debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider));
 
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
-            let elected_parttype = GDRR::select_next_parttype(&self.instance, &mut parttypes_to_consider, &insertion_option_cache, self.problem.random(), &self.config);
-            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, self.problem.random(), &self.config, &self.cost_comparator);
+            let elected_parttype = GDRR::select_next_parttype(&parttypes_to_consider, &insertion_option_cache, self.problem.rng(), &self.config);
+            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, &mut self.problem, &self.config, &self.cost_comparator);
 
-            if elected_blueprint.is_some() {
-                let elected_blueprint_sheettype_id = rb!(elected_blueprint.as_ref().unwrap().layout().as_ref().unwrap().upgrade().unwrap()).sheettype().id();
+            if let Some(elected_blueprint) = elected_blueprint.as_ref() {
+                let cache_updates = self.problem.implement_insertion_blueprint(elected_blueprint);
+                insertion_option_cache.update_cache(&cache_updates, &parttypes_to_consider, &self.problem);
 
-                let (cache_updates, blueprint_created_new_layout) =
-                    self.problem.implement_insertion_blueprint(elected_blueprint.as_ref().unwrap());
-                insertion_option_cache.update_cache(&cache_updates, &parttypes_to_consider);
-
-                if blueprint_created_new_layout {
+                if let LayoutIndex::Empty(index) = elected_blueprint.layout_index() {
                     //update mat_limit_budget
-                    mat_limit_budget -= self.instance.get_sheettype(elected_blueprint_sheettype_id).value() as i128;
                     //remove the relevant empty_layout from consideration if the stock is empty
-                    if *self.problem.sheettype_qtys().get(elected_blueprint_sheettype_id).unwrap() == 0 {
-                        self.problem.empty_layouts().iter()
-                            .filter(|l| {
-                                rb!(l).sheettype().id() == elected_blueprint_sheettype_id
-                            }).for_each(|l| {
-                            insertion_option_cache.remove_for_layout(l);
-                        });
+                    let empty_layout = &self.problem.empty_layouts()[*index];
+                    mat_limit_budget -= empty_layout.sheettype().value() as i128;
+                    let sheettype_id = empty_layout.sheettype().id();
+
+                    if self.problem.sheettype_qtys()[sheettype_id] == 0 {
+                        insertion_option_cache.remove_all_for_layout(&elected_blueprint.layout_index(), empty_layout);
                     }
                 }
                 if *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
@@ -241,26 +251,21 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    fn select_next_parttype<'b : 'a>(instance: &'b Instance, parttypes: &mut Vec<&'a PartType>, insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'b PartType {
-        parttypes.shuffle(rand);
-        let n_options: Vec<usize> = parttypes.iter().map(|p| {
-            match insertion_option_cache.get_for_parttype(*p) {
-                Some(options) => {
-                    options.len()
-                }
-                None => {
-                    0
-                }
-            }
+    fn select_next_parttype(parttypes: &[&'a PartType], insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'a PartType {
+        let mut indices = (0..parttypes.len()).collect_vec();
+        indices.shuffle(rand);
+
+        let n_options: Vec<usize> = indices.iter().map(|i| {
+            let parttype = parttypes[*i];
+            insertion_option_cache.get_for_parttype(parttype).map_or(0, |options| options.len())
         }).collect();
 
-        let selected_index = blink::select_lowest_entry(&n_options, config.blink_rate, rand);
-        let selected_parttype_id = parttypes[selected_index].id();
-
-        instance.get_parttype(selected_parttype_id)
+        let blink = blink::select_lowest_entry(&n_options, config.blink_rate, rand);
+        let parttype_index = indices[blink];
+        parttypes[parttype_index]
     }
 
-    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mat_limit_budget: i128, rand: &mut StdRng, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mat_limit_budget: i128, problem: &mut Problem, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
         let insertion_options = insertion_option_cache.get_for_parttype(parttype);
         match insertion_options {
             Some(options) => {
@@ -272,12 +277,15 @@ impl<'a> GDRR<'a> {
                     if existing_layout_blueprints.len() > 20 {
                         break; //enough blueprints to consider
                     }
-                    if rb!(option.layout().upgrade().unwrap()).is_empty() {
-                        if mat_limit_budget >= rb!(option.layout().upgrade().unwrap()).sheettype().value() as i128 {
-                            new_layout_blueprints.extend(option.generate_blueprints());
+                    match option.layout_index() {
+                        LayoutIndex::Existing(_) => {
+                            existing_layout_blueprints.extend(option.generate_blueprints(problem))
                         }
-                    } else {
-                        existing_layout_blueprints.extend(option.generate_blueprints());
+                        LayoutIndex::Empty(i) => {
+                            if mat_limit_budget >= problem.empty_layouts()[*i].sheettype().value() as i128 {
+                                new_layout_blueprints.extend(option.generate_blueprints(problem));
+                            }
+                        }
                     }
                 }
                 match existing_layout_blueprints.is_empty() {
@@ -287,7 +295,7 @@ impl<'a> GDRR<'a> {
                             cost_comparator(a.cost(), b.cost())
                         });
                         //Select the best (blinked) one
-                        let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, rand);
+                        let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, problem.rng());
                         Some(existing_layout_blueprints.remove(selected_blinked_index))
                     }
                     true => {
@@ -299,7 +307,7 @@ impl<'a> GDRR<'a> {
                             }
                             false => {
                                 //Select a random blueprint from the new layout blueprints
-                                let selected_index = rand.gen_range(0..new_layout_blueprints.len());
+                                let selected_index = problem.rng().gen_range(0..new_layout_blueprints.len());
                                 Some(new_layout_blueprints.remove(selected_index))
                             }
                         }

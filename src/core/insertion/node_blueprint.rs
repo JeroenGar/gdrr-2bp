@@ -53,8 +53,7 @@ impl NodeBlueprint {
         } else {
             let mut cost = Cost::new(0, 0.0, 0, 0);
             for child in &self.children {
-                let child_cost = child.calculate_cost();
-                cost.add(&child_cost);
+                cost = cost + child.calculate_cost();
             }
             return cost;
         }

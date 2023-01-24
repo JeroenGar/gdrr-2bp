@@ -17,7 +17,6 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
-use crate::util::macros::{rb, rbm};
 
 /// Problem is the main representation of the optimization problem.
 /// A Problem is based on an Instance and contains a collection of Layouts.
@@ -29,7 +28,7 @@ pub struct Problem<'a> {
     sheettype_qtys: Vec<usize>,
     layouts: Arena<Layout<'a>>,
     empty_layouts: Vec<Layout<'a>>,
-    random: StdRng,
+    rng: StdRng,
     unchanged_layouts: HashSet<usize>,
     solution_id_unchanged_layouts: Option<usize>,
     solution_id_counter: usize,
@@ -53,7 +52,7 @@ impl<'a> Problem<'a> {
             empty_layouts : Vec::new(),
             unchanged_layouts : HashSet::new(),
             solution_id_unchanged_layouts : None,
-            random,
+            rng: random,
             solution_id_counter : 0,
             layout_id_counter : 0,
         };
@@ -62,48 +61,46 @@ impl<'a> Problem<'a> {
         for (sheettype, _) in instance.sheets() {
             match sheettype.fixed_first_cut_orientation() {
                 Some(orientation) => {
-                    problem.empty_layouts.push(
-                        Layout::new(problem.next_layout_id(), sheettype, orientation)
-                    );
+                    let empty_layout = Layout::new(problem.next_layout_id(), sheettype, orientation);
+                    problem.empty_layouts.push(empty_layout);
                 }
                 None => {
-                    problem.empty_layouts.extend(
-                        [
-                            Layout::new(problem.next_layout_id(), sheettype, Orientation::Horizontal),
-                            Layout::new(problem.next_layout_id(), sheettype, Orientation::Vertical)
-                        ]
-                    );
+                    let empty_layout_h = Layout::new(problem.next_layout_id(), sheettype, Orientation::Horizontal);
+                    let empty_layout_v = Layout::new(problem.next_layout_id(), sheettype, Orientation::Vertical);
+                    problem.empty_layouts.extend([empty_layout_h, empty_layout_v]);
                 }
             }
         }
-
         problem
     }
 
     /// Modifies the problem by inserting an part according to the InsertionBlueprint.
     /// It returns which updates should be made to the InsertionOptionCache and whether or not a new layout was created.
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> CacheUpdates<Index> {
-        self.register_part(blueprint.parttype(), 1);
+        self.register_part(blueprint.parttype().id(), 1);
 
-        match blueprint.layout() {
+        match blueprint.layout_index() {
             LayoutIndex::Existing(index) => {
                 let blueprint_layout = &mut self.layouts[*index];
-                let mut cache_updates = CacheUpdates::new(blueprint.layout());
-
+                let mut cache_updates = CacheUpdates::new(*blueprint.layout_index());
                 blueprint_layout.implement_insertion_blueprint(blueprint, &mut cache_updates, self.instance);
-                self.layout_has_changed(blueprint_layout.id());
+
+                let blueprint_layout_id = blueprint_layout.id();
+                self.layout_has_changed(blueprint_layout_id);
 
                 cache_updates
             }
             LayoutIndex::Empty(index) => {
-                let empty_layout = &self.empty_layouts[index];
+                let next_layout_id = self.next_layout_id();
+                let empty_layout = &self.empty_layouts[*index];
 
                 //Create a copy of the empty layout and register it
-                let copy = self.register_layout(empty_layout.clone_with_id(self.next_layout_id()));
+                let empty_layout_clone = empty_layout.clone_with_id(next_layout_id);
+                let clone_index = self.register_layout(empty_layout_clone);
 
                 //Implement the blueprint
-                let mut cache_updates = CacheUpdates::new(LayoutIndex::Existing(copy));
-                self.layouts[copy].implement_insertion_blueprint(blueprint, &mut cache_updates, self.instance);
+                let mut cache_updates = CacheUpdates::new(LayoutIndex::Existing(clone_index));
+                self.layouts[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates, self.instance);
 
                 cache_updates
             }
@@ -113,19 +110,21 @@ impl<'a> Problem<'a> {
     pub fn remove_node(&mut self, node_index: Index, layout_index: LayoutIndex) -> Option<Layout<'a>> {
         match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot remove a node from an empty layout"),
-            LayoutIndex::Existing(li) => {
-                let layout = &mut self.layouts[li];
-                match node_index == layout.top_node() {
+            LayoutIndex::Existing(index) => {
+                let layout = &mut self.layouts[index];
+                match node_index == *layout.top_node() {
                     true => {
                         //TODO: test if this scenario is possible
                         //Remove the entire layout
                         Some(self.unregister_layout(layout_index))
                     }
                     false => {
-                        let removed_parts = layout.remove_node(node_index);
-                        removed_parts.iter().for_each(|p| self.unregister_part(p, 1));
+                        let removed_part_ids = layout.remove_node(node_index);
+                        for p_id in removed_part_ids {
+                            self.unregister_part(p_id, 1);
+                        }
 
-                        if layout.is_empty() {
+                        if self.get_layout(&layout_index).is_empty() {
                             Some(self.unregister_layout(layout_index))
                         }
                         else {
@@ -150,16 +149,18 @@ impl<'a> Problem<'a> {
     }
 
     pub fn create_solution(&mut self, old_solution: &Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
+        //TODO: implement cached cost for problem
+
         debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
         let id = self.next_solution_id();
+        let cost = cached_cost.unwrap_or(self.cost());
         let solution = match old_solution {
             Some(old_solution) => {
                 debug_assert!(old_solution.id() == self.solution_id_unchanged_layouts.unwrap());
-
-                ProblemSolution::new(self, cached_cost.unwrap_or(self.cost()), id, old_solution)
+                ProblemSolution::new(self, cost, id, old_solution)
             }
             None => {
-                ProblemSolution::new_force_copy_all(self, cached_cost.unwrap_or(self.cost()), id)
+                ProblemSolution::new_force_copy_all(self, cost, id)
             }
         };
 
@@ -171,7 +172,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
-        match self.unchanged_layouts_solution_id == Some(solution.id()) {
+        match self.solution_id_unchanged_layouts == Some(solution.id()) {
             true => {
                 //A partial restore is possible.
 
@@ -240,7 +241,7 @@ impl<'a> Problem<'a> {
             |(parttype, qty)| { parttype.area() * (*qty - self.parttype_qtys.get(parttype.id()).unwrap()) as u64 }
         ).sum::<u64>();
         let total_used_sheet_area = self.layouts().iter().map(
-            |layout| { rb!(layout).sheettype().area() }
+            |(_, layout)| { layout.sheettype().area() }
         ).sum::<u64>();
 
         total_included_part_area as f64 / total_used_sheet_area as f64
@@ -256,18 +257,31 @@ impl<'a> Problem<'a> {
         &self.sheettype_qtys
     }
 
-    pub fn random(&mut self) -> &mut StdRng {
-        &mut self.random
+    pub fn rng(&mut self) -> &mut StdRng {
+        &mut self.rng
     }
 
     pub fn layouts(&self) -> &Arena<Layout<'a>> {
         &self.layouts
     }
 
+    pub fn layouts_mut(&mut self) -> &mut Arena<Layout<'a>> {
+        &mut self.layouts
+    }
+
+    pub fn get_layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
+        match layout_index{
+            LayoutIndex::Existing(index) => self.layouts.get(*index).unwrap(),
+            LayoutIndex::Empty(index) => self.empty_layouts.get(*index).unwrap(),
+        }
+    }
+
     pub fn register_layout(&mut self, layout: Layout<'a>) -> Index {
-        self.register_sheet(layout.sheettype(), 1);
+        self.register_sheet(layout.sheettype().id(), 1);
         layout.get_included_parts().iter().for_each(
-            |p| { self.register_part(p, 1) });
+            |p_id| {
+                self.register_part(*p_id, 1);
+            });
 
         self.layouts.insert(layout)
     }
@@ -278,9 +292,9 @@ impl<'a> Problem<'a> {
             LayoutIndex::Existing(li) => {
                 let layout = self.layouts.remove(li).expect("Layout not found");
 
-                self.unregister_sheet(layout.sheettype(), 1);
+                self.unregister_sheet(layout.sheettype().id(), 1);
                 layout.get_included_parts().iter().for_each(
-                    |p| { self.unregister_part(p, 1) });
+                    |p_id| { self.unregister_part(*p_id, 1) });
                 layout
             }
         }
@@ -292,30 +306,26 @@ impl<'a> Problem<'a> {
 
     fn reset_unchanged_layouts(&mut self, unchanged_layouts_solution_id: usize) {
         self.unchanged_layouts = self.layouts.iter().map(
-            |l| rb!(l).id()).collect();
+            |(_,l)| l.id()).collect();
         self.solution_id_unchanged_layouts = Some(unchanged_layouts_solution_id);
     }
 
-    fn register_part(&mut self, parttype: &'a PartType, qty: usize) {
-        self.parttype_qtys[parttype.id()] -= qty;
+    fn register_part(&mut self, parttype_id: usize, qty: usize) {
+        self.parttype_qtys[parttype_id] -= qty;
     }
 
-    fn unregister_part(&mut self, parttype: &'a PartType, qty: usize) {
-        let id = parttype.id();
-        debug_assert!(self.parttype_qtys[id] + qty <= self.instance.get_parttype_qty(id).unwrap());
-
-        self.parttype_qtys[id] += qty;
+    fn unregister_part(&mut self, parttype_id: usize, qty: usize) {
+        debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.get_parttype_qty(parttype_id).unwrap());
+        self.parttype_qtys[parttype_id] += qty;
     }
 
-    fn register_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
-        self.sheettype_qtys[sheettype.id()] -= qty;
+    fn register_sheet(&mut self, sheettype_id: usize, qty: usize) {
+        self.sheettype_qtys[sheettype_id] -= qty;
     }
 
-    fn unregister_sheet(&mut self, sheettype: &'a SheetType, qty: usize) {
-        let id = sheettype.id();
-        debug_assert!(self.sheettype_qtys[id] + qty <= self.instance.get_sheettype_qty(id).unwrap());
-
-        self.sheettype_qtys[id] += qty;
+    fn unregister_sheet(&mut self, sheettype_id: usize, qty: usize) {
+        debug_assert!(self.sheettype_qtys[sheettype_id] + qty <= self.instance.get_sheettype_qty(sheettype_id).unwrap());
+        self.sheettype_qtys[sheettype_id] += qty;
     }
 
     fn next_layout_id(&mut self) -> usize {
@@ -332,16 +342,8 @@ impl<'a> Problem<'a> {
         &self.empty_layouts
     }
 
-    pub fn counter_layout_id(&self) -> usize {
-        self.counter_layout_id
-    }
-
     pub fn unchanged_layouts(&self) -> &HashSet<usize> {
         &self.unchanged_layouts
-    }
-
-    pub fn counter_solution_id(&self) -> usize {
-        self.solution_id_counter
     }
 }
 

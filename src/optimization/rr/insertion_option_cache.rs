@@ -2,18 +2,20 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
 use by_address::ByAddress;
-use generational_arena::Index;
+use generational_arena::{Arena, Index};
+use itertools::Itertools;
 
 use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_option::InsertionOption;
+use crate::core::layout_index::LayoutIndex;
+use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::CacheUpdates;
-use crate::util::macros::{rb};
 use crate::util::multi_map::MultiMap;
 
 pub struct InsertionOptionCache<'a> {
-    option_node_map: MultiMap<ByAddress<Rc<RefCell<Node<'a>>>>, Rc<InsertionOption<'a>>>,
+    option_node_map: MultiMap<(LayoutIndex, Index), Rc<InsertionOption<'a>>>,
     option_parttype_map: MultiMap<&'a PartType, Rc<InsertionOption<'a>>>,
 }
 
@@ -25,57 +27,48 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<Index>, parttypes: &Vec<&'a PartType>)
-    {
-        cache_updates.invalidated().iter().for_each(|node| {
-            match node.upgrade() {
-                Some(node) => {
-                    self.remove_for_node(&node);
-                }
-                None => {}
-            }
+    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<Index>, parttypes: &Vec<&'a PartType>, problem: &Problem){
+        let layout_i = cache_updates.layout_index();
+        cache_updates.invalidated().iter().for_each(|node_i| {
+            self.remove_for_node(layout_i, node_i);
         });
-        let layout = cache_updates.layout().clone();
-        cache_updates.new_entries().iter().for_each(|node| {
-            let node = node.upgrade().unwrap();
-            self.add_for_node(&node, layout.clone(), parttypes.iter());
+        let layout = problem.get_layout(layout_i);
+        cache_updates.new_entries().iter().for_each(|node_i| {
+            let node = &layout.nodes()[*node_i];
+            self.add_for_node(node_i, node, layout_i, parttypes.iter());
         });
     }
 
-    pub fn add_for_parttypes<I>(&mut self, parttypes: I, layouts: &Vec<Rc<RefCell<Layout<'a>>>>)
-        where I: Iterator<Item=&'b &'a PartType>
+    pub fn add_for_parttypes(&mut self, parttypes: &[&'a PartType], layouts: &[(LayoutIndex, &Layout)])
     {
-        let mut sorted_parttypes: Vec<&&PartType> = Vec::from_iter(parttypes);
+        //sort by decreasing area
+        let sorted_parttypes: Vec<&&PartType> = parttypes.iter()
+            .sorted_by(|a, b| a.area().cmp(&b.area()).reverse())
+            .collect_vec();
+
         if sorted_parttypes.is_empty() {
             return;
         }
-        //sort by decreasing area
-        sorted_parttypes.sort_by(|a, b| {
-            a.area().cmp(&b.area()).reverse()
-        });
 
-
-        for layout in layouts.iter() {
-            let layout_ref = rb!(layout);
-            let sorted_empty_nodes = layout_ref.sorted_empty_nodes();
+        for (layout_i, layout) in layouts {
+            let sorted_empty_nodes = layout.sorted_empty_nodes();
             let mut starting_index = 0;
 
-            for empty_node in sorted_empty_nodes.iter() {
+            for empty_node_i in sorted_empty_nodes.iter() {
                 let mut generated_insertion_options = Vec::new();
-                let empty_node = empty_node.upgrade().unwrap();
-                let empty_node_ref = rb!(empty_node);
-                if sorted_parttypes.get(sorted_parttypes.len() - 1).unwrap().area() > empty_node_ref.area() {
+                let empty_node = &layout.nodes()[*empty_node_i];
+                if sorted_parttypes[sorted_parttypes.len() - 1].area() > empty_node.area() {
                     //The smallest parttype is larger than this node, there are no possible insertion options left.
                     break;
                 }
                 for i in starting_index..sorted_parttypes.len() {
                     let parttype = *sorted_parttypes.get(i).unwrap();
 
-                    if empty_node_ref.area() < parttype.area() {
+                    if empty_node.area() < parttype.area() {
                         //The empty node is smaller than this parttype. For the next (smaller) empty node, start searching from next index
                         starting_index = i + 1;
                     } else {
-                        let insertion_option = InsertionOptionCache::generate_insertion_option(&empty_node, parttype, Rc::downgrade(layout));
+                        let insertion_option = InsertionOptionCache::generate_insertion_option(empty_node, parttype, *layout_i, *empty_node_i);
                         match insertion_option {
                             Some(insertion_option) => {
                                 let insertion_option = Rc::new(insertion_option);
@@ -90,21 +83,22 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                     let parttype = insertion_option.parttype();
                     self.option_parttype_map.insert(parttype, insertion_option.clone());
                 }
-                self.option_node_map.insert_all(ByAddress(empty_node.clone()), generated_insertion_options);
+                self.option_node_map.insert_all((*layout_i, *empty_node_i), generated_insertion_options);
             }
         }
     }
 
-    pub fn add_for_node<I>(&mut self, node: &Rc<RefCell<Node<'a>>>, layout: Weak<RefCell<Layout<'a>>>, parttypes: I)
+    pub fn add_for_node<I>(&mut self, node_i: &Index, node: &Node, layout_i: &LayoutIndex, parttypes: I)
         where I: Iterator<Item=&'b &'a PartType> {
-        let node_ref = rb!(node);
-        if node_ref.parttype().is_none() && node_ref.children().is_empty() {
+        if node.parttype().is_none() && node.children().is_empty() {
             for parttype in parttypes.into_iter() {
-                let insertion_option = InsertionOptionCache::generate_insertion_option(node, parttype, layout.clone());
+                let insertion_option =
+                    InsertionOptionCache::generate_insertion_option(node, parttype, *layout_i, *node_i);
                 match insertion_option {
                     Some(insertion_option) => {
                         let insertion_option = Rc::new(insertion_option);
-                        self.option_node_map.insert(ByAddress(node.clone()), insertion_option.clone());
+                        let node_key = (*layout_i, *node_i);
+                        self.option_node_map.insert(node_key, insertion_option.clone());
                         self.option_parttype_map.insert(parttype, insertion_option.clone());
                     }
                     None => {}
@@ -117,7 +111,8 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         match self.option_parttype_map.get(&parttype) {
             Some(options) => {
                 for insert_opt in options {
-                    self.option_node_map.remove(&ByAddress(insert_opt.original_node().upgrade().unwrap()), insert_opt);
+                    let key = (*insert_opt.layout_index(), *insert_opt.original_node_index());
+                    self.option_node_map.remove(&key, insert_opt);
                 }
             }
             None => ()
@@ -125,8 +120,9 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         self.option_parttype_map.remove_all(&parttype);
     }
 
-    pub fn remove_for_node(&mut self, node: &Rc<RefCell<Node<'a>>>) {
-        match self.option_node_map.get(&ByAddress(node.clone())) {
+    pub fn remove_for_node(&mut self, layout_i: &LayoutIndex, node_i: &Index) {
+        let node_key = (*layout_i, *node_i);
+        match self.option_node_map.get(&node_key) {
             Some(options) => {
                 for insert_opt in options {
                     self.option_parttype_map.remove(&insert_opt.parttype(), insert_opt);
@@ -134,39 +130,36 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
             }
             None => ()
         }
-        self.option_node_map.remove_all(&ByAddress(node.clone()));
+        self.option_node_map.remove_all(&node_key);
     }
 
-    pub fn remove_for_layout(&mut self, layout: &Rc<RefCell<Layout<'a>>>) {
-        let layout = rb!(layout);
+    pub fn remove_all_for_layout(&mut self, layout_i: &LayoutIndex, layout: &Layout) {
         let sorted_empty_nodes = layout.sorted_empty_nodes();
-        for empty_node in sorted_empty_nodes.iter() {
-            let empty_node = empty_node.upgrade().unwrap();
-            self.remove_for_node(&empty_node);
+        for empty_node_i in sorted_empty_nodes.iter() {
+            self.remove_for_node(layout_i, empty_node_i);
         }
     }
 
-    fn generate_insertion_option(node: &Rc<RefCell<Node<'a>>>, parttype: &'a PartType, layout: Weak<RefCell<Layout<'a>>>) -> Option<InsertionOption<'a>> {
-        let node_ref = rb!(node);
+    fn generate_insertion_option(node: &Node, parttype: &'a PartType, layout_i: LayoutIndex, node_i: Index) -> Option<InsertionOption<'a>> {
         match parttype.fixed_rotation() {
             Some(fixed_rotation) => {
-                match node_ref.insertion_possible(parttype, *fixed_rotation) {
-                    true => Some(InsertionOption::new(Rc::downgrade(&node), parttype, Some(*fixed_rotation), layout)),
+                match node.insertion_possible(parttype, *fixed_rotation) {
+                    true => Some(InsertionOption::new(layout_i, node_i, parttype, Some(*fixed_rotation))),
                     false => None
                 }
             }
             None => {
-                let default_possible = node_ref.insertion_possible(parttype, Rotation::Default);
-                let rotated_possible = node_ref.insertion_possible(parttype, Rotation::Rotated);
+                let default_possible = node.insertion_possible(parttype, Rotation::Default);
+                let rotated_possible = node.insertion_possible(parttype, Rotation::Rotated);
                 match (default_possible, rotated_possible) {
                     (true, true) => {
-                        Some(InsertionOption::new(Rc::downgrade(&node), parttype, None, layout))
+                        Some(InsertionOption::new(layout_i, node_i, parttype, None))
                     }
                     (true, false) => {
-                        Some(InsertionOption::new(Rc::downgrade(&node), parttype, Some(Rotation::Default), layout))
+                        Some(InsertionOption::new(layout_i, node_i, parttype,  Some(Rotation::Default)))
                     }
                     (false, true) => {
-                        Some(InsertionOption::new(Rc::downgrade(&node), parttype, Some(Rotation::Rotated), layout))
+                        Some(InsertionOption::new(layout_i, node_i, parttype, Some(Rotation::Rotated)))
                     }
                     (false, false) => {
                         None
@@ -180,8 +173,8 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         self.option_parttype_map.get(&parttype)
     }
 
-    pub fn get_for_node(&self, node: &Rc<RefCell<Node<'a>>>) -> Option<&Vec<Rc<InsertionOption<'a>>>> {
-        self.option_node_map.get(&ByAddress(node.clone()))
+    pub fn get_for_node(&self, node_i: &Index, layout_i: &LayoutIndex) -> Option<&Vec<Rc<InsertionOption<'a>>>> {
+        self.option_node_map.get(&(*layout_i, *node_i))
     }
 
     pub fn is_empty(&self) -> bool {

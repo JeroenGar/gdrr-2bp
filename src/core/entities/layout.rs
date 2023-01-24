@@ -49,12 +49,12 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<'a, Index>, instance: &'a Instance) {
-        let original = blueprint.original_node();
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<Index>, instance: &'a Instance) {
+        let original = *blueprint.original_node_index();
         let parent = self.nodes[original].parent().expect("original node has no parent");
 
         //unregister the original node
-        self.unregister_node(original, None);
+        self.unregister_node(original, &mut None);
         cache_updates.add_invalidated(original);
 
         //create and register the replacements
@@ -72,7 +72,7 @@ impl<'a> Layout<'a> {
     fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, all_created_nodes: &mut Vec<Index>, instance: &'a Instance) {
         let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
 
-        let node = Node::new(blueprint.width(), blueprint.height(), blueprint.orientation(), parttype);
+        let node = Node::new(blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
         let node_index = self.register_node(node, parent);
 
         all_created_nodes.push(node_index);
@@ -82,8 +82,8 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn remove_node(&mut self, node_index: Index) -> Vec<PartType>{
-        /*
+    pub fn remove_node(&mut self, node_index: Index) -> Vec<usize>{
+        /*®
            Scenario 1: Empty node present + other child(ren)
             -> expand existing waste piece
 
@@ -116,12 +116,12 @@ impl<'a> Layout<'a> {
          */
 
         let parent_node_index = self.nodes[node_index].parent().expect("Cannot remove a node without a parent");
-        let parent_node = &mut self.nodes[parent_node_index];
+        let parent_node = &self.nodes[parent_node_index];
 
         //Check if there is an empty_node present
-        let empty_node = parent_node.children().iter().find(|child: &Index| { self.nodes[*child].is_empty()});
+        let empty_node = parent_node.children().iter().find(|c| { self.nodes[**c].is_empty()});
 
-        let mut removed_parts = vec![];
+        let mut removed_parts = Some(vec![]);
 
         match empty_node {
             Some(&empty_node_index) => {
@@ -144,8 +144,8 @@ impl<'a> Layout<'a> {
                     };
 
                     //Replace the empty node and the node to be removed with a enlarged empty node
-                    self.unregister_node(empty_node_index, Some(&mut removed_parts));
-                    self.unregister_node(node_index, Some(&mut removed_parts));
+                    self.unregister_node(empty_node_index, &mut removed_parts);
+                    self.unregister_node(node_index, &mut removed_parts);
                     self.register_node(replacement_node, parent_node_index);
                 } else {
                     //Scenario 3: replace the parent with an empty node
@@ -155,7 +155,7 @@ impl<'a> Layout<'a> {
                     let empty_parent_node = Node::new(parent_node.width(), parent_node.height(), parent_node.next_cut_orient(), None);
 
                     //replace
-                    self.unregister_node(parent_node_index, Some(&mut removed_parts));
+                    self.unregister_node(parent_node_index, &mut removed_parts);
                     self.register_node(empty_parent_node, grandparent_index);
                 }
             }
@@ -167,11 +167,11 @@ impl<'a> Layout<'a> {
                 let replacement_node = Node::new(node.width(), node.height(), node.next_cut_orient(), None);
 
                 //replace
-                self.unregister_node(node_index, Some(&mut removed_parts));
+                self.unregister_node(node_index, &mut removed_parts);
                 self.register_node(replacement_node, parent_node_index);
             }
         }
-        removed_parts
+        removed_parts.unwrap()
     }
 
     fn invalidate_caches(&mut self) {
@@ -188,13 +188,16 @@ impl<'a> Layout<'a> {
 
     fn calculate_usage(&self) -> f64 {
         let used_area = self.nodes.iter().map(|(index, node)| {
-            node.parttype().map(|| node.area()).unwrap_or(0)
-        }).sum();
+            match node.parttype(){
+                Some(_) => node.area(),
+                None => 0
+            }
+        }).sum::<u64>();
 
         used_area as f64 / self.sheettype.area() as f64
     }
 
-    fn register_node(&mut self, mut node: Node, parent: Index) -> Index {
+    fn register_node(&mut self, mut node: Node<'a>, parent: Index) -> Index {
         self.invalidate_caches();
 
         if let Some(parttype) = node.parttype() {
@@ -223,21 +226,21 @@ impl<'a> Layout<'a> {
         }
 
         //Configure relationship between node and parent
-        node.set_parent(parent);
+        self.nodes[node_index].set_parent(parent);
         self.nodes[parent].add_child(node_index);
 
         debug_assert!(assertions::no_ghost_nodes_in_arena(&self.nodes, &self.top_node));
         node_index
     }
 
-    fn unregister_node(&mut self, node_index: Index, removed_parts: Option<&mut Vec<&'a PartType>>) {
+    fn unregister_node(&mut self, node_index: Index, removed_part_ids: &mut Option<Vec<usize>>) {
         self.invalidate_caches();
 
         let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
 
-        if let Some(parttype) = node.parttype() {
-            if let Some(removed_parts) = removed_parts {
-                removed_parts.push(parttype);
+        if let &Some(parttype) = node.parttype() {
+            if let Some(removed_parts) = removed_part_ids {
+                removed_parts.push(parttype.id());
             }
             self.unregister_part(parttype);
         }
@@ -245,14 +248,14 @@ impl<'a> Layout<'a> {
         //All empty nodes need to be removed from the sorted empty nodes list
         if node.is_empty() {
             let lower_index = self.sorted_empty_nodes.partition_point(|n|
-                { self.nodes[n].area() > node.area() });
+                { self.nodes[*n].area() > node.area() });
 
             if self.sorted_empty_nodes[lower_index] == node_index {
                 //We have found the correct node, remove it
                 self.sorted_empty_nodes.remove(lower_index);
             } else {
                 let upper_index = self.sorted_empty_nodes.partition_point(|n|
-                    { self.nodes[n].area() >= node.area() });
+                    { self.nodes[*n].area() >= node.area() });
 
                 let mut node_found = false;
                 for i in lower_index..upper_index {
@@ -270,12 +273,12 @@ impl<'a> Layout<'a> {
         }
 
         for child in node.children() {
-            let removed_parts = removed_parts.map(|v| v);
-            self.unregister_node(child.clone(), removed_parts);
+            self.unregister_node(child.clone(), removed_part_ids);
         }
 
         //break the relationship with parent
         if let Some(parent) = self.nodes[node_index].parent() {
+            let parent = parent.clone();
             self.nodes[parent].remove_child(node_index);
         }
 
@@ -290,9 +293,9 @@ impl<'a> Layout<'a> {
         self.invalidate_caches();
     }
 
-    pub fn get_included_parts(&self) -> Vec<&'a PartType> {
+    pub fn get_included_parts(&self) -> Vec<usize> {
         self.nodes.iter()
-            .map(|(_, n)| n.parttype().clone())
+            .map(|(_, n)| n.parttype().map(|p| p.id()))
             .flatten()
             .collect_vec()
     }
@@ -314,6 +317,18 @@ impl<'a> Layout<'a> {
         cost
     }
 
+    pub fn cost_immut(&self, force_recalc: bool) -> Cost {
+        let cost = match (self.cached_cost.as_ref(), force_recalc) {
+            (Some(cost), false) => cost.clone(),
+            _ => {
+                let cost = self.calculate_cost();
+                cost
+            }
+        };
+        debug_assert!(force_recalc || cost == self.cost_immut(true));
+        cost
+    }
+
     pub fn usage(&mut self, force_recalc: bool) -> f64 {
         let usage = match (self.cached_usage.as_ref(), force_recalc) {
             (Some(usage), false) => *usage,
@@ -324,6 +339,18 @@ impl<'a> Layout<'a> {
             }
         };
         debug_assert!(force_recalc || usage == self.usage(true));
+        usage
+    }
+
+    pub fn usage_immut(&self, force_recalc: bool) -> f64 {
+        let usage = match (self.cached_usage.as_ref(), force_recalc) {
+            (Some(usage), false) => *usage,
+            _ => {
+                let usage = self.calculate_usage();
+                usage
+            }
+        };
+        debug_assert!(force_recalc || usage == self.usage_immut(true));
         usage
     }
 
@@ -339,7 +366,7 @@ impl<'a> Layout<'a> {
     pub fn get_removable_nodes(&self) -> Vec<Index> {
         //All nodes with children (except the top node) or that contain a part are removable
         self.nodes.iter()
-            .filter(|(index, _)| index != self.top_node)
+            .filter(|(index, _)| *index != self.top_node)
             .filter(|(_, node)| node.parttype().is_some() || !node.children().is_empty())
             .map(|(index, _)| index)
             .collect_vec()
@@ -355,5 +382,9 @@ impl<'a> Layout<'a> {
 
     pub fn nodes(&self) -> &Arena<Node> {
         &self.nodes
+    }
+
+    pub fn id(&self) -> usize {
+        self.id
     }
 }

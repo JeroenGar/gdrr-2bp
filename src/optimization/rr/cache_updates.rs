@@ -1,23 +1,19 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
-use std::rc::Weak;
 use generational_arena::Index;
-
-use crate::core::entities::node::Node;
 use crate::core::layout_index::LayoutIndex;
 
 pub struct CacheUpdates<T> {
     invalidated: Vec<T>,
     new_entries: Vec<T>,
-    layout: LayoutIndex,
+    layout_i: LayoutIndex,
 }
 
 impl<T> CacheUpdates<T> {
-    pub fn new(layout: LayoutIndex) -> Self {
+    pub fn new(layout_i: LayoutIndex) -> Self {
         CacheUpdates {
-            invalidated: Vec::new(),
-            new_entries: Vec::new(),
-            layout,
+            invalidated: vec![],
+            new_entries: vec![],
+            layout_i,
         }
     }
 
@@ -41,8 +37,8 @@ impl<T> CacheUpdates<T> {
         &self.new_entries
     }
 
-    pub fn layout(&self) -> &LayoutIndex {
-        &self.layout
+    pub fn layout_index(&self) -> &LayoutIndex {
+        &self.layout_i
     }
 }
 

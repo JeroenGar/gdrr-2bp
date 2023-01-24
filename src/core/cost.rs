@@ -32,7 +32,7 @@ impl Cost {
         self
     }
 
-    pub fn subtract(self, other: &Cost) -> Self {
+    pub fn subtract(mut self, other: &Cost) -> Self {
         self.material_cost -= other.material_cost;
         self.leftover_value -= other.leftover_value;
         self.part_area_excluded -= other.part_area_excluded;
