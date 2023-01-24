@@ -1,14 +1,13 @@
 use std::hash::Hash;
-
-use indexmap::{IndexMap};
+use fxhash::FxHashMap;
 
 pub struct MultiMap<K: Hash + Eq, V> {
-    map: IndexMap<K, Vec<V>>,
+    map: FxHashMap<K, Vec<V>>,
 }
 
 impl<K: Hash + Eq, V: Eq> MultiMap<K, V> {
     pub fn new() -> Self {
-        let map = IndexMap::new();
+        let map = FxHashMap::default();
         Self { map }
     }
 
@@ -41,7 +40,7 @@ impl<K: Hash + Eq, V: Eq> MultiMap<K, V> {
         match self.map.get_mut(key) {
             Some(values) => {
                 let value_index = values.iter().position(|v| v == value).unwrap();
-                values.remove(value_index);
+                values.swap_remove(value_index);
                 true
             }
             None => false

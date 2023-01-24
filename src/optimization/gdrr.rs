@@ -5,7 +5,7 @@ use colored::*;
 use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rand::rngs::StdRng;
+use rand::rngs::{SmallRng};
 
 use crate::{Instance, PartType};
 use crate::core::cost::Cost;
@@ -250,7 +250,7 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    fn select_next_parttype(parttypes: &[&'a PartType], insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut StdRng, config: &Config) -> &'a PartType {
+    fn select_next_parttype(parttypes: &[&'a PartType], insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut SmallRng, config: &Config) -> &'a PartType {
         let mut indices = (0..parttypes.len()).collect_vec();
         indices.shuffle(rand);
 

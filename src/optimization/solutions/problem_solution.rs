@@ -30,10 +30,10 @@ impl<'a> ProblemSolution<'a> {
 
         for (_,layout) in problem.layouts() {
             let layout_id = layout.id();
-            if problem.unchanged_layouts().contains(&layout_id) {
-                layouts.insert(layout_id, prev_solution.layouts.get(&layout_id).unwrap().clone());
-            } else {
+            if problem.changed_layouts().contains(&layout_id) {
                 layouts.insert(layout_id, Rc::new(layout.clone()));
+            } else {
+                layouts.insert(layout_id, prev_solution.layouts.get(&layout_id).unwrap().clone());
             }
         }
 

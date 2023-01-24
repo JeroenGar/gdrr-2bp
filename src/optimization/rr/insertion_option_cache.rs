@@ -108,29 +108,27 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     pub fn remove_for_parttype(&mut self, parttype: &'a PartType) {
-        match self.option_parttype_map.get(&parttype) {
+        match self.option_parttype_map.remove_all(&parttype) {
             Some(options) => {
                 for insert_opt in options {
                     let key = (*insert_opt.layout_index(), *insert_opt.original_node_index());
-                    self.option_node_map.remove(&key, insert_opt);
+                    self.option_node_map.remove(&key, &insert_opt);
                 }
             }
             None => ()
         }
-        self.option_parttype_map.remove_all(&parttype);
     }
 
     pub fn remove_for_node(&mut self, layout_i: &LayoutIndex, node_i: &Index) {
         let node_key = (*layout_i, *node_i);
-        match self.option_node_map.get(&node_key) {
+        match self.option_node_map.remove_all(&node_key) {
             Some(options) => {
                 for insert_opt in options {
-                    self.option_parttype_map.remove(&insert_opt.parttype(), insert_opt);
+                    self.option_parttype_map.remove(&insert_opt.parttype(), &insert_opt);
                 }
             }
             None => ()
         }
-        self.option_node_map.remove_all(&node_key);
     }
 
     pub fn remove_all_for_layout(&mut self, layout_i: &LayoutIndex, layout: &Layout) {

@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::rc::{Rc, Weak};
 
 use rand::Rng;
-use rand::rngs::{StdRng};
+use rand::rngs::{SmallRng};
 
 const DEFAULT_N_SAMPLES: usize = 3;
 const DEFAULT_CHANCE_ARRAY: [f64; DEFAULT_N_SAMPLES] = [0.625, 0.875, 1.0];
@@ -34,7 +34,7 @@ impl<T,V,const N: usize> BiasedSampler<T, V, N> where V: PartialOrd {
         }
     }
 
-    pub fn sample(&self, random: &mut StdRng) -> Option<&T> {
+    pub fn sample(&self, random: &mut SmallRng) -> Option<&T> {
         //TODO: ensure the comparator is correct
 
         if self.entries.is_empty() {

@@ -1,5 +1,5 @@
 {
-  "maxRunTime": 600,
+  "maxRunTime": 20,
   "nThreads": 4,
   "rotationAllowed": true,
   "avgNodesRemoved": 6,

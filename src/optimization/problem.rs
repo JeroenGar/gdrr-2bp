@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use generational_arena::{Arena, Index};
 use rand::{SeedableRng, thread_rng};
-use rand::rngs::StdRng;
+use rand::rngs::SmallRng;
 
 use crate::{DETERMINISTIC_MODE, Instance, Orientation, PartType, SheetType};
 use crate::core::cost::Cost;
@@ -28,9 +28,9 @@ pub struct Problem<'a> {
     sheettype_qtys: Vec<usize>,
     layouts: Arena<Layout<'a>>,
     empty_layouts: Vec<Layout<'a>>,
-    rng: StdRng,
-    unchanged_layouts: HashSet<usize>,
-    solution_id_unchanged_layouts: Option<usize>,
+    rng: SmallRng,
+    changed_layouts: Vec<usize>,
+    solution_id_changed_layouts: Option<usize>,
     solution_id_counter: usize,
     layout_id_counter: usize,
 }
@@ -40,8 +40,8 @@ impl<'a> Problem<'a> {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let random = match DETERMINISTIC_MODE {
-            true => StdRng::seed_from_u64(0),
-            false => StdRng::from_rng(thread_rng()).unwrap()
+            true => SmallRng::seed_from_u64(0),
+            false => SmallRng::from_rng(thread_rng()).unwrap()
         };
 
         let mut problem = Problem {
@@ -50,8 +50,8 @@ impl<'a> Problem<'a> {
             sheettype_qtys,
             layouts : Arena::new(),
             empty_layouts : Vec::new(),
-            unchanged_layouts : HashSet::new(),
-            solution_id_unchanged_layouts : None,
+            changed_layouts : Vec::new(),
+            solution_id_changed_layouts : None,
             rng: random,
             solution_id_counter : 0,
             layout_id_counter : 0,
@@ -156,7 +156,7 @@ impl<'a> Problem<'a> {
         let cost = cached_cost.unwrap_or(self.cost());
         let solution = match old_solution {
             Some(old_solution) => {
-                debug_assert!(old_solution.id() == self.solution_id_unchanged_layouts.unwrap());
+                debug_assert!(old_solution.id() == self.solution_id_changed_layouts.unwrap());
                 ProblemSolution::new(self, cost, id, old_solution)
             }
             None => {
@@ -164,15 +164,15 @@ impl<'a> Problem<'a> {
             }
         };
 
-        debug_assert!(assertions::problem_matches_solution(self, &solution), "{:#?},{:#?}", id, self.solution_id_unchanged_layouts);
+        debug_assert!(assertions::problem_matches_solution(self, &solution), "{:#?},{:#?}", id, self.solution_id_changed_layouts);
 
-        self.reset_unchanged_layouts(solution.id());
+        self.reset_changed_layouts(solution.id());
 
         solution
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
-        match self.solution_id_unchanged_layouts == Some(solution.id()) {
+        match self.solution_id_changed_layouts == Some(solution.id()) {
             true => {
                 //A partial restore is possible.
 
@@ -187,7 +187,7 @@ impl<'a> Problem<'a> {
                     match solution.layouts().contains_key(&layout_id) {
                         true => {
                             //layout is present in the solution
-                            if !self.unchanged_layouts.contains(&layout_id) {
+                            if self.changed_layouts.contains(&layout_id) {
                                 changed_layout_indices.push(index)
                             }
                             present_layout_ids.push(layout_id);
@@ -229,7 +229,7 @@ impl<'a> Problem<'a> {
 
         debug_assert!(assertions::problem_matches_solution(self, solution));
 
-        self.reset_unchanged_layouts(solution.id());
+        self.reset_changed_layouts(solution.id());
     }
 
     pub fn restore_from_instance_solution(&mut self, _solution: &SendableSolution) {
@@ -257,7 +257,7 @@ impl<'a> Problem<'a> {
         &self.sheettype_qtys
     }
 
-    pub fn rng(&mut self) -> &mut StdRng {
+    pub fn rng(&mut self) -> &mut SmallRng {
         &mut self.rng
     }
 
@@ -301,13 +301,12 @@ impl<'a> Problem<'a> {
     }
 
     fn layout_has_changed(&mut self, l_id: usize) {
-        self.unchanged_layouts.remove(&l_id);
+        self.changed_layouts.push(l_id);
     }
 
-    fn reset_unchanged_layouts(&mut self, unchanged_layouts_solution_id: usize) {
-        self.unchanged_layouts = self.layouts.iter().map(
-            |(_,l)| l.id()).collect();
-        self.solution_id_unchanged_layouts = Some(unchanged_layouts_solution_id);
+    fn reset_changed_layouts(&mut self, solution_id_changed_layouts: usize) {
+        self.changed_layouts.clear();
+        self.solution_id_changed_layouts = Some(solution_id_changed_layouts);
     }
 
     fn register_part(&mut self, parttype_id: usize, qty: usize) {
@@ -342,8 +341,8 @@ impl<'a> Problem<'a> {
         &self.empty_layouts
     }
 
-    pub fn unchanged_layouts(&self) -> &HashSet<usize> {
-        &self.unchanged_layouts
+    pub fn changed_layouts(&self) -> &Vec<usize> {
+        &self.changed_layouts
     }
 }
 
