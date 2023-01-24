@@ -15,7 +15,7 @@ pub struct Layout<'a> {
     id : usize,
     sheettype: &'a SheetType,
     nodes: Arena<Node<'a>>,
-    top_node: Index,
+    top_node_i: Index,
     cached_cost: Option<Cost>,
     cached_usage: Option<f64>,
     sorted_empty_nodes: Vec<Index>, //sorted by descending area
@@ -24,20 +24,21 @@ pub struct Layout<'a> {
 impl<'a> Layout<'a> {
     pub fn new(id: usize, sheettype: &'a SheetType, first_cut_orientation: Orientation) -> Self {
         let mut nodes = Arena::new();
-        let top_node = nodes.insert(Node::new(sheettype.width(), sheettype.height(), first_cut_orientation, None));
+        let top_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation, None);
+        let top_node_i = nodes.insert(top_node);
 
         let mut layout = Self {
             id,
             sheettype,
             nodes,
-            top_node,
+            top_node_i,
             cached_cost: None,
             cached_usage: None,
             sorted_empty_nodes: vec![],
         };
 
         let placeholder_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation.rotate(), None);
-        layout.register_node(placeholder_node, top_node);
+        layout.register_node(placeholder_node, top_node_i, true);
 
         layout
     }
@@ -64,16 +65,16 @@ impl<'a> Layout<'a> {
         }
         cache_updates.extend_new(all_created_nodes);
 
-
-        //TODO: fix this
-        //debug_assert!(assertions::children_nodes_fit(rb!(parent_node).deref()), "{:#?}", blueprint);
+        debug_assert!(assertions::children_nodes_fit(&parent, &self.nodes), "{:#?}", blueprint);
+        debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
+        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
     }
 
     fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, all_created_nodes: &mut Vec<Index>, instance: &'a Instance) {
         let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
 
         let node = Node::new(blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
-        let node_index = self.register_node(node, parent);
+        let node_index = self.register_node(node, parent, blueprint.is_empty());
 
         all_created_nodes.push(node_index);
 
@@ -146,7 +147,7 @@ impl<'a> Layout<'a> {
                     //Replace the empty node and the node to be removed with a enlarged empty node
                     self.unregister_node(empty_node_index, &mut removed_parts);
                     self.unregister_node(node_index, &mut removed_parts);
-                    self.register_node(replacement_node, parent_node_index);
+                    self.register_node(replacement_node, parent_node_index, true);
                 } else {
                     //Scenario 3: replace the parent with an empty node
                     let grandparent_index = parent_node.parent().expect("grandparent node needs to be present").clone();
@@ -156,7 +157,7 @@ impl<'a> Layout<'a> {
 
                     //replace
                     self.unregister_node(parent_node_index, &mut removed_parts);
-                    self.register_node(empty_parent_node, grandparent_index);
+                    self.register_node(empty_parent_node, grandparent_index, true);
                 }
             }
             None => {
@@ -168,9 +169,12 @@ impl<'a> Layout<'a> {
 
                 //replace
                 self.unregister_node(node_index, &mut removed_parts);
-                self.register_node(replacement_node, parent_node_index);
+                self.register_node(replacement_node, parent_node_index, true);
             }
         }
+        debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
+        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
+
         removed_parts.unwrap()
     }
 
@@ -197,7 +201,7 @@ impl<'a> Layout<'a> {
         used_area as f64 / self.sheettype.area() as f64
     }
 
-    fn register_node(&mut self, mut node: Node<'a>, parent: Index) -> Index {
+    fn register_node(&mut self, mut node: Node<'a>, parent: Index, is_empty: bool) -> Index {
         self.invalidate_caches();
 
         if let Some(parttype) = node.parttype() {
@@ -207,7 +211,8 @@ impl<'a> Layout<'a> {
         let node_index = self.nodes.insert(node);
 
         //All empty nodes need to be added to the sorted empty nodes list
-        if self.nodes[node_index].is_empty() {
+        if is_empty {
+            debug_assert!(self.nodes[node_index].is_empty());
             let node_area = self.nodes[node_index].area();
             let result = self.sorted_empty_nodes.binary_search_by(
                 &(|n: &Index| {
@@ -220,32 +225,21 @@ impl<'a> Layout<'a> {
                 Ok(i) => self.sorted_empty_nodes.insert(i, node_index),
                 Err(i) => self.sorted_empty_nodes.insert(i, node_index),
             }
-            //TODO: sort these assertions out
-            //debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes));
-            //debug_assert!(assertions::all_nodes_have_parents(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| n.upgrade().unwrap()).collect::<Vec<_>>());
         }
 
         //Configure relationship between node and parent
         self.nodes[node_index].set_parent(parent);
         self.nodes[parent].add_child(node_index);
 
-        debug_assert!(assertions::no_ghost_nodes_in_arena(&self.nodes, &self.top_node));
+        debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         node_index
     }
 
     fn unregister_node(&mut self, node_index: Index, removed_part_ids: &mut Option<Vec<usize>>) {
         self.invalidate_caches();
 
-        let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
-
-        if let &Some(parttype) = node.parttype() {
-            if let Some(removed_parts) = removed_part_ids {
-                removed_parts.push(parttype.id());
-            }
-            self.unregister_part(parttype);
-        }
-
         //All empty nodes need to be removed from the sorted empty nodes list
+        let node = &self.nodes[node_index];
         if node.is_empty() {
             let lower_index = self.sorted_empty_nodes.partition_point(|n|
                 { self.nodes[*n].area() > node.area() });
@@ -272,17 +266,28 @@ impl<'a> Layout<'a> {
             }
         }
 
-        for child in node.children() {
-            self.unregister_node(child.clone(), removed_part_ids);
+        //unregister all children
+        for child in node.children().clone() {
+            self.unregister_node(child, removed_part_ids);
+        }
+
+        //remove the node
+        let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
+
+        //unregister part
+        if let &Some(parttype) = node.parttype() {
+            if let Some(removed_parts) = removed_part_ids {
+                removed_parts.push(parttype.id());
+            }
+            self.unregister_part(parttype);
         }
 
         //break the relationship with parent
-        if let Some(parent) = self.nodes[node_index].parent() {
-            let parent = parent.clone();
-            self.nodes[parent].remove_child(node_index);
+        if let Some(parent) = node.parent() {
+            self.nodes[*parent].remove_child(node_index);
         }
 
-        debug_assert!(assertions::no_ghost_nodes_in_arena(&self.nodes, &self.top_node));
+        debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
     }
 
     fn register_part(&mut self, _parttype: &PartType) {
@@ -355,18 +360,15 @@ impl<'a> Layout<'a> {
     }
 
     pub fn sorted_empty_nodes(&self) -> &Vec<Index> {
-        //TODO: fix
-        //debug_assert!(assertions::all_nodes_have_parents(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| n.upgrade().unwrap()).collect::<Vec<_>>());
-        //debug_assert!(assertions::cached_empty_nodes_correct(self, &self.sorted_empty_nodes));
-        //debug_assert!(assertions::nodes_sorted_descending_area(&self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| rb!(n.upgrade().unwrap()).area()).collect::<Vec<_>>());
+        debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
+        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
 
         &self.sorted_empty_nodes
     }
 
     pub fn get_removable_nodes(&self) -> Vec<Index> {
-        //All nodes with children (except the top node) or that contain a part are removable
+        //All nodes with children or that contain a part are removable
         self.nodes.iter()
-            .filter(|(index, _)| *index != self.top_node)
             .filter(|(_, node)| node.parttype().is_some() || !node.children().is_empty())
             .map(|(index, _)| index)
             .collect_vec()
@@ -376,8 +378,8 @@ impl<'a> Layout<'a> {
         self.sheettype
     }
 
-    pub fn top_node(&self) -> &Index {
-        &self.top_node
+    pub fn top_node_index(&self) -> &Index {
+        &self.top_node_i
     }
 
     pub fn nodes(&self) -> &Arena<Node> {

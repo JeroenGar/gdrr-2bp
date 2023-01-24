@@ -75,6 +75,9 @@ impl NodeBlueprint {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.parttype_id.is_none() && self.children.is_empty()
+    }
 
     pub fn area(&self) -> u64 {
         self.width * self.height
@@ -83,16 +86,21 @@ impl NodeBlueprint {
     pub fn width(&self) -> u64 {
         self.width
     }
+
     pub fn height(&self) -> u64 {
         self.height
     }
+
     pub fn children(&self) -> &Vec<NodeBlueprint> {
         &self.children
     }
+
     pub fn parttype_id(&self) -> Option<usize> {
         self.parttype_id
     }
+
     pub fn next_cut_orient(&self) -> Orientation {
         self.next_cut_orient
     }
+
 }

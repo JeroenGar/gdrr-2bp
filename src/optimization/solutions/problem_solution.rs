@@ -38,7 +38,7 @@ impl<'a> ProblemSolution<'a> {
         }
 
         debug_assert!(layouts.iter().all(|(_id, l)| {
-            let top_node = l.top_node();
+            let top_node = l.top_node_index();
             assertions::children_nodes_fit(top_node, l.nodes())
         }));
 

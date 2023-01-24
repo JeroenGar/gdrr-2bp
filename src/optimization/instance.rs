@@ -14,8 +14,7 @@ pub struct Instance {
 impl Instance {
     pub fn new(parts: Vec<(PartType, usize)>, sheets: Vec<(SheetType, usize)>) -> Self {
         // The ID's of parts and sheets must match their respective indices in the vectors.
-        // TODO: assign ID's in instance constructor!!!
-        assert!(assertions::instance_parttypes_and_sheettypes_are_correct(&parts, &sheets));
+        assert!(assertions::instance_parttypes_and_sheettypes_ids_correct(&parts, &sheets));
 
         let total_part_area = parts.iter().map(|(parttype, qty)| parttype.area() * (*qty as u64)).sum();
         let total_part_qty = parts.iter().map(|(_, qty)| *qty).sum();

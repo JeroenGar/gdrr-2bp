@@ -27,8 +27,6 @@ pub struct InsertionOption<'a> {
 
 impl<'a> InsertionOption<'a> {
     pub fn new(layout_i: LayoutIndex, original_node_i: Index, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
-        //TODO: fix this
-        //debug_assert!(rb!(original_node.upgrade().unwrap()).parent().is_some(), "{:#?}", original_node.upgrade().unwrap());
         Self {
             layout_i,
             original_node_i,

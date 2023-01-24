@@ -41,7 +41,6 @@ impl<'a> Node<'a> {
 
     pub fn add_child(&mut self, child: Index) {
         self.children.push(child);
-        //TODO: debug_assert!(assertions::children_nodes_fit(node_ref.deref()))
     }
 
     pub fn remove_child(&mut self, old_child: Index) {

@@ -108,13 +108,13 @@ impl<'a> Problem<'a> {
     }
 
     pub fn remove_node(&mut self, node_index: Index, layout_index: LayoutIndex) -> Option<Layout<'a>> {
+        self.layout_has_changed(self.get_layout(&layout_index).id());
         match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot remove a node from an empty layout"),
             LayoutIndex::Existing(index) => {
                 let layout = &mut self.layouts[index];
-                match node_index == *layout.top_node() {
+                match node_index == *layout.top_node_index() {
                     true => {
-                        //TODO: test if this scenario is possible
                         //Remove the entire layout
                         Some(self.unregister_layout(layout_index))
                     }
@@ -227,9 +227,9 @@ impl<'a> Problem<'a> {
         self.parttype_qtys = solution.parttype_qtys().clone();
         self.sheettype_qtys = solution.sheettype_qtys().clone();
 
-        self.reset_unchanged_layouts(solution.id());
-
         debug_assert!(assertions::problem_matches_solution(self, solution));
+
+        self.reset_unchanged_layouts(solution.id());
     }
 
     pub fn restore_from_instance_solution(&mut self, _solution: &SendableSolution) {

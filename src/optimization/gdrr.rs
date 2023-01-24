@@ -143,9 +143,9 @@ impl<'a> GDRR<'a> {
                 match layout_index {
                     Some(layout_index) => {
                         let removable_nodes = self.problem.layouts()[*layout_index].get_removable_nodes();
-                        let selected_node = removable_nodes.choose(&mut self.problem.rng()).unwrap().clone();
+                        let selected_node = removable_nodes.choose(&mut self.problem.rng()).unwrap();
 
-                        let removed_layout = self.problem.remove_node(selected_node, LayoutIndex::Existing(*layout_index));
+                        let removed_layout = self.problem.remove_node(*selected_node, LayoutIndex::Existing(*layout_index));
                         if let Some(mut removed_layout) = removed_layout {
                             mat_limit_budget += removed_layout.sheettype().value() as i128;
                         }
@@ -167,7 +167,7 @@ impl<'a> GDRR<'a> {
 
                 match min_usage_layout_index {
                     Some(min_usage_layout_index) => {
-                        let top_node = self.problem.layouts()[min_usage_layout_index].top_node().clone();
+                        let top_node = self.problem.layouts()[min_usage_layout_index].top_node_index().clone();
 
                         //release it and update mat_limit_exceedance
                         let removed_layout = self.problem.remove_node(top_node, LayoutIndex::Existing(min_usage_layout_index));
@@ -198,11 +198,10 @@ impl<'a> GDRR<'a> {
         //Collect all the layouts which should be considered during this recreate iteration
         let layouts_to_consider = self.problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
             .chain(self.problem.empty_layouts().iter().enumerate()
-                .filter(|(_, l)| {
-                    self.problem.sheettype_qtys()[l.sheettype().id()] > 0
-                })
+                .filter(|(_, l)| self.problem.sheettype_qtys()[l.sheettype().id()] > 0)
                 .map(|(i, l)| (LayoutIndex::Empty(i), l))
-            ).collect_vec();
+            )
+            .collect_vec();
 
         //Generate insertion options for all relevant parttypes and layouts
         insertion_option_cache.add_for_parttypes(&parttypes_to_consider, &layouts_to_consider);
