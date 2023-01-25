@@ -3,9 +3,10 @@ use std::collections::VecDeque;
 
 use colored::*;
 use itertools::Itertools;
+use ordered_float::NotNan;
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rand::rngs::{SmallRng};
+use rand::rngs::SmallRng;
 
 use crate::{Instance, PartType};
 use crate::core::cost::Cost;
@@ -137,12 +138,15 @@ impl<'a> GDRR<'a> {
 
         if mat_limit_budget >= 0 {
             for _i in 0..n_nodes_to_remove {
-                let entries = self.problem.layouts_mut().iter_mut().map(|(i, l)| (i, l.usage(false))).collect_vec();
+                //The bias sampler allows us to select a random layout for removing a node, but with a bias towards layouts with a low usage.
+                //This is done to preserve 'good' layouts and give 'bad' layouts more opportunity to improve
+                let entries = self.problem.layouts_mut().iter_mut()
+                    .map(|(i, l)| (i, NotNan::new(l.usage(false)).expect("layout usage is NaN")))
+                    .collect_vec();
                 let biased_sampler = BiasedSampler::new_default(entries, BiasMode::Low);
+                let selected_layout = biased_sampler.sample(&mut self.problem.rng());
 
-                let layout_index = biased_sampler.sample(&mut self.problem.rng());
-
-                match layout_index {
+                match selected_layout {
                     Some(layout_index) => {
                         let removable_nodes = self.problem.layouts()[*layout_index].get_removable_nodes();
                         let selected_node = removable_nodes.choose(&mut self.problem.rng()).unwrap();
@@ -161,7 +165,7 @@ impl<'a> GDRR<'a> {
             while mat_limit_budget < 0 {
                 //Search the lowest usage layout
                 let min_usage_layout_index = self.problem.layouts_mut().iter_mut()
-                    .map(|(i,l)| (i, l.usage(false)))
+                    .map(|(i, l)| (i, l.usage(false)))
                     .min_by(|(_, a), (_, b)| {
                         a.partial_cmp(b).unwrap()
                     })

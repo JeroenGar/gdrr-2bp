@@ -8,8 +8,8 @@ pub struct Size {
 impl Size {
     pub fn new(width: u64, height: u64) -> Size {
         Size {
-            width: width,
-            height: height,
+            width,
+            height,
             area: width * height,
         }
     }

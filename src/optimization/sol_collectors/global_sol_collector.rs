@@ -16,7 +16,7 @@ use crate::util::macros::timed_println;
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 use crate::util::util;
 
-const MONITOR_INTERVAL: Duration = time::Duration::from_millis(10);
+const MONITOR_INTERVAL: Duration = Duration::from_millis(10);
 
 pub struct GlobalSolCollector {
     _instance: Arc<Instance>,
@@ -56,7 +56,7 @@ impl GlobalSolCollector {
     }
 
     pub fn monitor(&mut self, gdrr_thread_handlers: Vec<thread::JoinHandle<()>>) {
-        let start_time = std::time::Instant::now();
+        let start_time = time::Instant::now();
         let max_run_time = self.config.max_run_time.unwrap_or(usize::MAX);
         let running = Arc::new(AtomicBool::new(true));
         let r = running.clone();

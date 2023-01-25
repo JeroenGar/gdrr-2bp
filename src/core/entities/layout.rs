@@ -5,7 +5,7 @@ use crate::{Instance, Orientation};
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
-use crate::optimization::rr::cache_updates::CacheUpdates;
+use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::assertions;
 
 use super::{parttype::PartType, sheettype::SheetType};
@@ -37,6 +37,7 @@ impl<'a> Layout<'a> {
             sorted_empty_nodes: vec![],
         };
 
+        //The top node cannot be modified, so we register a placeholder node to be able to insert parts
         let placeholder_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation.rotate(), None);
         layout.register_node(placeholder_node, top_node_i, true);
 
@@ -50,36 +51,36 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, cache_updates: &mut CacheUpdates<Index>, instance: &'a Instance) {
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, instance: &'a Instance, updates: &mut IOCUpdates) {
         let original = *blueprint.original_node_index();
         let parent = self.nodes[original].parent().expect("original node has no parent");
 
         //unregister the original node
         self.unregister_node(original, &mut None);
-        cache_updates.add_invalidated(original);
+        updates.add_removed(original);
 
         //create and register the replacements
         let mut all_created_nodes = vec![];
         for replacement in blueprint.replacements() {
-            self.implement_node_blueprint(parent, replacement, &mut all_created_nodes, instance);
+            self.implement_node_blueprint(parent, replacement, instance, &mut all_created_nodes);
         }
-        cache_updates.extend_new(all_created_nodes);
+        updates.extend_new(all_created_nodes);
 
         debug_assert!(assertions::children_nodes_fit(&parent, &self.nodes), "{:#?}", blueprint);
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
     }
 
-    fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, all_created_nodes: &mut Vec<Index>, instance: &'a Instance) {
+    fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, instance: &'a Instance, new_nodes: &mut Vec<Index>) {
         let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
 
         let node = Node::new(blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
         let node_index = self.register_node(node, parent, blueprint.is_empty());
 
-        all_created_nodes.push(node_index);
+        new_nodes.push(node_index);
 
         for child_blueprint in blueprint.children() {
-            self.implement_node_blueprint(node_index, child_blueprint, all_created_nodes, instance);
+            self.implement_node_blueprint(node_index, child_blueprint, instance, new_nodes);
         }
     }
 
@@ -172,6 +173,7 @@ impl<'a> Layout<'a> {
                 self.register_node(replacement_node, parent_node_index, true);
             }
         }
+
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
 

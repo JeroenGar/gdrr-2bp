@@ -42,7 +42,6 @@ impl<'a> Node<'a> {
         self.children.remove(old_child_index);
     }
 
-
     pub fn generate_insertion_node_blueprints(&self, parttype: &'a PartType, rotation: Rotation, mut insertion_replacements: Vec<Vec<NodeBlueprint>>) -> Vec<Vec<NodeBlueprint>> {
         debug_assert!(self.insertion_possible(parttype, rotation));
 

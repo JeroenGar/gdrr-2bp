@@ -1,39 +1,41 @@
 use std::fmt::Debug;
+use generational_arena::Index;
 use crate::core::layout_index::LayoutIndex;
 
-pub struct CacheUpdates<T> {
-    invalidated: Vec<T>,
-    new_entries: Vec<T>,
+//Insertion Option Cache Updates
+pub struct IOCUpdates {
+    removed_nodes: Vec<Index>,
+    new_nodes: Vec<Index>,
     layout_i: LayoutIndex,
 }
 
-impl<T> CacheUpdates<T> {
+impl IOCUpdates {
     pub fn new(layout_i: LayoutIndex) -> Self {
-        CacheUpdates {
-            invalidated: vec![],
-            new_entries: vec![],
+        IOCUpdates {
+            removed_nodes: vec![],
+            new_nodes: vec![],
             layout_i,
         }
     }
 
-    pub fn add_invalidated(&mut self, item: T) {
-        self.invalidated.push(item);
+    pub fn add_removed(&mut self, item: Index) {
+        self.removed_nodes.push(item);
     }
 
-    pub fn add_new(&mut self, item: T) {
-        self.new_entries.push(item);
+    pub fn add_new(&mut self, item: Index) {
+        self.new_nodes.push(item);
     }
 
-    pub fn extend_new(&mut self, items: Vec<T>) {
-        self.new_entries.extend(items);
+    pub fn extend_new(&mut self, items: Vec<Index>) {
+        self.new_nodes.extend(items);
     }
 
-    pub fn invalidated(&self) -> &Vec<T> {
-        &self.invalidated
+    pub fn removed_nodes(&self) -> &Vec<Index> {
+        &self.removed_nodes
     }
 
-    pub fn new_entries(&self) -> &Vec<T> {
-        &self.new_entries
+    pub fn new_nodes(&self) -> &Vec<Index> {
+        &self.new_nodes
     }
 
     pub fn layout_index(&self) -> &LayoutIndex {
@@ -42,11 +44,11 @@ impl<T> CacheUpdates<T> {
 }
 
 
-impl<T : Debug> Debug for CacheUpdates<T> {
+impl Debug for IOCUpdates {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "CacheUpdates {{ invalidated: {:#?}, new_entries: {:#?} }}",
-               &self.invalidated,
-               &self.new_entries
+               &self.removed_nodes,
+               &self.new_nodes
         )
     }
 }

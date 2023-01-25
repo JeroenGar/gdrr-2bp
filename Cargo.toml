@@ -21,6 +21,7 @@ horrorshow = "0.8.4"
 itertools = "0.10.3"
 generational-arena = "0.2.8"
 fxhash = "0.2.1"
+ordered-float = "3.0.0"
 
 [profile.release]
 opt-level = 3

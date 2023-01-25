@@ -7,7 +7,7 @@ use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
-use crate::optimization::rr::cache_updates::CacheUpdates;
+use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
@@ -71,14 +71,14 @@ impl<'a> Problem<'a> {
 
     /// Modifies the problem by inserting an part according to the InsertionBlueprint.
     /// It returns which updates should be made to the InsertionOptionCache and whether or not a new layout was created.
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> CacheUpdates<Index> {
+    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> IOCUpdates {
         self.register_part(blueprint.parttype().id(), 1);
 
         match blueprint.layout_index() {
             LayoutIndex::Existing(index) => {
                 let blueprint_layout = &mut self.layouts[*index];
-                let mut cache_updates = CacheUpdates::new(*blueprint.layout_index());
-                blueprint_layout.implement_insertion_blueprint(blueprint, &mut cache_updates, self.instance);
+                let mut cache_updates = IOCUpdates::new(*blueprint.layout_index());
+                blueprint_layout.implement_insertion_blueprint(blueprint, self.instance, &mut cache_updates);
 
                 let blueprint_layout_id = blueprint_layout.id();
                 self.layout_has_changed(blueprint_layout_id);
@@ -94,8 +94,8 @@ impl<'a> Problem<'a> {
                 let clone_index = self.register_layout(empty_layout_clone);
 
                 //Implement the blueprint
-                let mut cache_updates = CacheUpdates::new(LayoutIndex::Existing(clone_index));
-                self.layouts[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates, self.instance);
+                let mut cache_updates = IOCUpdates::new(LayoutIndex::Existing(clone_index));
+                self.layouts[clone_index].implement_insertion_blueprint(blueprint, self.instance, &mut cache_updates);
 
                 cache_updates
             }

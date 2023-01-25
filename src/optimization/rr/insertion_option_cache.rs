@@ -9,10 +9,11 @@ use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_option::InsertionOption;
 use crate::core::layout_index::LayoutIndex;
 use crate::optimization::problem::Problem;
-use crate::optimization::rr::cache_updates::CacheUpdates;
+use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::multi_map::MultiMap;
 
 /// This struct functions as a cache for all InsertionOptions during the recreate phase
+/// It is kept up to date by removing and adding InsertionOptions when nodes are removed or added
 pub struct InsertionOptionCache<'a> {
     option_node_map: MultiMap<(LayoutIndex, Index), Rc<InsertionOption<'a>>>,
     option_parttype_map: MultiMap<&'a PartType, Rc<InsertionOption<'a>>>,
@@ -26,13 +27,13 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates: &CacheUpdates<Index>, parttypes: &Vec<&'a PartType>, problem: &Problem){
+    pub fn update_cache(&mut self, cache_updates: &IOCUpdates, parttypes: &Vec<&'a PartType>, problem: &Problem){
         let layout_i = cache_updates.layout_index();
-        cache_updates.invalidated().iter().for_each(|node_i| {
+        cache_updates.removed_nodes().iter().for_each(|node_i| {
             self.remove_for_node(layout_i, node_i);
         });
         let layout = problem.get_layout(layout_i);
-        cache_updates.new_entries().iter().for_each(|node_i| {
+        cache_updates.new_nodes().iter().for_each(|node_i| {
             let node = &layout.nodes()[*node_i];
             self.add_for_node(node_i, node, layout_i, parttypes.iter());
         });
