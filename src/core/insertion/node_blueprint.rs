@@ -6,6 +6,8 @@ use crate::core::cost::Cost;
 use crate::core::entities::node::Node;
 use crate::core::leftover_valuator;
 
+/// Represents a node in an InsertionBlueprint
+
 #[derive(Debug, Clone)]
 pub struct NodeBlueprint {
     width: u64,

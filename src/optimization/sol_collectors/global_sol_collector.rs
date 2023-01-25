@@ -18,6 +18,10 @@ use crate::util::util;
 
 const MONITOR_INTERVAL: Duration = Duration::from_millis(10);
 
+/// Global Solution Collector
+/// communicates with a set of LocalSolCollectors
+/// It receives solutions and sends out sync messages (material limit lowering, terminate)
+
 pub struct GlobalSolCollector {
     _instance: Arc<Instance>,
     config: Arc<Config>,
@@ -35,21 +39,16 @@ impl GlobalSolCollector {
                config: Arc<Config>,
                tx_syncs: Vec<Sender<SyncMessage>>,
                rx_solution_report: Receiver<SolutionReportMessage>,
+               cost_comparator: fn(&Cost, &Cost) -> Ordering,
     ) -> Self {
-        let material_limit = None;
-        let best_complete_solution = None;
-        let best_incomplete_solution = None;
-        let best_incomplete_cost = None;
-        let cost_comparator = crate::COST_COMPARATOR;
-
         Self {
             _instance,
             config,
-            best_complete_solution,
-            best_incomplete_solution,
-            best_incomplete_cost,
+            best_complete_solution : None,
+            best_incomplete_solution : None,
+            best_incomplete_cost : None,
             cost_comparator,
-            material_limit,
+            material_limit : None,
             tx_syncs,
             rx_solution_report,
         }
@@ -165,6 +164,7 @@ impl GlobalSolCollector {
     pub fn best_incomplete_cost(&self) -> &Option<Cost> {
         &self.best_incomplete_cost
     }
+
     pub fn material_limit(&self) -> Option<u64> {
         self.material_limit
     }

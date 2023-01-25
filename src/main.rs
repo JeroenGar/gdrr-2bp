@@ -88,14 +88,14 @@ fn main() {
 
 
         let handle = thread::Builder::new().name(thread_name).spawn(move || {
-            let local_sol_collector = LocalSolCollector::new(rx_sync, tx_solution_report_thread);
+            let local_sol_collector = LocalSolCollector::new(instance_thread.clone(), rx_sync, tx_solution_report_thread, COST_COMPARATOR);
             let mut gdrr = GDRR::new(&instance_thread, &config_thread, local_sol_collector);
             gdrr.lahc();
         });
         gdrr_thread_handlers.push(handle.expect("could not spawn thread"));
     }
 
-    let mut global_sol_collector = GlobalSolCollector::new(instance, config, tx_syncs, rx_solution_report);
+    let mut global_sol_collector = GlobalSolCollector::new(instance, config, tx_syncs, rx_solution_report, COST_COMPARATOR);
 
     global_sol_collector.monitor(gdrr_thread_handlers);
 

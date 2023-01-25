@@ -3,7 +3,7 @@ use crate::core::entities::sheettype::SheetType;
 use crate::util::assertions;
 
 #[derive(Debug)]
-/// Instance is a static representation of a collection of parts and sheets to be optimized.
+/// Instance is a immutable representation of the collection of parts and sheets that need to be optimized.
 pub struct Instance {
     parts: Vec<(PartType, usize)>,
     sheets: Vec<(SheetType, usize)>,

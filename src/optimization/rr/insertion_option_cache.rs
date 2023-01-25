@@ -12,8 +12,10 @@ use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::multi_map::MultiMap;
 
-/// This struct functions as a cache for all InsertionOptions during the recreate phase
-/// It is kept up to date by removing and adding InsertionOptions when nodes are removed or added
+/// A cache for InsertionOptions during the recreate phase
+/// It allows very fast lookup of all InsertionOptions that are valid for a given node or a given parttype
+/// It is kept up-to-date throughout the recreate phase, by receiving updates about which nodes are removed or added
+
 pub struct InsertionOptionCache<'a> {
     option_node_map: MultiMap<(LayoutIndex, Index), Rc<InsertionOption<'a>>>,
     option_parttype_map: MultiMap<&'a PartType, Rc<InsertionOption<'a>>>,

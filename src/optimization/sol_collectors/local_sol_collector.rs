@@ -1,9 +1,11 @@
 use std::cmp::Ordering;
+use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 
 use colored::*;
 
 use crate::core::cost::Cost;
+use crate::optimization::instance::Instance;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
@@ -11,7 +13,12 @@ use crate::optimization::solutions::solution_stats::SolutionStats;
 use crate::util::macros::{timed_thread_println};
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 
+/// Local solution collectors collect and compare solutions from GDRR threads.
+/// It keeps track of the best complete and incomplete solutions.
+/// It also communicates with a GlobalSolCollector to transfer solutions and synchronize.
+///
 pub struct LocalSolCollector<'a> {
+    instance: Arc<Instance>,
     best_complete_solution: Option<ProblemSolution<'a>>,
     best_incomplete_solution: Option<ProblemSolution<'a>>,
     cost_comparator: fn(&Cost, &Cost) -> Ordering,
@@ -25,27 +32,23 @@ pub struct LocalSolCollector<'a> {
 
 
 impl<'a> LocalSolCollector<'a> {
-    pub fn new(rx_sync: Receiver<SyncMessage>,
-               tx_solution_report: Sender<SolutionReportMessage>) -> Self {
-        let best_complete_solution = None;
-        let best_incomplete_solution = None;
-        let cost_comparator = crate::COST_COMPARATOR;
-        let material_limit = None;
-        let best_complete_transferred = false;
-        let best_incomplete_transferred = false;
-        let terminate = false;
-
+    pub fn new(instance: Arc<Instance>,
+               rx_sync: Receiver<SyncMessage>,
+               tx_solution_report: Sender<SolutionReportMessage>,
+               cost_comparator: fn(&Cost, &Cost) -> Ordering,
+    ) -> Self {
 
         Self {
-            best_complete_solution,
-            best_incomplete_solution,
+            instance,
+            best_complete_solution : None,
+            best_incomplete_solution : None,
             cost_comparator,
-            material_limit,
+            material_limit : None,
             rx_sync,
             tx_solution_report,
-            best_complete_transferred,
-            best_incomplete_transferred,
-            terminate,
+            best_complete_transferred : false,
+            best_incomplete_transferred : false,
+            terminate : false,
         }
     }
 
@@ -112,7 +115,7 @@ impl<'a> LocalSolCollector<'a> {
                         }
                         None => {
                             //timed_thread_println!("{}", "Sending full incomplete solution");
-                            let sendable_solution = SendableSolution::new(&best_incomplete_solution);
+                            let sendable_solution = SendableSolution::new(self.instance.clone(), &best_incomplete_solution);
                             SolutionReportMessage::NewIncompleteSolution(thread_name, sendable_solution)
                         }
                     };
@@ -127,7 +130,7 @@ impl<'a> LocalSolCollector<'a> {
             Some(best_complete_solution) => {
                 if !self.best_complete_transferred {
                     let thread_name = std::thread::current().name().unwrap().parse().unwrap();
-                    let sendable_solution = SendableSolution::new(best_complete_solution);
+                    let sendable_solution = SendableSolution::new(self.instance.clone(), &best_complete_solution);
                     //timed_thread_println!("{}", "Sending full solution".green());
                     self.tx_solution_report.send(
                         SolutionReportMessage::NewCompleteSolution(thread_name, sendable_solution)

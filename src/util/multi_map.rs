@@ -1,6 +1,9 @@
 use std::hash::Hash;
 use fxhash::FxHashMap;
 
+/// A map that can contain multiple values for a single key.
+/// Uses the fxhash crate, which hashes considerably faster the default one.
+
 pub struct MultiMap<K: Hash + Eq, V> {
     map: FxHashMap<K, Vec<V>>,
 }

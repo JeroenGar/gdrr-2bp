@@ -14,6 +14,10 @@ use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 
+/// A set of functions which ensure correct behaviour of the code. Used for debugging purposes
+/// They are called with debug_assert!() macro throughout the code.
+/// Are not compiled in release mode
+
 pub fn children_nodes_fit(node_i: &Index, arena: &Arena<Node>) -> bool {
     let node = &arena[*node_i];
     match node.children().is_empty() {

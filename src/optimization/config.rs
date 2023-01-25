@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+/// Contains all the configurable parameters of the algorithm
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {

@@ -3,6 +3,8 @@ use crate::core::entities::layout::Layout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::Instance;
 
+///Representation of a layout that can be sent across threads
+
 #[derive(Debug, Clone)]
 pub struct SendableLayout {
     sheettype_id: usize,

@@ -24,6 +24,8 @@ use crate::util::biased_sampler::{BiasedSampler, BiasMode};
 use crate::util::macros::timed_thread_println;
 use crate::util::util;
 
+/// Goal-Driven Ruin and Recreate algorithm
+
 pub struct GDRR<'a> {
     config: &'a Config,
     instance: &'a Instance,
@@ -47,6 +49,7 @@ impl<'a> GDRR<'a> {
         }
     }
 
+    // Late Acceptance Hill Climbing metaheuristic
     pub fn lahc(&'a mut self) {
         let start_time = std::time::Instant::now();
 

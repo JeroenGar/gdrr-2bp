@@ -9,12 +9,17 @@ use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
 use crate::optimization::problem::Problem;
 
+/// Represents the possibility to insert a parttype into a node with a certain rotation
+/// Does not define how exactly, just that it is possible
+///
+/// InsertionOptions can generate InsertionBlueprints which define exactly how a part is inserted
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct InsertionOption<'a> {
     layout_i: LayoutIndex,
     original_node_i: Index,
     parttype: &'a PartType,
-    rotation: Option<Rotation>,
+    rotation: Option<Rotation>, // None means both rotations are possible
 }
 
 impl<'a> InsertionOption<'a> {
