@@ -11,6 +11,7 @@ use crate::{Instance, PartType};
 use crate::core::cost::Cost;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
+use crate::core::leftover_valuator;
 use crate::optimization::config::Config;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
@@ -34,6 +35,7 @@ pub struct GDRR<'a> {
 impl<'a> GDRR<'a> {
     pub fn new(instance: &'a Instance, config: &'a Config, local_sol_collector: LocalSolCollector<'a>) -> Self {
         let problem = Problem::new(instance);
+        leftover_valuator::set_power(config.leftover_valuation_power);
         let cost_comparator = crate::COST_COMPARATOR;
         Self {
             config,

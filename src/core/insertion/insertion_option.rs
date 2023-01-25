@@ -23,8 +23,6 @@ pub struct InsertionOption<'a> {
     rotation: Option<Rotation>,
 }
 
-//TODO: cache the blueprints
-
 impl<'a> InsertionOption<'a> {
     pub fn new(layout_i: LayoutIndex, original_node_i: Index, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
         Self {

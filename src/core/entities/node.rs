@@ -1,16 +1,10 @@
-use std::cell::RefCell;
-use std::ops::Deref;
-use std::rc::Rc;
-use std::rc::Weak;
-use generational_arena::{Arena, Index};
+use generational_arena::{Index};
 
-use crate::{Instance, Orientation, PartType};
+use crate::{Orientation, PartType};
 use crate::core::cost::Cost;
-use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::leftover_valuator;
 use crate::core::rotation::Rotation;
-use crate::util::assertions;
 
 #[derive(Debug, Clone)]
 pub struct Node<'a> {

@@ -250,9 +250,11 @@ impl<'a> Problem<'a> {
     pub fn instance(&self) -> &'a Instance {
         self.instance
     }
+
     pub fn parttype_qtys(&self) -> &Vec<usize> {
         &self.parttype_qtys
     }
+
     pub fn sheettype_qtys(&self) -> &Vec<usize> {
         &self.sheettype_qtys
     }
