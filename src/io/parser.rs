@@ -6,7 +6,7 @@ use crate::{Instance, JsonInstance, Orientation, PartType, SheetType};
 use crate::core::entities::sendable_layout::SendableLayout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution, JsonSolutionStats};
-use crate::optimization::config::Config;
+use crate::optimization::config::{Config, SheetValuationMode};
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::Rotation::Default;
@@ -31,11 +31,16 @@ pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> I
     let mut sheets = Vec::new();
     for json_sheet in json_instance.sheettypes.iter_mut() {
         json_sheet.reference = Some(sheet_id);
+        let sheet_value = match config.sheet_valuation_mode{
+            SheetValuationMode::Area => json_sheet.length * json_sheet.height,
+            SheetValuationMode::Cost => json_sheet.cost
+        };
+
         let sheettype = SheetType::new(
             sheet_id,
             json_sheet.length,
             json_sheet.height,
-            json_sheet.cost,
+            sheet_value,
             None,
         );
         let stock = match json_sheet.stock {

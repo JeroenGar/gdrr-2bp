@@ -63,6 +63,8 @@ fn main() {
     let mut json_instance: JsonInstance = serde_json::from_reader(BufReader::new(&input_file)).unwrap();
     let config: Config = serde_json::from_reader(BufReader::new(&config_file)).unwrap();
 
+    timed_println!("Config file loaded: {}", serde_json::to_string(&config).unwrap());
+
     {
         let mut leftover_valuator_write_lock = leftover_valuator::LEFTOVER_VALUATION_POWER.write().unwrap();
         *leftover_valuator_write_lock = config.leftover_valuation_power;

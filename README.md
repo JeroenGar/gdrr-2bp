@@ -70,8 +70,13 @@ A detailed explanation of most of these parameters can be found in the paper.
     "blinkRate": 0.01, //blink rate (β)
     "leftoverValuationPower": 2, //exponent used for the valuation of leftover nodes (α)
     "historyLength": 500, //late-acceptance history length (Lh)
+    "sheetValuationMode": "area", //defines how the sheets are valued (area or cost)
 }
 ```
+If `sheetValuationMode` is set to `cost`, the algorithm values each sheet based on the cost field in the input JSON.
+In `area` mode, the cost field is ignored and the value of each sheet is its area. 
+For maximum usage optimization, set the `sheetValuationMode` to `area`.
+
 In addition `maxRRIterations` can also be defined. 
 If provided, the algorithm will run until the predefined number of iterations is reached.   
 Both `maxRRIterations` and `maxRunTime` fields are optional. 

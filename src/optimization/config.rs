@@ -12,6 +12,12 @@ pub struct Config {
     pub history_length: usize,
     pub rotation_allowed: bool,
     pub n_threads: usize,
+    pub sheet_valuation_mode : SheetValuationMode,
 }
 
-impl Config {}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SheetValuationMode {
+    Area,
+    Cost
+}
