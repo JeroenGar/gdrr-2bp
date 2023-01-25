@@ -191,7 +191,7 @@ impl<'a> Layout<'a> {
     }
 
     fn calculate_usage(&self) -> f64 {
-        let used_area = self.nodes.iter().map(|(index, node)| {
+        let used_area = self.nodes.iter().map(|(_, node)| {
             match node.parttype(){
                 Some(_) => node.area(),
                 None => 0
@@ -201,7 +201,7 @@ impl<'a> Layout<'a> {
         used_area as f64 / self.sheettype.area() as f64
     }
 
-    fn register_node(&mut self, mut node: Node<'a>, parent: Index, is_empty: bool) -> Index {
+    fn register_node(&mut self, node: Node<'a>, parent: Index, is_empty: bool) -> Index {
         self.invalidate_caches();
 
         if let Some(parttype) = node.parttype() {

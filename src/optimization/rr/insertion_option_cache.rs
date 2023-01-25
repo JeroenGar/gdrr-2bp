@@ -1,8 +1,6 @@
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+use std::rc::{Rc};
 
-use by_address::ByAddress;
-use generational_arena::{Arena, Index};
+use generational_arena::{Index};
 use itertools::Itertools;
 
 use crate::{PartType, Rotation};

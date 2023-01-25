@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use once_cell::sync::Lazy;
 
-use crate::core::{entities::parttype::PartType, leftover_valuator, orientation::Orientation};
+use crate::core::{entities::parttype::PartType, orientation::Orientation};
 use crate::core::cost::Cost;
 use crate::core::entities::sheettype::SheetType;
 use crate::core::rotation::Rotation;

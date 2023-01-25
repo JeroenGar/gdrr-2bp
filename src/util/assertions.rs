@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::rc::Weak;
@@ -103,7 +101,6 @@ pub fn problem_matches_solution(problem: &Problem, solution: &ProblemSolution) -
         }
     }
     return true;
-    todo!()
 }
 
 pub fn layouts_match(l1: &Layout, l2: &Layout) -> bool {
@@ -228,7 +225,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
 }
 
 pub fn cached_sorted_empty_nodes_correct(nodes: &Arena<Node>, cached_sorted_empty_nodes: &Vec<Index>) -> bool {
-    let all_empty_nodes = nodes.iter().filter(|(i,n)| n.is_empty()).map(|(i,n)| i).collect_vec();
+    let all_empty_nodes = nodes.iter().filter(|(_i,n)| n.is_empty()).map(|(i,_n)| i).collect_vec();
 
     if all_empty_nodes.len() != cached_sorted_empty_nodes.len() {
         return false;

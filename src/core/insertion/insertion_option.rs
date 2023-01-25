@@ -1,16 +1,10 @@
-use std::cell::{RefCell};
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
-use std::rc::Weak;
 
-use by_address::ByAddress;
-use generational_arena::{Arena, Index};
+use generational_arena::{Index};
 use itertools::Itertools;
 
 use crate::{PartType, Rotation};
 use crate::core::cost::Cost;
-use crate::core::entities::layout::Layout;
-use crate::core::entities::node::Node;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
 use crate::optimization::problem::Problem;
@@ -41,7 +35,7 @@ impl<'a> InsertionOption<'a> {
                 original_node.generate_insertion_node_blueprints(self.parttype, rotation,  vec![])
             }
             None => {
-                let mut node_blueprints = original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Default, vec![]);
+                let node_blueprints = original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Default, vec![]);
                 original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Rotated, node_blueprints)
             }
         };

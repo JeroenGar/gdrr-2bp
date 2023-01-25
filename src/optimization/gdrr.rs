@@ -148,7 +148,7 @@ impl<'a> GDRR<'a> {
                         let selected_node = removable_nodes.choose(&mut self.problem.rng()).unwrap();
 
                         let removed_layout = self.problem.remove_node(*selected_node, LayoutIndex::Existing(*layout_index));
-                        if let Some(mut removed_layout) = removed_layout {
+                        if let Some(removed_layout) = removed_layout {
                             mat_limit_budget += removed_layout.sheettype().value() as i128;
                         }
                     }
@@ -173,7 +173,7 @@ impl<'a> GDRR<'a> {
 
                         //release it and update mat_limit_exceedance
                         let removed_layout = self.problem.remove_node(top_node, LayoutIndex::Existing(min_usage_layout_index));
-                        if let Some(mut removed_layout) = removed_layout {
+                        if let Some(removed_layout) = removed_layout {
                             mat_limit_budget += removed_layout.sheettype().value() as i128;
                         } else {
                             panic!("Top node should remove entire layout!");

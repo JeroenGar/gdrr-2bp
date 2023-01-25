@@ -1,6 +1,4 @@
-use std::ops::Deref;
 use std::rc::Rc;
-use generational_arena::Index;
 
 use indexmap::IndexMap;
 

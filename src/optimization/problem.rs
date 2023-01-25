@@ -1,13 +1,8 @@
-use std::cell::RefCell;
-use std::collections::HashSet;
-use std::ops::Deref;
-use std::rc::Rc;
-
 use generational_arena::{Arena, Index};
 use rand::{SeedableRng, thread_rng};
 use rand::rngs::SmallRng;
 
-use crate::{DETERMINISTIC_MODE, Instance, Orientation, PartType, SheetType};
+use crate::{DETERMINISTIC_MODE, Instance, Orientation};
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;

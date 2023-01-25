@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use generational_arena::Index;
 use crate::core::layout_index::LayoutIndex;
 
 pub struct CacheUpdates<T> {
