@@ -14,6 +14,7 @@ use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::CacheUpdates;
 use crate::util::multi_map::MultiMap;
 
+/// This struct functions as a cache for all InsertionOptions during the recreate phase
 pub struct InsertionOptionCache<'a> {
     option_node_map: MultiMap<(LayoutIndex, Index), Rc<InsertionOption<'a>>>,
     option_parttype_map: MultiMap<&'a PartType, Rc<InsertionOption<'a>>>,
@@ -104,18 +105,6 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                     None => {}
                 }
             }
-        }
-    }
-
-    pub fn remove_for_parttype(&mut self, parttype: &'a PartType) {
-        match self.option_parttype_map.remove_all(&parttype) {
-            Some(options) => {
-                for insert_opt in options {
-                    let key = (*insert_opt.layout_index(), *insert_opt.original_node_index());
-                    self.option_node_map.remove(&key, &insert_opt);
-                }
-            }
-            None => ()
         }
     }
 

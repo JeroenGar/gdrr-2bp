@@ -155,14 +155,6 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
     for (i, q) in problem.parttype_qtys().iter().enumerate() {
         let parttype = problem.instance().get_parttype(i);
         match (q, parttypes.contains(&parttype)) {
-            (0, false) => {
-                let ioc_options = ioc.get_for_parttype(&parttype);
-                let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
-
-                if ioc_options.is_some() || fresh_ioc_options.is_some() {
-                    return false;
-                }
-            }
             (0, true) => {
                 return false;
             }
@@ -191,10 +183,11 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
     for (layout_index, layout) in layouts_to_consider.iter(){
         for node_index in layout.sorted_empty_nodes(){
             let node = &layout.nodes()[*node_index];
-            let ioc_options = ioc.get_for_node(node_index, layout_index);
+            let ioc_options = ioc.get_for_node(node_index, layout_index)
+                .map(|ioc_opts| ioc_opts.iter().filter(|io| parttypes.contains(&io.parttype())).collect_vec());
             let fresh_ioc_options = fresh_ioc.get_for_node(node_index, layout_index);
 
-            match (ioc_options, fresh_ioc_options) {
+            match (ioc_options.as_ref(), fresh_ioc_options) {
                 (None, None) => (),
                 (Some(ioc_options), Some(fresh_ioc_options)) => {
                     let ioc_len = ioc_options.len();
@@ -213,7 +206,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
                     }
                 }
                 (_, _) => {
-                    let ioc_options_len = match ioc_options {
+                    let ioc_options_len = match ioc_options.as_ref(){
                         Some(ioc_options) => ioc_options.len(),
                         None => 0
                     };

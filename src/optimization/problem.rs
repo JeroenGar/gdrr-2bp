@@ -282,7 +282,7 @@ impl<'a> Problem<'a> {
             |p_id| {
                 self.register_part(*p_id, 1);
             });
-
+        self.layout_has_changed(layout.id());
         self.layouts.insert(layout)
     }
 

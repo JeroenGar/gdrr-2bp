@@ -33,7 +33,8 @@ impl<'a> ProblemSolution<'a> {
             if problem.changed_layouts().contains(&layout_id) {
                 layouts.insert(layout_id, Rc::new(layout.clone()));
             } else {
-                layouts.insert(layout_id, prev_solution.layouts.get(&layout_id).unwrap().clone());
+                let prev_solution_layout = prev_solution.layouts.get(&layout_id).expect("Unchanged layout not found in previous solution");
+                layouts.insert(layout_id, prev_solution_layout.clone());
             }
         }
 

@@ -228,7 +228,6 @@ impl<'a> GDRR<'a> {
                 }
                 if *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
                     //if the parttype is not needed anymore, remove it from the cache
-                    insertion_option_cache.remove_for_parttype(elected_parttype);
                     parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
                 }
 
@@ -241,7 +240,6 @@ impl<'a> GDRR<'a> {
                 //if there is no insertion blueprint, the part cannot be added to the problem
                 part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
                     * elected_parttype.area();
-                insertion_option_cache.remove_for_parttype(elected_parttype);
 
                 parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
 
