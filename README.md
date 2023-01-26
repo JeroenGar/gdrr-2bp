@@ -33,8 +33,8 @@ General usage:
 cargo run --release  \
     [path to input JSON] \
     [path to config JSON] \
-    [path to write result JSON to (optional)] \
-    [path to write result HTML to (optional)]
+    [path to write result JSON (optional)] \
+    [path to write result HTML (optional)]
 ```
 Concrete example:
 ```bash
@@ -52,7 +52,7 @@ Omitting the flag will result in an unoptimized binary which also contains a lot
 
 The input problem files are using the same JSON format as used in [OR-Datasets](https://github.com/Oscar-Oliveira/OR-Datasets/tree/master/Cutting-and-Packing/2D) repository by [
 Óscar Oliveira](https://github.com/Oscar-Oliveira).
-Any file from this repository, or other file following the same format, should work. 
+Any file from this repository, or other files using this format, should work. 
 
 Two examples are provided in the [examples](examples/) folder.
 
@@ -85,7 +85,8 @@ The algorithm will continue execution until either, one of the termination condi
 Configuring more than 1 thread for instances with only a single type of bin won't make much of an improvement to the end result.
 On the contrary, many threads will result in a reduction of iterations/s per individual thread. 
 Which, in turn, can lead to increased runtimes to reach the same solution quality.
-However, if the instance contains multiple types of bins, it is highly recommended to use multiple threads.
+
+If the instance, however, contains multiple types of bins, it is highly recommended to use multiple threads.
 The diversity in bins used by the threads will usually result in a higher overall solution quality.
 
 An example config file can be found in the [examples](examples/) folder.
@@ -107,10 +108,10 @@ Examples can be found in the [examples](examples/) folder.
 
 ### HTML
 
-In addition to the JSON solution, the algorithm can also output the final solution in a visual format in the form of an HTML file. 
+In addition to the JSON solution, a visual representation of the final solution can be generated in the form of an HTML file. 
 
 Examples can be found in the [examples](examples/) folder.
 
 ## TODOs
 
-- write proper documentation of the codebase with rustdoc
+- improve documentation
