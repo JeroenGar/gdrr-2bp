@@ -232,7 +232,12 @@ impl<'a> GDRR<'a> {
                     let sheettype_id = empty_layout.sheettype().id();
 
                     if self.problem.sheettype_qtys()[sheettype_id] == 0 {
-                        insertion_option_cache.remove_all_for_layout(&elected_blueprint.layout_index(), empty_layout);
+                        //There is no more stock left of this sheettype, remove all empty layouts with this sheettype from the cache
+                        self.problem.empty_layouts().iter().enumerate()
+                            .filter(|(_, l)| l.sheettype().id() == sheettype_id)
+                            .for_each(|(i, l)| {
+                                insertion_option_cache.remove_all_for_layout(&LayoutIndex::Empty(i), l);
+                            });
                     }
                 }
                 if *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
