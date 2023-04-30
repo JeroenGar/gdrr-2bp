@@ -1,7 +1,7 @@
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
-use crate::Instance;
+use crate::optimization::instance::Instance;
 
 ///Representation of a layout that can be sent across threads
 

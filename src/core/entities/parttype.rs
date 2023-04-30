@@ -1,7 +1,7 @@
 use std::hash::{Hash, Hasher};
+use crate::core::rotation::Rotation;
 
 use crate::core::size::Size;
-use crate::Rotation;
 
 #[derive(Debug)]
 pub struct PartType {

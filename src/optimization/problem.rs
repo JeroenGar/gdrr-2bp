@@ -2,11 +2,13 @@ use generational_arena::{Arena, Index};
 use rand::{SeedableRng, thread_rng};
 use rand::rngs::SmallRng;
 
-use crate::{DETERMINISTIC_MODE, Instance, Orientation};
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
+use crate::core::orientation::Orientation;
+use crate::DETERMINISTIC_MODE;
+use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
@@ -316,6 +318,7 @@ impl<'a> Problem<'a> {
     }
 
     fn register_sheet(&mut self, sheettype_id: usize, qty: usize) {
+        debug_assert!(self.sheettype_qtys[sheettype_id] >= qty);
         self.sheettype_qtys[sheettype_id] -= qty;
     }
 

@@ -1,10 +1,11 @@
 use generational_arena::{Arena, Index};
 use itertools::Itertools;
 
-use crate::{Instance, Orientation};
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
+use crate::core::orientation::Orientation;
+use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::assertions;
 

@@ -1,3 +1,5 @@
+
+#[macro_export]
 macro_rules! timed_println {
     ($($arg:tt)*)=>{
         let duration = crate::EPOCH.elapsed();
@@ -9,6 +11,7 @@ macro_rules! timed_println {
     };
 }
 
+#[macro_export]
 macro_rules! timed_thread_println {
     ($($arg:tt)*)=>{
         let duration = crate::EPOCH.elapsed();
@@ -20,6 +23,3 @@ macro_rules! timed_thread_println {
         println!($($arg)*);
     };
 }
-
-pub(crate) use timed_println;
-pub(crate) use timed_thread_println;

@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
-use crate::Instance;
+use crate::optimization::instance::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;

@@ -7,12 +7,13 @@ use std::time::Duration;
 
 use colored::*;
 
-use crate::{Config, Instance};
 use crate::core::cost::Cost;
+use crate::optimization::config::Config;
+use crate::optimization::instance::Instance;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::optimization::solutions::solution_stats::SolutionStats;
-use crate::util::macros::timed_println;
+use crate::timed_println;
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 use crate::util::util;
 

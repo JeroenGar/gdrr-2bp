@@ -1,9 +1,9 @@
 use generational_arena::Index;
 
 use crate::core::cost::Cost;
+use crate::core::entities::parttype::PartType;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::layout_index::LayoutIndex;
-use crate::PartType;
 
 /// Representation of how a part can be inserted into a Node of a Layout
 /// Layouts can use InsertionBlueprints to insert parts

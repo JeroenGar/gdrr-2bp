@@ -1,9 +1,10 @@
 use generational_arena::{Index};
 
-use crate::{Orientation, PartType};
 use crate::core::cost::Cost;
+use crate::core::entities::parttype::PartType;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::leftover_valuator;
+use crate::core::orientation::Orientation;
 use crate::core::rotation::Rotation;
 
 #[derive(Debug, Clone)]

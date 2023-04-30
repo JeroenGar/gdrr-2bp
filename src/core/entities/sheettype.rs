@@ -1,6 +1,5 @@
 use std::hash::{Hash, Hasher};
-
-use crate::Orientation;
+use crate::core::orientation::Orientation;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SheetType {

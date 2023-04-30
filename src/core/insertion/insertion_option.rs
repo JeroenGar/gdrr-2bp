@@ -3,10 +3,11 @@ use std::fmt::Debug;
 use generational_arena::{Index};
 use itertools::Itertools;
 
-use crate::{PartType, Rotation};
 use crate::core::cost::Cost;
+use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
+use crate::core::rotation::Rotation;
 use crate::optimization::problem::Problem;
 
 /// Represents the possibility to insert a parttype into a node with a certain rotation

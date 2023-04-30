@@ -8,12 +8,13 @@ use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::rngs::SmallRng;
 
-use crate::{Instance, PartType};
 use crate::core::cost::Cost;
+use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
 use crate::core::leftover_valuator;
 use crate::optimization::config::Config;
+use crate::optimization::instance::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
@@ -21,7 +22,7 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::{assertions, blink};
 use crate::util::biased_sampler::{BiasedSampler, BiasMode};
-use crate::util::macros::timed_thread_println;
+use crate::timed_thread_println;
 use crate::util::util;
 
 /// Goal-Driven Ruin and Recreate algorithm
@@ -201,7 +202,7 @@ impl<'a> GDRR<'a> {
             .map(|(i, _q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
 
 
-        let mut insertion_option_cache = InsertionOptionCache::new();
+        let mut insertion_option_cache = InsertionOptionCache::new(self.instance);
         let mut part_area_not_included: u64 = 0;
 
         //Collect all the layouts which should be considered during this recreate iteration
@@ -226,7 +227,6 @@ impl<'a> GDRR<'a> {
 
                 if let LayoutIndex::Empty(index) = elected_blueprint.layout_index() {
                     //update mat_limit_budget
-                    //remove the relevant empty_layout from consideration if the stock is empty
                     let empty_layout = &self.problem.empty_layouts()[*index];
                     mat_limit_budget -= empty_layout.sheettype().value() as i128;
                     let sheettype_id = empty_layout.sheettype().id();

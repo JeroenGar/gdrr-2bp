@@ -3,11 +3,13 @@ use std::rc::{Rc};
 use generational_arena::{Index};
 use itertools::Itertools;
 
-use crate::{PartType, Rotation};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
+use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_option::InsertionOption;
 use crate::core::layout_index::LayoutIndex;
+use crate::core::rotation::Rotation;
+use crate::optimization::instance::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::multi_map::MultiMap;
@@ -18,14 +20,14 @@ use crate::util::multi_map::MultiMap;
 
 pub struct InsertionOptionCache<'a> {
     option_node_map: MultiMap<(LayoutIndex, Index), Rc<InsertionOption<'a>>>,
-    option_parttype_map: MultiMap<&'a PartType, Rc<InsertionOption<'a>>>,
+    option_parttype_map: Vec<Vec<Rc<InsertionOption<'a>>>>,
 }
 
 impl<'a : 'b, 'b> InsertionOptionCache<'a> {
-    pub fn new() -> Self {
+    pub fn new(instance: &Instance) -> Self {
         Self {
             option_node_map: MultiMap::new(),
-            option_parttype_map: MultiMap::new(),
+            option_parttype_map: (0..instance.parts().len()).map(|_| Vec::new()).collect_vec(),
         }
     }
 
@@ -83,7 +85,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                 //update the maps
                 for insertion_option in &generated_insertion_options {
                     let parttype = insertion_option.parttype();
-                    self.option_parttype_map.insert(parttype, insertion_option.clone());
+                    self.option_parttype_map[parttype.id()].push(insertion_option.clone());
                 }
                 self.option_node_map.insert_all((*layout_i, *empty_node_i), generated_insertion_options);
             }
@@ -101,7 +103,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                         let insertion_option = Rc::new(insertion_option);
                         let node_key = (*layout_i, *node_i);
                         self.option_node_map.insert(node_key, insertion_option.clone());
-                        self.option_parttype_map.insert(parttype, insertion_option.clone());
+                        self.option_parttype_map[parttype.id()].push(insertion_option.clone());
                     }
                     None => {}
                 }
@@ -114,7 +116,9 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         match self.option_node_map.remove_all(&node_key) {
             Some(options) => {
                 for insert_opt in options {
-                    self.option_parttype_map.remove(&insert_opt.parttype(), &insert_opt);
+                    let options = &mut self.option_parttype_map[insert_opt.parttype().id()];
+                    let index = options.iter().position(|v| Rc::ptr_eq(v, &insert_opt)).unwrap();
+                    options.swap_remove(index);
                 }
             }
             None => ()
@@ -158,7 +162,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     pub fn get_for_parttype(&self, parttype: &'a PartType) -> Option<&Vec<Rc<InsertionOption<'a>>>> {
-        self.option_parttype_map.get(&parttype)
+        self.option_parttype_map.get(parttype.id())
     }
 
     pub fn get_for_node(&self, node_i: &Index, layout_i: &LayoutIndex) -> Option<&Vec<Rc<InsertionOption<'a>>>> {

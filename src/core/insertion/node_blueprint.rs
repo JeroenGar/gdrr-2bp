@@ -1,10 +1,11 @@
 use generational_arena::{Arena, Index};
 use itertools::Itertools;
 
-use crate::{Orientation, PartType};
 use crate::core::cost::Cost;
 use crate::core::entities::node::Node;
+use crate::core::entities::parttype::PartType;
 use crate::core::leftover_valuator;
+use crate::core::orientation::Orientation;
 
 /// Represents a node in an InsertionBlueprint
 

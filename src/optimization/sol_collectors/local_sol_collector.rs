@@ -10,7 +10,7 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::optimization::solutions::solution_stats::SolutionStats;
-use crate::util::macros::{timed_thread_println};
+use crate::timed_thread_println;
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 
 /// Local solution collectors collect and compare solutions from GDRR threads.

@@ -5,11 +5,13 @@ use std::rc::Weak;
 use generational_arena::{Arena, Index};
 use itertools::Itertools;
 
-use crate::{Orientation, PartType, SheetType};
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
+use crate::core::entities::parttype::PartType;
+use crate::core::entities::sheettype::SheetType;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::layout_index::LayoutIndex;
+use crate::core::orientation::Orientation;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
@@ -142,7 +144,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
         )
         .collect_vec();
 
-    let mut fresh_ioc = InsertionOptionCache::new();
+    let mut fresh_ioc = InsertionOptionCache::new(problem.instance());
 
     fresh_ioc.add_for_parttypes(
         parttypes,

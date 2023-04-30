@@ -1,15 +1,18 @@
 use std::path::PathBuf;
 
 use itertools::Itertools;
+use crate::core::entities::parttype::PartType;
 
-use crate::{Instance, JsonInstance, Orientation, PartType, SheetType};
 use crate::core::entities::sendable_layout::SendableLayout;
+use crate::core::entities::sheettype::SheetType;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
-use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution, JsonSolutionStats};
+use crate::core::orientation::Orientation;
+use crate::core::rotation::Rotation;
+use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonInstance, JsonOrientation, JsonSolution, JsonSolutionStats};
 use crate::optimization::config::{Config, SheetValuationMode};
+use crate::optimization::instance::Instance;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
-use crate::Rotation::Default;
 
 pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> Instance {
     let mut part_id = 0;
@@ -20,7 +23,7 @@ pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> I
             part_id,
             json_part.length,
             json_part.height,
-            if config.rotation_allowed { None } else { Some(Default) },
+            if config.rotation_allowed { None } else { Some(Rotation::Default) },
         );
         let demand = json_part.demand;
         parts.push((parttype, demand));
