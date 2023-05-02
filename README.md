@@ -46,7 +46,7 @@ cargo run --release \
 ```
 
 Make sure to include the `--release` flag to build the optimized version of the binary. 
-Omitting the flag will result in an unoptimized binary which also contains a lot of (very expensive) assertions.
+Omitting the flag not only leads to an unoptimized binary but also enables many (highly costly) assertions that validate the correctness of the algorithm (for use during debugging).
 
 ## Input JSON
 
