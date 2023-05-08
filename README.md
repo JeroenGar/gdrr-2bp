@@ -136,3 +136,7 @@ Example:
 | p_incl         | (total included item area) / (total required item area) * 100                |
 | sheets         | Number of bins used in the solution                                          |
 | mat            | Total value of the bins used in the solution                 
+
+## Acknowledgements
+
+This project was funded by [Research Foundation – Flanders](https://www.fwo.be/en/) (file number: 1S71222N) 
