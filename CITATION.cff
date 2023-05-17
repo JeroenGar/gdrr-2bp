@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "GDRR-2BP: a Rust implementation of the goal-driven ruin and recreate heuristic for the 2d variable-sized bin packing problem with guillotine constraints."
+message: "If you use this software, please cite it as below."
+type: software
+url: "https://github.com/JeroenGar/gdrr-2bp"
+date-released: 2023-05-17
+authors:
+- family-names: "Gardeyn"
+  given-names: "Jeroen"
+  email: jeroen.gardeyn@hotmail.com
+  affiliation: KU Leuven
