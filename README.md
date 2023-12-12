@@ -1,6 +1,6 @@
 # GDRR-2BP ![workflow](https://github.com/JeroenGar/gdrr-2bp/actions/workflows/rust.yml/badge.svg)
 
-**This repo contains a Rust implementation of the algorithm described in [a goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints]( https://www.sciencedirect.com/science/article/abs/pii/S0377221721009826).**
+**This repo contains a Rust 🦀 implementation of the algorithm described in [a goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints]( https://www.sciencedirect.com/science/article/abs/pii/S0377221721009826).**
 
 The code used in the experiments in the paper was originally written in Java.
 Due to contractual obligations, this codebase can unfortunately not be made public.
