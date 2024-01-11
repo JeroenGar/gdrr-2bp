@@ -5,9 +5,9 @@
 The code used in the experiments in the paper was originally written in Java.
 Due to contractual obligations, this codebase can unfortunately not be made public.
 However, this reimplementation closely resembles the original design philosophy and datastructures.
-It is also MUCH faster than the original implementation.
+It is also much (50-100x) faster than the implementation used for the benchmarks in the paper.
 
-If this repository helps you in any way, please let me know. 
+If this repository helps you in any way, please let me know.
 I'm very interested to know whether this work is useful to anyone.
 
 # Features
