@@ -139,4 +139,8 @@ Example:
 
 ## Acknowledgements
 
-This project was funded by [Research Foundation – Flanders](https://www.fwo.be/en/) (file number: 1S71222N) 
+This project began development at [KU Leuven](https://www.kuleuven.be/english/) and was funded by [Research Foundation - Flanders (FWO)](https://www.fwo.be/en/) (grant number: 1S71222N).
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/9/97/Fonds_Wetenschappelijk_Onderzoek_logo_2024.svg" height="50px" alt="FWO logo">
+&nbsp;
+<img src="https://upload.wikimedia.org/wikipedia/commons/4/49/KU_Leuven_logo.svg" height="50px" alt="KU Leuven logo">
