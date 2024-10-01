@@ -1,4 +1,4 @@
-# GDRR-2BP ![workflow](https://github.com/JeroenGar/gdrr-2bp/actions/workflows/rust.yml/badge.svg)
+# GDRR-2BP ![workflow](https://github.com/JeroenGar/gdrr-2bp/actions/workflows/rust.yml/badge.svg)[![DOI](https://zenodo.org/badge/doi/10.1016/j.ejor.2021.11.031.svg)](https://doi.org/10.1016/j.ejor.2021.11.031)
 
 **This repo contains a Rust 🦀 implementation of the algorithm described in [a goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints]( https://www.sciencedirect.com/science/article/abs/pii/S0377221721009826).**
 
@@ -143,4 +143,8 @@ Example:
 
 ## Acknowledgements
 
-This project was funded by [Research Foundation – Flanders](https://www.fwo.be/en/) (file number: 1S71222N) 
+This project began development at [KU Leuven](https://www.kuleuven.be/english/) and was funded by [Research Foundation - Flanders (FWO)](https://www.fwo.be/en/) (grant number: 1S71222N).
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/9/97/Fonds_Wetenschappelijk_Onderzoek_logo_2024.svg" height="50px" alt="FWO logo">
+&nbsp;
+<img src="https://upload.wikimedia.org/wikipedia/commons/4/49/KU_Leuven_logo.svg" height="50px" alt="KU Leuven logo">
