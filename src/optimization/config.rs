@@ -15,6 +15,7 @@ pub struct Config {
     pub rotation_allowed: bool,
     pub n_threads: usize,
     pub sheet_valuation_mode : SheetValuationMode,
+    pub max_stages: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]

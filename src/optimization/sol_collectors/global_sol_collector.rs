@@ -129,7 +129,12 @@ impl GlobalSolCollector {
                 self.best_complete_solution = Some(solution.clone());
 
                 for tx_sync in &self.tx_syncs {
-                    tx_sync.send(SyncMessage::SyncMatLimit(solution.cost().material_cost)).expect("Error sending sync matlimit message");
+                    match tx_sync.send(SyncMessage::SyncMatLimit(solution.cost().material_cost)) {
+                        Ok(_) => {},
+                        Err(err) => {
+                            timed_println!("{}: {:?}", "Error syncing material limit".bright_red().bold(), err.to_string());
+                        },
+                    }
                 }
             }
         }

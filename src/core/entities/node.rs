@@ -9,6 +9,7 @@ use crate::core::rotation::Rotation;
 
 #[derive(Debug, Clone)]
 pub struct Node<'a> {
+    level: u8,
     width: u64,
     height: u64,
     children: Vec<Index>,
@@ -19,8 +20,9 @@ pub struct Node<'a> {
 
 
 impl<'a> Node<'a> {
-    pub fn new(width: u64, height: u64, next_cut_orient: Orientation, parttype: Option<&'a PartType>) -> Node<'a> {
+    pub fn new(level: u8, width: u64, height: u64, next_cut_orient: Orientation, parttype: Option<&'a PartType>) -> Node<'a> {
         Node {
+            level,
             width,
             height,
             children: vec![],
@@ -43,7 +45,7 @@ impl<'a> Node<'a> {
         self.children.remove(old_child_index);
     }
 
-    pub fn generate_insertion_node_blueprints(&self, parttype: &'a PartType, rotation: Rotation, mut insertion_replacements: Vec<Vec<NodeBlueprint>>) -> Vec<Vec<NodeBlueprint>> {
+    pub fn generate_insertion_node_blueprints(&self, parttype: &'a PartType, rotation: Rotation, max_level: u8, mut insertion_replacements: Vec<Vec<NodeBlueprint>>) -> Vec<Vec<NodeBlueprint>> {
         debug_assert!(self.insertion_possible(parttype, rotation));
 
         let part_size = match rotation {
@@ -101,7 +103,7 @@ impl<'a> Node<'a> {
              ---*****          ---*****
          */
 
-        if self.next_cut_orient == Orientation::Horizontal && self.width == part_size.width() {
+        if self.next_cut_orient == Orientation::Horizontal && self.width == part_size.width() && self.level < max_level {
             let mut copy = NodeBlueprint::new(self.width, self.height, None, self.next_cut_orient);
 
             let remainder_height = self.height - part_size.height();
@@ -116,7 +118,7 @@ impl<'a> Node<'a> {
             return insertion_replacements;
         }
 
-        if self.next_cut_orient == Orientation::Vertical && self.height == part_size.height() {
+        if self.next_cut_orient == Orientation::Vertical && self.height == part_size.height() && self.level < max_level {
             let mut copy = NodeBlueprint::new(self.width, self.height, None, self.next_cut_orient);
 
             let remainder_width = self.width - part_size.width();
@@ -145,7 +147,7 @@ impl<'a> Node<'a> {
              This requires an extra available level
          */
 
-        if self.next_cut_orient == Orientation::Horizontal {
+        if self.next_cut_orient == Orientation::Horizontal && self.level < max_level {
             let remainder_width_top = self.width - part_size.width();
             let mut part_node_parent = NodeBlueprint::new(part_size.width(), self.height, None, self.next_cut_orient);
             let remainder_node_top = NodeBlueprint::new(remainder_width_top, self.height, None, self.next_cut_orient);
@@ -160,7 +162,7 @@ impl<'a> Node<'a> {
             insertion_replacements.push(vec![part_node_parent, remainder_node_top]);
         }
 
-        if self.next_cut_orient == Orientation::Vertical {
+        if self.next_cut_orient == Orientation::Vertical && self.level < max_level {
             let remainder_height_top = self.height - part_size.height();
             let mut part_node_parent = NodeBlueprint::new(self.width, part_size.height(), None, self.next_cut_orient);
             let remainder_node_top = NodeBlueprint::new(self.width, remainder_height_top, None, self.next_cut_orient);
@@ -185,7 +187,7 @@ impl<'a> Node<'a> {
 
          */
 
-        if self.next_cut_orient == Orientation::Horizontal {
+        if self.next_cut_orient == Orientation::Horizontal && self.level + 1 < max_level {
             let mut copy = NodeBlueprint::new(self.width, self.height, None, self.next_cut_orient);
 
             let remainder_height_top = self.height - part_size.height();
@@ -205,7 +207,7 @@ impl<'a> Node<'a> {
             insertion_replacements.push(vec![copy]);
         }
 
-        if self.next_cut_orient == Orientation::Vertical {
+        if self.next_cut_orient == Orientation::Vertical && self.level + 1 < max_level {
             let mut copy = NodeBlueprint::new(self.width, self.height, None, self.next_cut_orient);
 
             let remainder_width_top = self.width - part_size.width();
@@ -225,7 +227,7 @@ impl<'a> Node<'a> {
 
             insertion_replacements.push(vec![copy]);
         }
-        return insertion_replacements;
+        insertion_replacements
     }
 
     pub fn insertion_possible(&self, parttype: &PartType, rotation: Rotation) -> bool {
@@ -273,6 +275,9 @@ impl<'a> Node<'a> {
     }
     pub fn parent(&self) -> &Option<Index> {
         &self.parent
+    }
+    pub fn level(&self) -> u8 {
+        self.level
     }
 }
 

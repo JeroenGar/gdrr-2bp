@@ -20,6 +20,7 @@ The algorithm currently has support for:
 - [x] 90° rotation of items
 - [x] can handle instances with insufficient bins to produce all items
 - [x] configurable cost and stock quantity per bin type
+- [x] configurable maximum number of guillotine stages
 
 # How to use
 
@@ -81,6 +82,9 @@ In addition `maxRRIterations` can also be defined.
 If provided, the algorithm will run until the predefined number of iterations is reached.   
 Both `maxRRIterations` and `maxRunTime` fields are optional. 
 The algorithm will continue execution until either, one of the termination conditions (defined in the config json) is reached, or it is manually terminated (CTRL+C). 
+
+The `maxStages` field (optional) can be used to limit the number stages the guillotine saw can make.
+A value of `"maxStages": 2` will ensure that all patterns can be cut with at most 2 rotations of the guillotine saw.
 
 Configuring more than 1 thread for instances with only a single type of bin won't make much of an improvement to the end result.
 On the contrary, many threads will result in a reduction of iterations/s per individual thread. 

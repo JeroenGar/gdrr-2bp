@@ -1,6 +1,5 @@
 use generational_arena::{Arena, Index};
 use itertools::Itertools;
-
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
 use crate::core::entities::node::Node;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
@@ -25,7 +24,7 @@ pub struct Layout<'a> {
 impl<'a> Layout<'a> {
     pub fn new(id: usize, sheettype: &'a SheetType, first_cut_orientation: Orientation) -> Self {
         let mut nodes = Arena::new();
-        let top_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation, None);
+        let top_node = Node::new(0, sheettype.width(), sheettype.height(), first_cut_orientation, None);
         let top_node_i = nodes.insert(top_node);
 
         let mut layout = Self {
@@ -39,7 +38,7 @@ impl<'a> Layout<'a> {
         };
 
         //The top node cannot be modified, so we register a placeholder node to be able to insert parts
-        let placeholder_node = Node::new(sheettype.width(), sheettype.height(), first_cut_orientation.rotate(), None);
+        let placeholder_node = Node::new(1, sheettype.width(), sheettype.height(), first_cut_orientation.rotate(), None);
         layout.register_node(placeholder_node, top_node_i, true);
 
         layout
@@ -75,7 +74,7 @@ impl<'a> Layout<'a> {
     fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, instance: &'a Instance, new_nodes: &mut Vec<Index>) {
         let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
 
-        let node = Node::new(blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
+        let node = Node::new(self.nodes[parent].level() + 1, blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
         let node_index = self.register_node(node, parent, blueprint.is_empty());
 
         new_nodes.push(node_index);
@@ -138,11 +137,11 @@ impl<'a> Layout<'a> {
                     let replacement_node = match parent_node.next_cut_orient() {
                         Orientation::Horizontal => {
                             let new_height = empty_node.height() + node.height();
-                            Node::new(node.width(), new_height, node.next_cut_orient(), None)
+                            Node::new(node.level(), node.width(), new_height, node.next_cut_orient(), None)
                         }
                         Orientation::Vertical => {
                             let new_width = empty_node.width() + node.width();
-                            Node::new(new_width, node.height(), node.next_cut_orient(), None)
+                            Node::new(node.level(), new_width, node.height(), node.next_cut_orient(), None)
                         }
                     };
 
@@ -155,7 +154,7 @@ impl<'a> Layout<'a> {
                     let grandparent_index = parent_node.parent().expect("grandparent node needs to be present").clone();
 
                     //create empty parent
-                    let empty_parent_node = Node::new(parent_node.width(), parent_node.height(), parent_node.next_cut_orient(), None);
+                    let empty_parent_node = Node::new(parent_node.level(), parent_node.width(), parent_node.height(), parent_node.next_cut_orient(), None);
 
                     //replace
                     self.unregister_node(parent_node_index, &mut removed_parts);
@@ -167,7 +166,7 @@ impl<'a> Layout<'a> {
 
                 //create empty replacement node
                 let node = &self.nodes[node_index];
-                let replacement_node = Node::new(node.width(), node.height(), node.next_cut_orient(), None);
+                let replacement_node = Node::new(node.level(), node.width(), node.height(), node.next_cut_orient(), None);
 
                 //replace
                 self.unregister_node(node_index, &mut removed_parts);
@@ -210,6 +209,8 @@ impl<'a> Layout<'a> {
         if let Some(parttype) = node.parttype() {
             self.register_part(parttype);
         }
+
+        debug_assert!(node.level() == self.nodes[parent].level() + 1);
 
         let node_index = self.nodes.insert(node);
 

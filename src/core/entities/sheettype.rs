@@ -8,16 +8,18 @@ pub struct SheetType {
     height: u64,
     value: u64,
     fixed_first_cut_orientation: Option<Orientation>,
+    max_stages: u8,
 }
 
 impl SheetType {
-    pub fn new(id: usize, width: u64, height: u64, value: u64, fixed_first_cut_orientation: Option<Orientation>) -> SheetType {
+    pub fn new(id: usize, width: u64, height: u64, value: u64, fixed_first_cut_orientation: Option<Orientation>, max_stages: u8) -> SheetType {
         SheetType {
             id,
             width,
             height,
             value,
             fixed_first_cut_orientation,
+            max_stages,
         }
     }
 
@@ -43,6 +45,10 @@ impl SheetType {
 
     pub fn fixed_first_cut_orientation(&self) -> Option<Orientation> {
         self.fixed_first_cut_orientation
+    }
+
+    pub fn max_stages(&self) -> u8 {
+        self.max_stages
     }
 }
 

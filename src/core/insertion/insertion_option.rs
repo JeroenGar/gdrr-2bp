@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use generational_arena::{Index};
+use generational_arena::Index;
 use itertools::Itertools;
 
 use crate::core::cost::Cost;
@@ -29,20 +29,21 @@ impl<'a> InsertionOption<'a> {
             layout_i,
             original_node_i,
             parttype,
-            rotation
+            rotation,
         }
     }
 
     pub fn generate_blueprints(&self, problem: &Problem) -> Vec<InsertionBlueprint<'a>> {
         let layout = problem.get_layout(&self.layout_i);
         let original_node = &layout.nodes()[self.original_node_i];
+        let max_stages = layout.sheettype().max_stages();
         let node_blueprints = match self.rotation {
             Some(rotation) => {
-                original_node.generate_insertion_node_blueprints(self.parttype, rotation,  vec![])
+                original_node.generate_insertion_node_blueprints(self.parttype, rotation, max_stages, vec![])
             }
             None => {
-                let node_blueprints = original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Default, vec![]);
-                original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Rotated, node_blueprints)
+                let node_blueprints = original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Default, max_stages, vec![]);
+                original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Rotated, max_stages, node_blueprints)
             }
         };
         let original_cost = original_node.calculate_cost();

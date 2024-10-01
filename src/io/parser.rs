@@ -39,17 +39,18 @@ pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> I
             SheetValuationMode::Cost => json_sheet.cost
         };
 
+        let max_stages = config.max_stages.unwrap_or(u8::MAX);
+
         let sheettype = SheetType::new(
             sheet_id,
             json_sheet.length,
             json_sheet.height,
             sheet_value,
             None,
+            max_stages
         );
-        let stock = match json_sheet.stock {
-            Some(stock) => stock,
-            None => usize::MAX
-        };
+
+        let stock = json_sheet.stock.unwrap_or(usize::MAX);
         sheets.push((sheettype, stock));
         sheet_id += 1;
     }
