@@ -100,12 +100,14 @@ fn main() {
     if json_solution.is_some() {
         if let Some(json_solution_path) = json_solution_path {
             let mut json_file = File::create(&json_solution_path).expect("JSON solution file could not be created");
-            serde_json::to_writer_pretty(&mut json_file, json_solution.as_ref().unwrap()).expect("could not write JSON solution");
+            let json_string = serde_json::to_string_pretty(json_solution.as_ref().unwrap()).expect("could not serialize JSON solution");
+            write!(json_file, "{}", json_string).expect("could not write JSON solution");
             timed_println!("JSON solution written to {}", json_solution_path.display());
         }
         if let Some(html_solution_path) = html_solution_path {
             let mut html_file = File::create(&html_solution_path).expect("HTML solution file could not be created");
-            write!(html_file, "{}", &generate_solution(json_solution.as_ref().unwrap())).expect("could not write HTML solution");
+            let html_string = generate_solution(json_solution.as_ref().unwrap());
+            write!(html_file, "{}", html_string).expect("could not write HTML solution");
             timed_println!("HTML solution written to {}", html_solution_path.display());
         }
     } else {
