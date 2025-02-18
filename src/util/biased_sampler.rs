@@ -1,5 +1,5 @@
-use rand::Rng;
 use rand::rngs::SmallRng;
+use rand::Rng;
 
 const DEFAULT_N_SAMPLES: usize = 3;
 const DEFAULT_CHANCE_ARRAY: [f64; DEFAULT_N_SAMPLES] = [0.625, 0.875, 1.0];
@@ -45,7 +45,7 @@ impl<T, V, const N: usize> BiasedSampler<T, V, N> where V: Ord {
         //Select N random entries
         let mut samples: [Option<&(T, V)>; N] = [None; N];
         for i in 0..N {
-            samples[i] = Some(&self.entries[random.gen_range(0..self.entries.len())]);
+            samples[i] = Some(&self.entries[random.random_range(0..self.entries.len())]);
         }
 
         //Sort the entries based on their value (ascending or descending, depending on the mode)
@@ -57,7 +57,7 @@ impl<T, V, const N: usize> BiasedSampler<T, V, N> where V: Ord {
             }
         });
 
-        let random_f64 = random.gen::<f64>();
+        let random_f64 = random.random::<f64>();
         for i in 0..N {
             if random_f64 <= self.chance_vec[i] {
                 return Some(&samples[i].unwrap().0);
@@ -65,7 +65,6 @@ impl<T, V, const N: usize> BiasedSampler<T, V, N> where V: Ord {
         }
         return Some(&samples[N - 1].unwrap().0);
     }
-
 
     pub fn entries(&self) -> &Vec<(T, V)> {
         &self.entries

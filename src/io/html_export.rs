@@ -1,97 +1,99 @@
 use horrorshow::helper::doctype;
 use horrorshow::html;
 use horrorshow::prelude::*;
+use svg::node::element::{Group, Rectangle, Text};
 use svg::Document;
-use svg::node::element::{Group, Rectangle};
-use svg::node::Text;
 
 use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution};
 
 pub fn generate_solution(json_solution: &JsonSolution) -> String {
-    let html = format!("{}", html! {
-        : doctype::HTML;
-        html(style="font-family:Arial") {
-            head {
-                title : format!("Solution {}", &json_solution.name);
-            }
-            body {
-                h1 {
-                    : format!("Solution {}", &json_solution.name);
+    let html = format!(
+        "{}",
+        html! {
+            : doctype::HTML;
+            html(style="font-family:Arial") {
+                head {
+                    title : format!("Solution {}", &json_solution.name);
                 }
-                h2 {
-                    : format!{"{}", "Statistics"}
-                }
-                table {
-                    tr {
-                        th(style="text-align:left") {
-                            : "Usage";
+                body {
+                    h1 {
+                        : format!("Solution {}", &json_solution.name);
+                    }
+                    h2 {
+                        : format!{"{}", "Statistics"}
+                    }
+                    table {
+                        tr {
+                            th(style="text-align:left") {
+                                : "Usage";
+                            }
+                            td {
+                                : format!{"{:.3}%", json_solution.statistics.usage_pct};
+                            }
                         }
-                        td {
-                            : format!{"{:.3}%", json_solution.statistics.usage_pct};
+                        tr {
+                            th(style="text-align:left") {
+                                : "Part area included";
+                            }
+                            td {
+                                : format!{"{:.3}%", json_solution.statistics.part_area_included_pct};
+                            }
+                        }
+                        tr {
+                            th(style="text-align:left") {
+                                : "# Objects used";
+                            }
+                            td {
+                                : format!{"{}", json_solution.statistics.n_objects_used};
+                            }
+                        }
+                        tr {
+                            th(style="text-align:left") {
+                                : "Material cost";
+                            }
+                            td {
+                                : format!{"{}", json_solution.statistics.material_cost};
+                            }
+                        }
+                        tr {
+                            th(style="text-align:left") {
+                                : "Run time";
+                            }
+                            td {
+                                : format!{"{}s", json_solution.statistics.run_time_ms as f64 / 1000.0};
+                            }
+                        }
+                        tr {
+                            th(style="text-align:left") {
+                                : "Config path";
+                            }
+                            td {
+                                : format!{"{}",  json_solution.statistics.config_path};
+                            }
                         }
                     }
-                    tr {
-                        th(style="text-align:left") {
-                            : "Part area included";
-                        }
-                        td {
-                            : format!{"{:.3}%", json_solution.statistics.part_area_included_pct};
-                        }
+                    h2 {
+                        : format!{"{}", "Cutting Patterns"}
                     }
-                    tr {
-                        th(style="text-align:left") {
-                            : "# Objects used";
+                    @ for i in 0..json_solution.cutting_patterns.len() {
+                        h3 {
+                            : format!("Pattern {}: Object {} [{}x{}], {:.3}% usage",
+                                i,
+                                json_solution.cutting_patterns[i].object,
+                                json_solution.cutting_patterns[i].root.length,
+                                json_solution.cutting_patterns[i].root.height,
+                                json_solution.cutting_patterns[i].usage * 100.0
+                            );
                         }
-                        td {
-                            : format!{"{}", json_solution.statistics.n_objects_used};
+                        div(style="width:1000px;") {
+                            : Raw(generate_cutting_pattern(&json_solution.cutting_patterns[i]))
                         }
-                    }
-                    tr {
-                        th(style="text-align:left") {
-                            : "Material cost";
-                        }
-                        td {
-                            : format!{"{}", json_solution.statistics.material_cost};
-                        }
-                    }
-                    tr {
-                        th(style="text-align:left") {
-                            : "Run time";
-                        }
-                        td {
-                            : format!{"{}s", json_solution.statistics.run_time_ms as f64 / 1000.0};
-                        }
-                    }
-                    tr {
-                        th(style="text-align:left") {
-                            : "Config path";
-                        }
-                        td {
-                            : format!{"{}",  json_solution.statistics.config_path};
-                        }
-                    }
-                }
-                h2 {
-                    : format!{"{}", "Cutting Patterns"}
-                }
-                @ for i in 0..json_solution.cutting_patterns.len() {
-                    h3 {
-                        : format!("Pattern {}: Object {} [{}x{}], {:.3}% usage",
-                            i,
-                            json_solution.cutting_patterns[i].object,
-                            json_solution.cutting_patterns[i].root.length,
-                            json_solution.cutting_patterns[i].root.height,
-                            json_solution.cutting_patterns[i].usage * 100.0
-                        );
-                    }
-                    div(style="width:1000px;") {
-                        : Raw(generate_cutting_pattern(&json_solution.cutting_patterns[i]))
-                    }
 
+                    }
                 }
             }
         }
-    });
+    );
 
     html
 }
@@ -101,7 +103,15 @@ pub fn generate_cutting_pattern(json_cp: &JsonCP) -> String {
     let mut document = Document::new()
         .set("width", "100%")
         .set("height", "100%")
-        .set("viewBox", (-stroke_width, -stroke_width, json_cp.root.length as f64 + stroke_width * 2.0, json_cp.root.height as f64 + stroke_width * 2.0));
+        .set(
+            "viewBox",
+            (
+                -stroke_width,
+                -stroke_width,
+                json_cp.root.length as f64 + stroke_width * 2.0,
+                json_cp.root.height as f64 + stroke_width * 2.0,
+            ),
+        );
     let mut group = Group::new();
 
     let mut subgroups = Vec::new();
@@ -117,10 +127,17 @@ pub fn generate_cutting_pattern(json_cp: &JsonCP) -> String {
         svg::write(&mut write_buffer, &document).expect("Failed to write SVG");
     }
 
-    std::str::from_utf8(&write_buffer).expect("Failed to convert to string").to_string()
+    std::str::from_utf8(&write_buffer)
+        .expect("Failed to convert to string")
+        .to_string()
 }
 
-fn generate_node(json_cp_node: &JsonCPNode, reference: (u64, u64), groups: &mut Vec<Group>, stroke_width: f64) {
+fn generate_node(
+    json_cp_node: &JsonCPNode,
+    reference: (u64, u64),
+    groups: &mut Vec<Group>,
+    stroke_width: f64,
+) {
     match json_cp_node.children.is_empty() {
         true => {
             let color = match json_cp_node.node_type {
@@ -143,25 +160,28 @@ fn generate_node(json_cp_node: &JsonCPNode, reference: (u64, u64), groups: &mut 
 
             match json_cp_node.node_type {
                 JsonCPNodeType::Item => {
-                    let mut text = svg::node::element::Text::new()
-                        .set("x", x + (width * 0.5))
-                        .set("y", y + (height * 0.5))
-                        .set("text-anchor", "middle")
-                        .set("dominant-baseline", "middle")
-                        .set("fill", "black");
-                    text = text.add(
-                        Text::new(format!("{}: [{}x{}]",
-                                          json_cp_node.item.unwrap(),
-                                          json_cp_node.length,
-                                          json_cp_node.height)
-                        )
-                    );
+                    let mut text = Text::new(format!(
+                        "{}: [{}x{}]",
+                        json_cp_node.item.unwrap(),
+                        json_cp_node.length,
+                        json_cp_node.height
+                    ))
+                    .set("x", x + (width * 0.5))
+                    .set("y", y + (height * 0.5))
+                    .set("text-anchor", "middle")
+                    .set("dominant-baseline", "middle")
+                    .set("fill", "black");
+
                     if json_cp_node.height > json_cp_node.length {
-                        text = text.set("transform", format!("rotate(-90 {} {})", x + (width * 0.5), y + (height * 0.5)));
+                        text = text.set(
+                            "transform",
+                            format!("rotate(-90 {} {})", x + (width * 0.5), y + (height * 0.5)),
+                        );
                     }
                     let font_size = f64::min(
                         0.005 * u64::max(json_cp_node.height, json_cp_node.length) as f64,
-                        0.02 * u64::min(json_cp_node.height, json_cp_node.length) as f64);
+                        0.02 * u64::min(json_cp_node.height, json_cp_node.length) as f64,
+                    );
                     text = text.set("font-size", format!("{}em", font_size));
 
                     group = group.add(text);
@@ -181,7 +201,9 @@ fn generate_node(json_cp_node: &JsonCPNode, reference: (u64, u64), groups: &mut 
                     Some(JsonOrientation::V) => {
                         reference.0 += child.length;
                     }
-                    _ => { panic!("Node with children should have orientation") }
+                    _ => {
+                        panic!("Node with children should have orientation")
+                    }
                 }
             }
         }

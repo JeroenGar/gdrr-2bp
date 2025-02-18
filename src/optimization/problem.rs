@@ -1,5 +1,5 @@
 use generational_arena::{Arena, Index};
-use rand::{SeedableRng, thread_rng};
+use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
 use crate::core::cost::Cost;
@@ -38,7 +38,7 @@ impl<'a> Problem<'a> {
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let random = match DETERMINISTIC_MODE {
             true => SmallRng::seed_from_u64(0),
-            false => SmallRng::from_rng(thread_rng()).unwrap()
+            false => SmallRng::from_rng(&mut rand::rng())
         };
 
         let mut problem = Problem {

@@ -16,7 +16,7 @@ pub fn select_lowest_entry(entries: &Vec<usize>, blink_chance: f32, rand: &mut S
     let mut selected_index = 0;
 
     for (i, entry) in entries.iter().enumerate() {
-        if *entry < lowest_value && rand.gen::<f32>() > blink_chance {
+        if *entry < lowest_value && rand.random::<f32>() > blink_chance {
             lowest_value = *entry;
             selected_index = i;
         }
@@ -27,7 +27,7 @@ pub fn select_lowest_entry(entries: &Vec<usize>, blink_chance: f32, rand: &mut S
 pub fn select_lowest_in_range(range: Range<usize>, blink_chance: f32, rand: &mut SmallRng) -> usize {
     let range_end = range.end;
     for i in range {
-        if rand.gen::<f32>() > blink_chance {
+        if rand.random::<f32>() > blink_chance {
             return i;
         }
     }

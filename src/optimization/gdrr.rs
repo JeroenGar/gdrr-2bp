@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use colored::*;
 use itertools::Itertools;
 use ordered_float::NotNan;
-use rand::prelude::SliceRandom;
+use rand::prelude::{IndexedRandom, SliceRandom};
 use rand::Rng;
 use rand::rngs::SmallRng;
 
@@ -138,7 +138,7 @@ impl<'a> GDRR<'a> {
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
-        let n_nodes_to_remove = self.problem.rng().gen_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
+        let n_nodes_to_remove = self.problem.rng().random_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
             for _i in 0..n_nodes_to_remove {
@@ -318,7 +318,7 @@ impl<'a> GDRR<'a> {
                             }
                             false => {
                                 //Select a random blueprint from the new layout blueprints
-                                let selected_index = problem.rng().gen_range(0..new_layout_blueprints.len());
+                                let selected_index = problem.rng().random_range(0..new_layout_blueprints.len());
                                 Some(new_layout_blueprints.remove(selected_index))
                             }
                         }
