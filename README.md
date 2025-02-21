@@ -27,7 +27,7 @@ The algorithm currently has support for:
 # How to use
 
 ## Requirements
-- Rust >= 1.62
+- Rust >= 1.85
 
 ## CLI
 
