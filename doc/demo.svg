@@ -1,0 +1,852 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.5 0 432 150">
+  <!-- Row 1 -->
+  <g transform="translate(0, 0) scale(0.000181)">
+    <g>
+        <g>
+            <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="105000" x="0" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 52500 96900)" x="52500" y="96900">
+                225: [105000x193800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="108000" x="105000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 159000 96900)" x="159000" y="96900">
+                321: [108000x193800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="105000" x="213000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 265500 96900)" x="265500" y="96900">
+                253: [105000x193800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="191800" stroke="black" stroke-width="1100" width="108000" x="318000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="959em" text-anchor="middle" transform="rotate(-90 372000 95900)" x="372000" y="95900">
+                304: [108000x191800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="2000" stroke="black" stroke-width="1100" width="108000" x="318000" y="191800"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="191800" stroke="black" stroke-width="1100" width="16000" x="426000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 434000 95900)" x="434000" y="95900">
+                409: [16000x191800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="2000" stroke="black" stroke-width="1100" width="16000" x="426000" y="191800"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="191800" stroke="black" stroke-width="1100" width="108000" x="442000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="959em" text-anchor="middle" transform="rotate(-90 496000 95900)" x="496000" y="95900">
+                270: [108000x191800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="2000" stroke="black" stroke-width="1100" width="108000" x="442000" y="191800"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="108000" x="0" y="193800"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 54000 280700)" x="54000" y="280700">
+                290: [108000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="108000" x="0" y="367600"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="105000" x="108000" y="193800"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 160500 280700)" x="160500" y="280700">
+                209: [105000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="105000" x="108000" y="367600"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="105000" x="213000" y="193800"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 265500 280700)" x="265500" y="280700">
+                244: [105000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="105000" x="213000" y="367600"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="105000" x="318000" y="193800"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 370500 280700)" x="370500" y="280700">
+                209: [105000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="105000" x="318000" y="367600"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="105000" x="423000" y="193800"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 475500 280700)" x="475500" y="280700">
+                244: [105000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="105000" x="423000" y="367600"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="169800" stroke="black" stroke-width="1100" width="21000" x="528000" y="193800"/>
+            <text dominant-baseline="middle" fill="black" font-size="420em" text-anchor="middle" transform="rotate(-90 538500 278700)" x="538500" y="278700">
+                145: [21000x169800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="4400" stroke="black" stroke-width="1100" width="21000" x="528000" y="363600"/>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="174200" stroke="black" stroke-width="1100" width="1000" x="549000" y="193800"/>
+        </g>
+    </g>
+  </g>
+  <g transform="translate(110, 0) scale(0.000181)">
+    <g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="105000" x="0" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 52500 86900)" x="52500" y="86900">
+                209: [105000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="173800" stroke="black" stroke-width="1100" width="105000" x="0" y="173800"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" transform="rotate(-90 52500 260700)" x="52500" y="260700">
+                209: [105000x173800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="105000" x="0" y="347600"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="133800" stroke="black" stroke-width="1100" width="108000" x="105000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="669em" text-anchor="middle" transform="rotate(-90 159000 66900)" x="159000" y="66900">
+                264: [108000x133800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="133800" stroke="black" stroke-width="1100" width="108000" x="105000" y="133800"/>
+            <text dominant-baseline="middle" fill="black" font-size="669em" text-anchor="middle" transform="rotate(-90 159000 200700)" x="159000" y="200700">
+                264: [108000x133800]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="79400" stroke="black" stroke-width="1100" width="108000" x="105000" y="267600"/>
+            <text dominant-baseline="middle" fill="black" font-size="540em" text-anchor="middle" x="159000" y="307300">
+                271: [108000x79400]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="1000" stroke="black" stroke-width="1100" width="108000" x="105000" y="347000"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="161800" x="213000" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="809em" text-anchor="middle" x="293900" y="52500">
+                224: [161800x105000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="173800" x="374800" y="0"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" x="461700" y="52500">
+                244: [173800x105000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="105000" stroke="black" stroke-width="1100" width="1400" x="548600" y="0"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="161800" x="213000" y="105000"/>
+            <text dominant-baseline="middle" fill="black" font-size="809em" text-anchor="middle" x="293900" y="157500">
+                224: [161800x105000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="173800" x="374800" y="105000"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" x="461700" y="157500">
+                209: [173800x105000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="105000" stroke="black" stroke-width="1100" width="1400" x="548600" y="105000"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="173800" x="213000" y="210000"/>
+            <text dominant-baseline="middle" fill="black" font-size="869em" text-anchor="middle" x="299900" y="264000">
+                290: [173800x108000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="161800" x="386800" y="210000"/>
+            <text dominant-baseline="middle" fill="black" font-size="809em" text-anchor="middle" x="467700" y="264000">
+                307: [161800x108000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="108000" stroke="black" stroke-width="1100" width="1400" x="548600" y="210000"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="30000" stroke="black" stroke-width="1100" width="180800" x="213000" y="318000"/>
+            <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" x="303400" y="333000">
+                405: [180800x30000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="30000" stroke="black" stroke-width="1100" width="150000" x="393800" y="318000"/>
+            <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" x="468800" y="333000">
+                322: [150000x30000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="30000" stroke="black" stroke-width="1100" width="6200" x="543800" y="318000"/>
+        </g>
+        <g>
+            <rect fill="#BFBFBF" height="20000" stroke="black" stroke-width="1100" width="540000" x="0" y="348000"/>
+            <text dominant-baseline="middle" fill="black" font-size="400em" text-anchor="middle" x="270000" y="358000">
+                67: [540000x20000]
+            </text>
+        </g>
+        <g>
+            <rect fill="#A9D18E" height="20000" stroke="black" stroke-width="1100" width="10000" x="540000" y="348000"/>
+        </g>
+    </g>
+  </g>
+  <g transform="translate(220, 0) scale(0.000181)">
+    <g>
+                    <g>
+                        <rect fill="#BFBFBF" height="88000" stroke="black" stroke-width="1100" width="482000" x="0" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1760em" text-anchor="middle" x="241000" y="44000">
+                            139: [482000x88000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="82000" stroke="black" stroke-width="1100" width="482000" x="0" y="88000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1640em" text-anchor="middle" x="241000" y="129000">
+                            121: [482000x82000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="176000" x="0" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="880em" text-anchor="middle" x="88000" y="215000">
+                            160: [176000x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="116000" x="176000" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="580em" text-anchor="middle" x="234000" y="215000">
+                            153: [116000x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="95200" x="292000" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="476em" text-anchor="middle" x="339600" y="215000">
+                            152: [95200x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="21000" x="387200" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="420em" text-anchor="middle" transform="rotate(-90 397700 215000)" x="397700" y="215000">
+                            245: [21000x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="30000" x="408200" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="450em" text-anchor="middle" transform="rotate(-90 423200 215000)" x="423200" y="215000">
+                            311: [30000x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="21000" x="438200" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="420em" text-anchor="middle" transform="rotate(-90 448700 215000)" x="448700" y="215000">
+                            211: [21000x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="90000" stroke="black" stroke-width="1100" width="21000" x="459200" y="170000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="420em" text-anchor="middle" transform="rotate(-90 469700 215000)" x="469700" y="215000">
+                            245: [21000x90000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="90000" stroke="black" stroke-width="1100" width="1800" x="480200" y="170000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="260000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="314000">
+                            317: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="108000" stroke="black" stroke-width="1100" width="2000" x="480000" y="260000"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="0" stroke="black" stroke-width="1100" width="482000" x="0" y="368000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="127000" stroke="black" stroke-width="1100" width="67200" x="482000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="635em" text-anchor="middle" transform="rotate(-90 515600 63500)" x="515600" y="63500">
+                            31: [67200x127000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="127000" stroke="black" stroke-width="1100" width="800" x="549200" y="0"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="119200" stroke="black" stroke-width="1100" width="66600" x="482000" y="127000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="596em" text-anchor="middle" transform="rotate(-90 515300 186600)" x="515300" y="186600">
+                            352: [66600x119200]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="119200" stroke="black" stroke-width="1100" width="1400" x="548600" y="127000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="119200" stroke="black" stroke-width="1100" width="66600" x="482000" y="246200"/>
+                        <text dominant-baseline="middle" fill="black" font-size="596em" text-anchor="middle" transform="rotate(-90 515300 305800)" x="515300" y="305800">
+                            346: [66600x119200]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="119200" stroke="black" stroke-width="1100" width="1400" x="548600" y="246200"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2600" stroke="black" stroke-width="1100" width="68000" x="482000" y="365400"/>
+                    </g>
+                </g>
+  </g>
+  <g transform="translate(330, 0) scale(0.000181)">
+    <g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="54000">
+                            318: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="108000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="162000">
+                            318: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="68000" stroke="black" stroke-width="1100" width="462000" x="0" y="216000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1360em" text-anchor="middle" x="231000" y="250000">
+                            37: [462000x68000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="65400" stroke="black" stroke-width="1100" width="16000" x="462000" y="216000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 470000 248700)" x="470000" y="248700">
+                            25: [16000x65400]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2600" stroke="black" stroke-width="1100" width="16000" x="462000" y="281400"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="68000" stroke="black" stroke-width="1100" width="2000" x="478000" y="216000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="68000" stroke="black" stroke-width="1100" width="462000" x="0" y="284000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1360em" text-anchor="middle" x="231000" y="318000">
+                            37: [462000x68000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="65400" stroke="black" stroke-width="1100" width="16000" x="462000" y="284000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 470000 316700)" x="470000" y="316700">
+                            25: [16000x65400]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2600" stroke="black" stroke-width="1100" width="16000" x="462000" y="349400"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="68000" stroke="black" stroke-width="1100" width="2000" x="478000" y="284000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="16000" stroke="black" stroke-width="1100" width="193800" x="0" y="352000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" x="96900" y="360000">
+                            410: [193800x16000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="16000" stroke="black" stroke-width="1100" width="133800" x="193800" y="352000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" x="260700" y="360000">
+                            369: [133800x16000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="16000" stroke="black" stroke-width="1100" width="133800" x="327600" y="352000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" x="394500" y="360000">
+                            369: [133800x16000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="16000" stroke="black" stroke-width="1100" width="18600" x="461400" y="352000"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="0" stroke="black" stroke-width="1100" width="480000" x="0" y="368000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="180800" stroke="black" stroke-width="1100" width="30000" x="480000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 495000 90400)" x="495000" y="90400">
+                            405: [30000x180800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="180800" stroke="black" stroke-width="1100" width="30000" x="480000" y="180800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 495000 271200)" x="495000" y="271200">
+                            405: [30000x180800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="6400" stroke="black" stroke-width="1100" width="30000" x="480000" y="361600"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="360000" stroke="black" stroke-width="1100" width="40000" x="510000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="800em" text-anchor="middle" transform="rotate(-90 530000 180000)" x="530000" y="180000">
+                            421: [40000x360000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="8000" stroke="black" stroke-width="1100" width="40000" x="510000" y="360000"/>
+                    </g>
+                </g>
+  </g>
+  <!-- Row 2 -->
+  <g transform="translate(0, 75) scale(0.000181)">
+    <g>
+                    <g>
+                        <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="16000" x="0" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 8000 96900)" x="8000" y="96900">
+                            410: [16000x193800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="105000" x="16000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 68500 96900)" x="68500" y="96900">
+                            225: [105000x193800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="108000" x="121000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 175000 96900)" x="175000" y="96900">
+                            276: [108000x193800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="105000" x="229000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 281500 96900)" x="281500" y="96900">
+                            253: [105000x193800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="108000" x="334000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 388000 96900)" x="388000" y="96900">
+                            276: [108000x193800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="193800" stroke="black" stroke-width="1100" width="108000" x="442000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" transform="rotate(-90 496000 96900)" x="496000" y="96900">
+                            321: [108000x193800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="193800" stroke="black" stroke-width="1100" width="0" x="550000" y="0"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="114000" stroke="black" stroke-width="1100" width="480000" x="0" y="193800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2280em" text-anchor="middle" x="240000" y="250800">
+                            337: [480000x114000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="200" stroke="black" stroke-width="1100" width="480000" x="0" y="307800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="113800" stroke="black" stroke-width="1100" width="16000" x="480000" y="193800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 488000 250700)" x="488000" y="250700">
+                            330: [16000x113800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="16000" x="480000" y="307600"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="110000" stroke="black" stroke-width="1100" width="30000" x="496000" y="193800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="550em" text-anchor="middle" transform="rotate(-90 511000 248800)" x="511000" y="248800">
+                            356: [30000x110000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="4200" stroke="black" stroke-width="1100" width="30000" x="496000" y="303800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="109800" stroke="black" stroke-width="1100" width="21000" x="526000" y="193800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="420em" text-anchor="middle" transform="rotate(-90 536500 248700)" x="536500" y="248700">
+                            134: [21000x109800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="4400" stroke="black" stroke-width="1100" width="21000" x="526000" y="303600"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="114200" stroke="black" stroke-width="1100" width="3000" x="547000" y="193800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="20000" stroke="black" stroke-width="1100" width="540000" x="0" y="308000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="400em" text-anchor="middle" x="270000" y="318000">
+                            67: [540000x20000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="20000" stroke="black" stroke-width="1100" width="10000" x="540000" y="308000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="40000" stroke="black" stroke-width="1100" width="540000" x="0" y="328000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="800em" text-anchor="middle" x="270000" y="348000">
+                            430: [540000x40000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="40000" stroke="black" stroke-width="1100" width="10000" x="540000" y="328000"/>
+                    </g>
+                </g>
+  </g>
+  <g transform="translate(110, 75) scale(0.000181)">
+     <g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="54000">
+                            296: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="108000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="162000">
+                            318: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="68000" stroke="black" stroke-width="1100" width="462000" x="0" y="216000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1360em" text-anchor="middle" x="231000" y="250000">
+                            37: [462000x68000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="200" stroke="black" stroke-width="1100" width="462000" x="0" y="284000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="65400" stroke="black" stroke-width="1100" width="16000" x="462000" y="216000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 470000 248700)" x="470000" y="248700">
+                            25: [16000x65400]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2800" stroke="black" stroke-width="1100" width="16000" x="462000" y="281400"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="68200" stroke="black" stroke-width="1100" width="2000" x="478000" y="216000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="83800" stroke="black" stroke-width="1100" width="458000" x="0" y="284200"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1676em" text-anchor="middle" x="229000" y="326100">
+                            126: [458000x83800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="83800" stroke="black" stroke-width="1100" width="16000" x="458000" y="284200"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 466000 326100)" x="466000" y="326100">
+                            125: [16000x83800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="83800" stroke="black" stroke-width="1100" width="6000" x="474000" y="284200"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="0" stroke="black" stroke-width="1100" width="480000" x="0" y="368000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="360000" stroke="black" stroke-width="1100" width="40000" x="480000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="800em" text-anchor="middle" transform="rotate(-90 500000 180000)" x="500000" y="180000">
+                            421: [40000x360000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="8000" stroke="black" stroke-width="1100" width="40000" x="480000" y="360000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="148800" stroke="black" stroke-width="1100" width="30000" x="520000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 535000 74400)" x="535000" y="74400">
+                            381: [30000x148800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="148800" stroke="black" stroke-width="1100" width="30000" x="520000" y="148800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 535000 223200)" x="535000" y="223200">
+                            381: [30000x148800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="69200" stroke="black" stroke-width="1100" width="26000" x="520000" y="297600"/>
+                        <text dominant-baseline="middle" fill="black" font-size="346em" text-anchor="middle" transform="rotate(-90 533000 332200)" x="533000" y="332200">
+                            51: [26000x69200]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="1200" stroke="black" stroke-width="1100" width="26000" x="520000" y="366800"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="70400" stroke="black" stroke-width="1100" width="4000" x="546000" y="297600"/>
+                    </g>
+                </g>
+  </g>
+  <g transform="translate(220, 75) scale(0.000181)">
+    <g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="161800" x="0" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="809em" text-anchor="middle" x="80900" y="52500">
+                            219: [161800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="193800" x="161800" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" x="258700" y="52500">
+                            253: [193800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="193800" x="355600" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" x="452500" y="52500">
+                            225: [193800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="105000" stroke="black" stroke-width="1100" width="600" x="549400" y="0"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="133800" x="0" y="105000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="669em" text-anchor="middle" x="66900" y="157500">
+                            252: [133800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="193800" x="133800" y="105000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="969em" text-anchor="middle" x="230700" y="157500">
+                            225: [193800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="87400" x="327600" y="105000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="525em" text-anchor="middle" transform="rotate(-90 371300 157500)" x="371300" y="157500">
+                            229: [87400x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="133800" x="415000" y="105000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="669em" text-anchor="middle" x="481900" y="157500">
+                            243: [133800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="105000" stroke="black" stroke-width="1100" width="1200" x="548800" y="105000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="30000" stroke="black" stroke-width="1100" width="138000" x="0" y="210000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" x="69000" y="225000">
+                            345: [138000x30000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="30000" stroke="black" stroke-width="1100" width="148800" x="138000" y="210000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" x="212400" y="225000">
+                            381: [148800x30000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="30000" stroke="black" stroke-width="1100" width="148800" x="286800" y="210000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" x="361200" y="225000">
+                            381: [148800x30000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="30000" stroke="black" stroke-width="1100" width="110000" x="435600" y="210000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="550em" text-anchor="middle" x="490600" y="225000">
+                            356: [110000x30000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="30000" stroke="black" stroke-width="1100" width="4400" x="545600" y="210000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="500000" x="0" y="240000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="250000" y="294000">
+                            273: [500000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="100800" stroke="black" stroke-width="1100" width="30000" x="500000" y="240000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="504em" text-anchor="middle" transform="rotate(-90 515000 290400)" x="515000" y="290400">
+                            201: [30000x100800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="7200" stroke="black" stroke-width="1100" width="30000" x="500000" y="340800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="85400" stroke="black" stroke-width="1100" width="16000" x="530000" y="240000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" transform="rotate(-90 538000 282700)" x="538000" y="282700">
+                            135: [16000x85400]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="85400" stroke="black" stroke-width="1100" width="4000" x="546000" y="240000"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="22600" stroke="black" stroke-width="1100" width="20000" x="530000" y="325400"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="20000" stroke="black" stroke-width="1100" width="540000" x="0" y="348000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="400em" text-anchor="middle" x="270000" y="358000">
+                            67: [540000x20000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="20000" stroke="black" stroke-width="1100" width="10000" x="540000" y="348000"/>
+                    </g>
+                </g>
+  </g>
+  <g transform="translate(330, 75) scale(0.000181)">
+     <g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="54000">
+                            318: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="108000" stroke="black" stroke-width="1100" width="480000" x="0" y="108000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="2160em" text-anchor="middle" x="240000" y="162000">
+                            317: [480000x108000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="29000" stroke="black" stroke-width="1100" width="478000" x="0" y="216000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="580em" text-anchor="middle" x="239000" y="230500">
+                            435: [478000x29000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="29000" stroke="black" stroke-width="1100" width="2000" x="478000" y="216000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="122600" stroke="black" stroke-width="1100" width="93000" x="0" y="245000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="613em" text-anchor="middle" transform="rotate(-90 46500 306300)" x="46500" y="306300">
+                            168: [93000x122600]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="400" stroke="black" stroke-width="1100" width="93000" x="0" y="367600"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="161800" x="93000" y="245000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="809em" text-anchor="middle" x="173900" y="297500">
+                            219: [161800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="16000" stroke="black" stroke-width="1100" width="161800" x="93000" y="350000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" x="173900" y="358000">
+                            395: [161800x16000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2000" stroke="black" stroke-width="1100" width="161800" x="93000" y="366000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="120800" stroke="black" stroke-width="1100" width="30000" x="254800" y="245000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 269800 305400)" x="269800" y="305400">
+                            359: [30000x120800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2200" stroke="black" stroke-width="1100" width="30000" x="254800" y="365800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="120800" stroke="black" stroke-width="1100" width="30000" x="284800" y="245000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 299800 305400)" x="299800" y="305400">
+                            359: [30000x120800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2200" stroke="black" stroke-width="1100" width="30000" x="284800" y="365800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="120800" stroke="black" stroke-width="1100" width="30000" x="314800" y="245000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="600em" text-anchor="middle" transform="rotate(-90 329800 305400)" x="329800" y="305400">
+                            359: [30000x120800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2200" stroke="black" stroke-width="1100" width="30000" x="314800" y="365800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="105000" stroke="black" stroke-width="1100" width="133800" x="344800" y="245000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="669em" text-anchor="middle" x="411700" y="297500">
+                            252: [133800x105000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="105000" stroke="black" stroke-width="1100" width="1400" x="478600" y="245000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="16000" stroke="black" stroke-width="1100" width="133800" x="344800" y="350000"/>
+                        <text dominant-baseline="middle" fill="black" font-size="320em" text-anchor="middle" x="411700" y="358000">
+                            369: [133800x16000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="16000" stroke="black" stroke-width="1100" width="1400" x="478600" y="350000"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2000" stroke="black" stroke-width="1100" width="135200" x="344800" y="366000"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="126800" stroke="black" stroke-width="1100" width="69200" x="480000" y="0"/>
+                        <text dominant-baseline="middle" fill="black" font-size="634em" text-anchor="middle" transform="rotate(-90 514600 63400)" x="514600" y="63400">
+                            46: [69200x126800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="126800" stroke="black" stroke-width="1100" width="800" x="549200" y="0"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="33000" stroke="black" stroke-width="1100" width="69200" x="480000" y="126800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="346em" text-anchor="middle" x="514600" y="143300">
+                            48: [69200x33000]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="33000" stroke="black" stroke-width="1100" width="800" x="549200" y="126800"/>
+                    </g>
+                    <g>
+                        <rect fill="#BFBFBF" height="205800" stroke="black" stroke-width="1100" width="69000" x="480000" y="159800"/>
+                        <text dominant-baseline="middle" fill="black" font-size="1029em" text-anchor="middle" transform="rotate(-90 514500 262700)" x="514500" y="262700">
+                            41: [69000x205800]
+                        </text>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="2400" stroke="black" stroke-width="1100" width="69000" x="480000" y="365600"/>
+                    </g>
+                    <g>
+                        <rect fill="#A9D18E" height="208200" stroke="black" stroke-width="1100" width="1000" x="549000" y="159800"/>
+                    </g>
+                </g>
+  </g>
+</svg>

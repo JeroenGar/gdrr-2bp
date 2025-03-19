@@ -12,6 +12,8 @@ It is also much (50-100x) faster than the implementation used for the benchmarks
 If this repository helps you in any way, please let me know.
 I'm very interested to know whether this work is useful to anyone.
 
+![example](doc/demo.svg)
+
 # Features
 
 In case there are sufficient bins to pack all items, the algorithm will minimize the total bin cost required to pack all items (complete solution).
