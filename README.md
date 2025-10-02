@@ -2,7 +2,7 @@
 
 **This repo contains a Rust 🦀 implementation of the algorithm described in [a goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints](https://doi.org/10.1016/j.ejor.2021.11.031).** 
 
-A preprint of the accepted version of the paper is freely available **[here](
+The author accepted manuscript of this paper is freely available **[here](
 https://doi.org/10.48550/arXiv.2508.19306)**.
 
 The code used in the experiments in the paper was originally written in Java.
