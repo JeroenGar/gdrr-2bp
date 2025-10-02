@@ -23,7 +23,7 @@ impl SendableLayout {
         }
     }
 
-    pub fn convert_to_layout(&self, _instance: &Instance) -> Layout {
+    pub fn convert_to_layout<'a>(&self, _instance: &'a Instance) -> Layout<'a> {
         todo!();
     }
 

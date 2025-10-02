@@ -386,7 +386,7 @@ impl<'a> Layout<'a> {
         &self.top_node_i
     }
 
-    pub fn nodes(&self) -> &Arena<Node> {
+    pub fn nodes(&self) -> &Arena<Node<'a>> {
         &self.nodes
     }
 
