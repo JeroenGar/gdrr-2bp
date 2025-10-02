@@ -3,9 +3,23 @@ title: "GDRR-2BP: a Rust implementation of the goal-driven ruin and recreate heu
 message: "If you use this software, please cite it as below."
 type: software
 url: "https://github.com/JeroenGar/gdrr-2bp"
-date-released: 2023-05-17
 authors:
 - family-names: "Gardeyn"
   given-names: "Jeroen"
-  email: jeroen.gardeyn@hotmail.com
   affiliation: KU Leuven
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Gardeyn"
+    given-names: "Jeroen"
+  - family-names: "Wauters"
+    given-names: "Tony"
+  title: "A goal-driven ruin and recreate heuristic for the 2D variable-sized bin packing problem with guillotine constraints"
+  doi: 10.1016/j.ejor.2021.11.031
+  journal: "European Journal of Operational Research"
+  month: 9
+  start: 432 # First page number
+  end: 444 # Last page number
+  issue: 2
+  volume: 301
+  year: 2022
