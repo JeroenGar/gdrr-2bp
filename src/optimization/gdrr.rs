@@ -5,7 +5,7 @@ use colored::*;
 use itertools::Itertools;
 use ordered_float::NotNan;
 use rand::prelude::{IndexedRandom, SliceRandom};
-use rand::Rng;
+use rand::RngExt;
 use rand::rngs::SmallRng;
 
 use crate::core::cost::Cost;
