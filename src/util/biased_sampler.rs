@@ -1,5 +1,5 @@
+use rand::RngExt;
 use rand::rngs::SmallRng;
-use rand::Rng;
 
 const DEFAULT_N_SAMPLES: usize = 3;
 const DEFAULT_CHANCE_ARRAY: [f64; DEFAULT_N_SAMPLES] = [0.625, 0.875, 1.0];

@@ -7,7 +7,7 @@ default-run = "gdrr_main"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = { version = "0.10.0", features = [ "small_rng" ] }
+rand = "0.10"
 indexmap = "2.7.1"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }

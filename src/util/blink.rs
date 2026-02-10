@@ -1,5 +1,5 @@
 use std::ops::Range;
-use rand::Rng;
+use rand::RngExt;
 use rand::rngs::SmallRng;
 
 /// Christiaens, J., & Vanden Berghe, G. (2020). Slack Induction by String Removals for Vehicle Routing Problems. (https://lirias.kuleuven.be/retrieve/510989)
