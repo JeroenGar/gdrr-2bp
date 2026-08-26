@@ -97,8 +97,8 @@ pub fn problem_matches_solution(problem: &Problem, solution: &ProblemSolution) -
         return false;
     }
 
-    for (_, layout) in problem.layouts().iter() {
-        let sol_layout = solution.layouts().get(&layout.id()).unwrap();
+    for (layout_key, layout) in problem.layouts().iter() {
+        let sol_layout = solution.layouts().get(layout_key).unwrap();
         match layouts_match(layout, sol_layout) {
             true => (),
             false => {

@@ -1,11 +1,12 @@
-use generational_arena::{Arena, Index};
+use generational_arena::Index;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
+use slotmap::SlotMap;
 
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
-use crate::core::layout_index::LayoutIndex;
+use crate::core::layout_index::{LayoutIndex, LayoutKey};
 use crate::core::orientation::Orientation;
 use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
@@ -22,10 +23,11 @@ pub struct Problem<'a> {
     instance: &'a Instance,
     parttype_qtys: Vec<usize>,
     sheettype_qtys: Vec<usize>,
-    layouts: Arena<Layout<'a>>,
+    layouts: SlotMap<LayoutKey, Layout<'a>>,
+    detached_layouts: Vec<(LayoutKey, Layout<'a>)>,
     empty_layouts: Vec<Layout<'a>>,
     rng: SmallRng,
-    changed_layouts: Vec<usize>,
+    changed_layouts: Vec<LayoutKey>,
     solution_id_changed_layouts: Option<usize>,
     solution_id_counter: usize,
     layout_id_counter: usize,
@@ -48,7 +50,8 @@ impl<'a> Problem<'a> {
             instance,
             parttype_qtys,
             sheettype_qtys,
-            layouts : Arena::new(),
+            layouts : SlotMap::with_key(),
+            detached_layouts : Vec::new(),
             empty_layouts : Vec::new(),
             changed_layouts : Vec::new(),
             solution_id_changed_layouts : None,
@@ -100,8 +103,7 @@ impl<'a> Problem<'a> {
                 let mut cache_updates = IOCUpdates::new(*blueprint.layout_index());
                 blueprint_layout.implement_insertion_blueprint(blueprint, self.instance, &mut cache_updates);
 
-                let blueprint_layout_id = blueprint_layout.id();
-                self.layout_has_changed(blueprint_layout_id);
+                self.layout_has_changed(*index);
 
                 cache_updates
             }
@@ -122,32 +124,26 @@ impl<'a> Problem<'a> {
         }
     }
 
-    pub fn remove_node(&mut self, node_index: Index, layout_index: LayoutIndex) -> Option<Layout<'a>> {
-        self.layout_has_changed(self.get_layout(&layout_index).id());
-        match layout_index {
+    pub fn remove_node(&mut self, node_index: Index, layout_index: LayoutIndex) -> Option<u64> {
+        let index = match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot remove a node from an empty layout"),
-            LayoutIndex::Existing(index) => {
-                let layout = &mut self.layouts[index];
-                match node_index == *layout.top_node_index() {
-                    true => {
-                        //Remove the entire layout
-                        Some(self.unregister_layout(layout_index))
-                    }
-                    false => {
-                        let removed_part_ids = layout.remove_node(node_index);
-                        for p_id in removed_part_ids {
-                            self.unregister_part(p_id, 1);
-                        }
+            LayoutIndex::Existing(index) => index,
+        };
+        self.layout_has_changed(index);
 
-                        if self.get_layout(&layout_index).is_empty() {
-                            Some(self.unregister_layout(layout_index))
-                        }
-                        else {
-                            None
-                        }
-                    }
-                }
-            }
+        if node_index == *self.layouts[index].top_node_index() {
+            return Some(self.unregister_layout(layout_index));
+        }
+
+        let removed_part_ids = self.layouts[index].remove_node(node_index);
+        for p_id in removed_part_ids {
+            self.unregister_part(p_id, 1);
+        }
+
+        if self.layouts[index].is_empty() {
+            Some(self.unregister_layout(layout_index))
+        } else {
+            None
         }
     }
 
@@ -167,6 +163,7 @@ impl<'a> Problem<'a> {
         //TODO: implement cached cost for problem
 
         debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
+        self.discard_detached_layouts();
         let id = self.next_solution_id();
         let cost = cached_cost.unwrap_or(self.cost());
         let solution = match old_solution {
@@ -187,37 +184,29 @@ impl<'a> Problem<'a> {
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
-        match self.solution_id_changed_layouts == Some(solution.id()) {
-            true => {
-                //A partial restore is possible.
-                //Only layouts changed since this solution was created can differ from it.
-                for layout_id in std::mem::take(&mut self.changed_layouts) {
-                    let current_index = self
-                        .layouts
-                        .iter()
-                        .find_map(|(index, layout)| (layout.id() == layout_id).then_some(index));
+        assert_eq!(
+            self.solution_id_changed_layouts,
+            Some(solution.id()),
+            "can only restore the latest problem solution",
+        );
 
-                    match (current_index, solution.layouts().get(&layout_id)) {
-                        (Some(index), Some(layout)) => self.layouts[index] = layout.as_ref().clone(),
-                        (Some(index), None) => {
-                            self.layouts.remove(index);
-                        },
-                        (None, Some(layout)) => {
-                            self.layouts.insert(layout.as_ref().clone());
-                        },
-                        (None, None) => (),
-                    }
-                }
-            }
-            false => {
-                //The id of the solution does not match unchanged_layouts_solution_id, a partial restore is not possible
-                self.layouts.clear();
-                for (_, layout) in solution.layouts().iter() {
-                    let copy = layout.as_ref().clone();
-                    self.layouts.insert(copy);
-                }
+        for layout_key in std::mem::take(&mut self.changed_layouts) {
+            match (self.layouts.contains_key(layout_key), solution.layouts().get(layout_key)) {
+                (true, Some(layout)) => self.layouts[layout_key] = layout.as_ref().clone(),
+                (true, None) => {
+                    self.layouts.remove(layout_key);
+                },
+                (false, Some(layout)) => {
+                    let detached_index = self.detached_layouts.iter()
+                        .position(|(key, _)| *key == layout_key)
+                        .expect("changed layout key was not detached");
+                    self.detached_layouts.swap_remove(detached_index);
+                    self.layouts.reattach(layout_key, layout.as_ref().clone());
+                },
+                (false, None) => (),
             }
         }
+        self.discard_detached_layouts();
 
         self.parttype_qtys = solution.parttype_qtys().clone();
         self.sheettype_qtys = solution.sheettype_qtys().clone();
@@ -258,11 +247,11 @@ impl<'a> Problem<'a> {
         &mut self.rng
     }
 
-    pub fn layouts(&self) -> &Arena<Layout<'a>> {
+    pub fn layouts(&self) -> &SlotMap<LayoutKey, Layout<'a>> {
         &self.layouts
     }
 
-    pub fn layouts_mut(&mut self) -> &mut Arena<Layout<'a>> {
+    pub fn layouts_mut(&mut self) -> &mut SlotMap<LayoutKey, Layout<'a>> {
         &mut self.layouts
     }
 
@@ -273,32 +262,42 @@ impl<'a> Problem<'a> {
         }
     }
 
-    pub fn register_layout(&mut self, layout: Layout<'a>) -> Index {
+    pub fn register_layout(&mut self, layout: Layout<'a>) -> LayoutKey {
         self.register_sheet(layout.sheettype().id(), 1);
         layout.get_included_parts().iter().for_each(
             |p_id| {
                 self.register_part(*p_id, 1);
             });
-        self.layout_has_changed(layout.id());
-        self.layouts.insert(layout)
+        let layout_key = self.layouts.insert(layout);
+        self.layout_has_changed(layout_key);
+        layout_key
     }
 
-    pub fn unregister_layout(&mut self, layout_index: LayoutIndex) -> Layout<'a> {
+    pub fn unregister_layout(&mut self, layout_index: LayoutIndex) -> u64 {
         match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot unregister empty layout"),
             LayoutIndex::Existing(li) => {
-                let layout = self.layouts.remove(li).expect("Layout not found");
+                let layout = self.layouts.detach(li).expect("Layout not found");
 
                 self.unregister_sheet(layout.sheettype().id(), 1);
                 layout.get_included_parts().iter().for_each(
                     |p_id| { self.unregister_part(*p_id, 1) });
-                layout
+                let sheet_value = layout.sheettype().value();
+                self.detached_layouts.push((li, layout));
+                sheet_value
             }
         }
     }
 
-    fn layout_has_changed(&mut self, l_id: usize) {
-        self.changed_layouts.push(l_id);
+    fn layout_has_changed(&mut self, layout_key: LayoutKey) {
+        self.changed_layouts.push(layout_key);
+    }
+
+    fn discard_detached_layouts(&mut self) {
+        for (key, layout) in self.detached_layouts.drain(..) {
+            self.layouts.reattach(key, layout);
+            self.layouts.remove(key);
+        }
     }
 
     fn reset_changed_layouts(&mut self, solution_id_changed_layouts: usize) {
@@ -339,7 +338,7 @@ impl<'a> Problem<'a> {
         &self.empty_layouts
     }
 
-    pub fn changed_layouts(&self) -> &Vec<usize> {
+    pub fn changed_layouts(&self) -> &Vec<LayoutKey> {
         &self.changed_layouts
     }
 }
