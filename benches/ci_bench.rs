@@ -10,6 +10,10 @@ use gdrr_2bp::io::parser;
 use gdrr_2bp::optimization::config::{Config, SheetValuationMode};
 use gdrr_2bp::optimization::gdrr::GDRR;
 use gdrr_2bp::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 const N_ITERATIONS: usize = 50_000;
 const LARGE_EXAMPLE: &str = include_str!("../examples/large_example_input.json");
