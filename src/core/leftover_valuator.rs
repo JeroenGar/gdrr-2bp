@@ -1,3 +1,8 @@
 pub fn valuate(area: u64, power: f32) -> f32 {
-    f32::powf(area as f32, power)
+    let area = area as f32;
+    if power == 2.0 {
+        area * area
+    } else {
+        area.powf(power)
+    }
 }
