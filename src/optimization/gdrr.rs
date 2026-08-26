@@ -360,7 +360,7 @@ impl<'a> GDRR<'a> {
                 cost_comparator(a.cost(), b.cost())
             });
             let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, problem.rng());
-            return Some(existing_layout_blueprints.remove(selected_blinked_index));
+            return Some(existing_layout_blueprints.swap_remove(selected_blinked_index));
         }
 
         for option in insertion_option_cache.get_for_parttype(parttype) {
@@ -376,7 +376,7 @@ impl<'a> GDRR<'a> {
         }
 
         let selected_index = problem.rng().random_range(0..new_layout_blueprints.len());
-        Some(new_layout_blueprints.remove(selected_index))
+        Some(new_layout_blueprints.swap_remove(selected_index))
     }
 }
 
