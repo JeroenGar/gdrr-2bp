@@ -306,11 +306,11 @@ impl<'a> GDRR<'a> {
             }
             match option.layout_index() {
                 LayoutIndex::Existing(_) => {
-                    existing_layout_blueprints.extend(option.generate_blueprints(problem))
+                    option.append_blueprints(problem, &mut existing_layout_blueprints)
                 }
                 LayoutIndex::Empty(i) => {
                     if mat_limit_budget >= problem.empty_layouts()[*i].sheettype().value() as i128 {
-                        new_layout_blueprints.extend(option.generate_blueprints(problem));
+                        option.append_blueprints(problem, &mut new_layout_blueprints);
                     }
                 }
             }

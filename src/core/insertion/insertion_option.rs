@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 
 use generational_arena::Index;
-use itertools::Itertools;
 
 use crate::core::cost::Cost;
 use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
+use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::layout_index::LayoutIndex;
 use crate::core::rotation::Rotation;
 use crate::optimization::problem::Problem;
@@ -33,30 +33,54 @@ impl<'a> InsertionOption<'a> {
         }
     }
 
-    pub fn generate_blueprints(&self, problem: &Problem) -> Vec<InsertionBlueprint<'a>> {
+    pub fn append_blueprints(
+        &self,
+        problem: &Problem,
+        blueprints: &mut Vec<InsertionBlueprint<'a>>,
+    ) {
         let layout = problem.get_layout(&self.layout_i);
         let leftover_valuation_power = layout.leftover_valuation_power();
         let original_node = &layout.nodes()[self.original_node_i];
         let max_stages = layout.sheettype().max_stages();
-        let node_blueprints = match self.rotation {
-            Some(rotation) => {
-                original_node.generate_insertion_node_blueprints(self.parttype, rotation, max_stages, vec![])
-            }
-            None => {
-                let node_blueprints = original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Default, max_stages, vec![]);
-                original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Rotated, max_stages, node_blueprints)
-            }
-        };
         let original_cost = original_node.calculate_cost(leftover_valuation_power);
-
-        //Convert the node blueprints into insertion blueprints
-        node_blueprints.into_iter().map(|nbs| {
-            let new_cost = nbs.iter()
+        let mut append_blueprint = |replacements: Vec<NodeBlueprint>| {
+            let new_cost = replacements.iter()
                 .map(|replacement| replacement.calculate_cost(leftover_valuation_power))
                 .sum::<Cost>();
             let insertion_cost = new_cost.subtract(&original_cost);
-            InsertionBlueprint::new(self.layout_i, self.original_node_i, nbs, self.parttype, insertion_cost)
-        }).collect_vec()
+            blueprints.push(InsertionBlueprint::new(
+                self.layout_i,
+                self.original_node_i,
+                replacements,
+                self.parttype,
+                insertion_cost,
+            ));
+        };
+
+        match self.rotation {
+            Some(rotation) => {
+                original_node.for_each_insertion_replacement(
+                    self.parttype,
+                    rotation,
+                    max_stages,
+                    &mut append_blueprint,
+                );
+            }
+            None => {
+                original_node.for_each_insertion_replacement(
+                    self.parttype,
+                    Rotation::Default,
+                    max_stages,
+                    &mut append_blueprint,
+                );
+                original_node.for_each_insertion_replacement(
+                    self.parttype,
+                    Rotation::Rotated,
+                    max_stages,
+                    &mut append_blueprint,
+                );
+            }
+        }
     }
 
     pub fn parttype(&self) -> &'a PartType {

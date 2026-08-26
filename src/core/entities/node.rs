@@ -45,7 +45,13 @@ impl<'a> Node<'a> {
         self.children.remove(old_child_index);
     }
 
-    pub fn generate_insertion_node_blueprints(&self, parttype: &'a PartType, rotation: Rotation, max_level: u8, mut insertion_replacements: Vec<Vec<NodeBlueprint>>) -> Vec<Vec<NodeBlueprint>> {
+    pub fn for_each_insertion_replacement(
+        &self,
+        parttype: &'a PartType,
+        rotation: Rotation,
+        max_level: u8,
+        emit: &mut impl FnMut(Vec<NodeBlueprint>),
+    ) {
         debug_assert!(self.insertion_possible(parttype, rotation));
 
         let part_size = match rotation {
@@ -82,16 +88,16 @@ impl<'a> Node<'a> {
             let part_node = NodeBlueprint::new(part_size.width(), self.height, Some(parttype), self.next_cut_orient);
             let remainder_node = NodeBlueprint::new(remainder_width, self.height, None, self.next_cut_orient);
 
-            insertion_replacements.push(vec![part_node, remainder_node]);
-            return insertion_replacements;
+            emit(vec![part_node, remainder_node]);
+            return;
         }
         if self.next_cut_orient == Orientation::Vertical && self.width == part_size.width() {
             let remainder_height = self.height - part_size.height();
             let part_node = NodeBlueprint::new(self.width, part_size.height(), Some(parttype), self.next_cut_orient);
             let remainder_node = NodeBlueprint::new(self.width, remainder_height, None, self.next_cut_orient);
 
-            insertion_replacements.push(vec![part_node, remainder_node]);
-            return insertion_replacements;
+            emit(vec![part_node, remainder_node]);
+            return;
         }
 
         /*
@@ -114,8 +120,8 @@ impl<'a> Node<'a> {
             copy.add_child(part_node);
             copy.add_child(remainder_node);
 
-            insertion_replacements.push(vec![copy]);
-            return insertion_replacements;
+            emit(vec![copy]);
+            return;
         }
 
         if self.next_cut_orient == Orientation::Vertical && self.height == part_size.height() && self.level < max_level {
@@ -129,9 +135,8 @@ impl<'a> Node<'a> {
             copy.add_child(part_node);
             copy.add_child(remainder_node);
 
-            insertion_replacements.push(vec![copy]);
-
-            return insertion_replacements;
+            emit(vec![copy]);
+            return;
         }
 
         /*
@@ -159,7 +164,7 @@ impl<'a> Node<'a> {
             part_node_parent.add_child(part_node);
             part_node_parent.add_child(remainder_node_bottom);
 
-            insertion_replacements.push(vec![part_node_parent, remainder_node_top]);
+            emit(vec![part_node_parent, remainder_node_top]);
         }
 
         if self.next_cut_orient == Orientation::Vertical && self.level < max_level {
@@ -174,7 +179,7 @@ impl<'a> Node<'a> {
             part_node_parent.add_child(part_node);
             part_node_parent.add_child(remainder_node_bottom);
 
-            insertion_replacements.push(vec![part_node_parent, remainder_node_top]);
+            emit(vec![part_node_parent, remainder_node_top]);
         }
 
         /*
@@ -204,7 +209,7 @@ impl<'a> Node<'a> {
             copy.add_child(part_node_parent);
             copy.add_child(remainder_node_top);
 
-            insertion_replacements.push(vec![copy]);
+            emit(vec![copy]);
         }
 
         if self.next_cut_orient == Orientation::Vertical && self.level + 1 < max_level {
@@ -225,9 +230,8 @@ impl<'a> Node<'a> {
             copy.add_child(part_node_parent);
             copy.add_child(remainder_node_top);
 
-            insertion_replacements.push(vec![copy]);
+            emit(vec![copy]);
         }
-        insertion_replacements
     }
 
     pub fn insertion_possible(&self, parttype: &PartType, rotation: Rotation) -> bool {
@@ -283,4 +287,3 @@ impl<'a> Node<'a> {
         self.level
     }
 }
-
