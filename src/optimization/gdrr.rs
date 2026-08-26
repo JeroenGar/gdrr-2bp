@@ -237,11 +237,18 @@ impl<'a> GDRR<'a> {
 
         let mut existing_layout_blueprints = Vec::new();
         let mut new_layout_blueprints = Vec::new();
+        let mut parttype_indices = Vec::new();
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
             existing_layout_blueprints.clear();
             new_layout_blueprints.clear();
 
-            let elected_parttype = GDRR::select_next_parttype(&parttypes_to_consider, &insertion_option_cache, self.problem.rng(), &self.config);
+            let elected_parttype = GDRR::select_next_parttype(
+                &parttypes_to_consider,
+                &insertion_option_cache,
+                &mut parttype_indices,
+                self.problem.rng(),
+                &self.config,
+            );
             let elected_blueprint = GDRR::select_insertion_blueprint(
                 elected_parttype,
                 &insertion_option_cache,
@@ -294,8 +301,15 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    fn select_next_parttype(parttypes: &[&'a PartType], insertion_option_cache: &InsertionOptionCache<'a>, rand: &mut SmallRng, config: &Config) -> &'a PartType {
-        let mut indices = (0..parttypes.len()).collect_vec();
+    fn select_next_parttype(
+        parttypes: &[&'a PartType],
+        insertion_option_cache: &InsertionOptionCache<'a>,
+        indices: &mut Vec<usize>,
+        rand: &mut SmallRng,
+        config: &Config,
+    ) -> &'a PartType {
+        indices.clear();
+        indices.extend(0..parttypes.len());
         indices.shuffle(rand);
 
         let n_options = indices.iter().map(|i| {
