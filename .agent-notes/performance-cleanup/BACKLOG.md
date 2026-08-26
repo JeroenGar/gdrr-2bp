@@ -6,7 +6,8 @@ This is a hypothesis list, not a commitment. Re-profile after every accepted pat
 
 - Flatten `option_parttype_map: Vec<Vec<InsertionOptionKey>>` only with a dynamic-update design that avoids shifting all later ranges. A naive CSR-style flattening turns each update into O(total options) memmove.
 - Consider flattening the remaining per-part-type option buckets only if profiles still justify it. The option store itself is now dense and safely reuses capacity.
-- Flatten nested `NodeBlueprint` trees if profiles still show blueprint creation, traversal, allocation, or drop time.
+- Use `swap_remove` when taking the selected insertion blueprint; both candidate buffers are cleared immediately afterward, so shifting their tails is unnecessary.
+- Stream `layouts_to_consider` into initial cache population instead of collecting a temporary vector if the post-blueprint profile still shows that allocation.
 - Reuse or flatten short-lived recreate scratch vectors when allocation samples justify it.
 - Avoid allocating `get_removable_nodes()` on every ruin selection. First compare a reusable scratch Vec with iterator-based selection.
 - Continue removing nested vectors and hash maps from hot state, but benchmark each representation independently.
