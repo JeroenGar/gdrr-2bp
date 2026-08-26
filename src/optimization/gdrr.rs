@@ -92,6 +92,7 @@ impl<'a> GDRR<'a> {
         let mut mat_limit = self.local_sol_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
         let mut removable_nodes = Vec::new();
+        let mut insertion_option_cache = InsertionOptionCache::new(self.instance);
 
         while n_iterations < max_rr_iterations && !self.local_sol_collector.terminate() {
             let mat_limit_budget: i128 = match local_optimum.as_ref() {
@@ -105,7 +106,11 @@ impl<'a> GDRR<'a> {
                 None => lahc_history.front().unwrap().part_area_excluded
             };
 
-            self.recreate(mat_limit_budget, max_part_area_not_included);
+            self.recreate(
+                mat_limit_budget,
+                max_part_area_not_included,
+                &mut insertion_option_cache,
+            );
 
             let cost = self.problem.cost();
 
@@ -217,13 +222,18 @@ impl<'a> GDRR<'a> {
         mat_limit_budget
     }
 
-    fn recreate(&mut self, mut mat_limit_budget: i128, max_part_area_excluded: u64) {
+    fn recreate(
+        &mut self,
+        mut mat_limit_budget: i128,
+        max_part_area_excluded: u64,
+        insertion_option_cache: &mut InsertionOptionCache<'a>,
+    ) {
         let mut parttypes_to_consider: Vec<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(_i, q)| { **q > 0 })
             .map(|(i, _q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
 
 
-        let mut insertion_option_cache = InsertionOptionCache::new(self.instance);
+        insertion_option_cache.clear();
         let mut part_area_not_included: u64 = 0;
 
         //Collect all the layouts which should be considered during this recreate iteration

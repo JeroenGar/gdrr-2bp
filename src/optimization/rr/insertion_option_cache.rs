@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use slotmap::{new_key_type, SlotMap};
 use std::ops::Range;
 
 use crate::core::entities::layout::Layout;
@@ -17,23 +16,30 @@ use crate::optimization::rr::cache_updates::IOCUpdates;
 /// It is kept up-to-date throughout the recreate phase, by receiving updates about which nodes are removed or added
 
 pub struct InsertionOptionCache<'a> {
-    options: SlotMap<InsertionOptionKey, CachedInsertionOption<'a>>,
+    options: Vec<CachedInsertionOption<'a>>,
     option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<usize>)>,
-    option_node_keys: Vec<InsertionOptionKey>,
-    option_parttype_map: Vec<Vec<InsertionOptionKey>>,
+    option_node_keys: Vec<usize>,
+    option_parttype_map: Vec<Vec<usize>>,
 }
 
-impl<'a : 'b, 'b> InsertionOptionCache<'a> {
+impl<'a: 'b, 'b> InsertionOptionCache<'a> {
     pub fn new(instance: &Instance) -> Self {
         Self {
-            options: SlotMap::with_key(),
+            options: Vec::new(),
             option_node_ranges: Vec::new(),
             option_node_keys: Vec::new(),
-            option_parttype_map: (0..instance.parts().len()).map(|_| Vec::new()).collect_vec(),
+            option_parttype_map: (0..instance.parts().len())
+                .map(|_| Vec::new())
+                .collect_vec(),
         }
     }
 
-    pub fn update_cache(&mut self, cache_updates: &IOCUpdates, parttypes: &Vec<&'a PartType>, problem: &Problem){
+    pub fn update_cache(
+        &mut self,
+        cache_updates: &IOCUpdates,
+        parttypes: &Vec<&'a PartType>,
+        problem: &Problem,
+    ) {
         let layout_i = cache_updates.layout_index();
         cache_updates.removed_nodes().iter().for_each(|node_i| {
             self.remove_for_node(layout_i, node_i);
@@ -45,10 +51,21 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         });
     }
 
-    pub fn add_for_parttypes(&mut self, parttypes: &[&'a PartType], layouts: &[(LayoutIndex, &Layout)])
-    {
+    pub fn clear(&mut self) {
+        self.options.clear();
+        self.option_node_ranges.clear();
+        self.option_node_keys.clear();
+        self.option_parttype_map.iter_mut().for_each(Vec::clear);
+    }
+
+    pub fn add_for_parttypes(
+        &mut self,
+        parttypes: &[&'a PartType],
+        layouts: &[(LayoutIndex, &Layout)],
+    ) {
         //sort by decreasing area
-        let sorted_parttypes: Vec<&&PartType> = parttypes.iter()
+        let sorted_parttypes: Vec<&&PartType> = parttypes
+            .iter()
             .sorted_by(|a, b| a.area().cmp(&b.area()).reverse())
             .collect_vec();
 
@@ -79,8 +96,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                         *layout_i,
                         *empty_node_i,
                     ) {
-                        let option_key = self.insert_option(insertion_option);
-                        self.option_node_keys.push(option_key);
+                        self.insert_option(insertion_option);
                     }
                 }
                 if option_range_start != self.option_node_keys.len() {
@@ -91,30 +107,43 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                 }
             }
         }
-        self.option_node_ranges.sort_unstable_by_key(|(node_key, _)| *node_key);
+        self.option_node_ranges
+            .sort_unstable_by_key(|(node_key, _)| *node_key);
     }
 
-    pub fn add_for_node<I>(&mut self, node_i: &NodeKey, node: &Node, layout_i: &LayoutIndex, parttypes: I)
-        where I: Iterator<Item=&'b &'a PartType> {
+    pub fn add_for_node<I>(
+        &mut self,
+        node_i: &NodeKey,
+        node: &Node,
+        layout_i: &LayoutIndex,
+        parttypes: I,
+    ) where
+        I: Iterator<Item = &'b &'a PartType>,
+    {
         if node.parttype().is_none() && !node.has_children() {
             let option_range_start = self.option_node_keys.len();
             for parttype in parttypes {
-                let insertion_option =
-                    InsertionOptionCache::generate_insertion_option(node, parttype, *layout_i, *node_i);
+                let insertion_option = InsertionOptionCache::generate_insertion_option(
+                    node, parttype, *layout_i, *node_i,
+                );
                 if let Some(insertion_option) = insertion_option {
-                    let option_key = self.insert_option(insertion_option);
-                    self.option_node_keys.push(option_key);
+                    self.insert_option(insertion_option);
                 }
             }
             if option_range_start != self.option_node_keys.len() {
                 let node_key = (*layout_i, *node_i);
                 let option_range = option_range_start..self.option_node_keys.len();
-                match self.option_node_ranges.binary_search_by_key(&node_key, |(key, _)| *key) {
+                match self
+                    .option_node_ranges
+                    .binary_search_by_key(&node_key, |(key, _)| *key)
+                {
                     Ok(index) => {
                         debug_assert!(self.option_node_ranges[index].1.is_empty());
                         self.option_node_ranges[index].1 = option_range;
                     }
-                    Err(index) => self.option_node_ranges.insert(index, (node_key, option_range)),
+                    Err(index) => self
+                        .option_node_ranges
+                        .insert(index, (node_key, option_range)),
                 }
             }
         }
@@ -122,20 +151,16 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn remove_for_node(&mut self, layout_i: &LayoutIndex, node_i: &NodeKey) {
         let node_key = (*layout_i, *node_i);
-        let Ok(node_range_index) = self.option_node_ranges.binary_search_by_key(&node_key, |(key, _)| *key) else {
+        let Ok(node_range_index) = self
+            .option_node_ranges
+            .binary_search_by_key(&node_key, |(key, _)| *key)
+        else {
             return;
         };
         let option_range = std::mem::take(&mut self.option_node_ranges[node_range_index].1);
-        for option_key in self.option_node_keys[option_range].iter().copied() {
-            let parttype_id = self.options[option_key].option.parttype().id();
-            let parttype_position = self.options[option_key].parttype_position;
-            let options = &mut self.option_parttype_map[parttype_id];
-            debug_assert_eq!(options[parttype_position], option_key);
-            options.swap_remove(parttype_position);
-            if let Some(moved_key) = options.get(parttype_position) {
-                self.options[*moved_key].parttype_position = parttype_position;
-            }
-            self.options.remove(option_key).expect("Insertion option missing");
+        for node_position in option_range {
+            let option_index = self.option_node_keys[node_position];
+            self.remove_option(option_index);
         }
     }
 
@@ -146,42 +171,88 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    fn insert_option(&mut self, insertion_option: InsertionOption<'a>) -> InsertionOptionKey {
+    fn insert_option(&mut self, insertion_option: InsertionOption<'a>) {
         let parttype_id = insertion_option.parttype().id();
         let parttype_position = self.option_parttype_map[parttype_id].len();
-        let option_key = self.options.insert(CachedInsertionOption {
+        let node_position = self.option_node_keys.len();
+        let option_index = self.options.len();
+        self.options.push(CachedInsertionOption {
             option: insertion_option,
             parttype_position,
+            node_position,
         });
 
-        self.option_parttype_map[parttype_id].push(option_key);
-        option_key
+        self.option_parttype_map[parttype_id].push(option_index);
+        self.option_node_keys.push(option_index);
     }
 
-    fn generate_insertion_option(node: &Node, parttype: &'a PartType, layout_i: LayoutIndex, node_i: NodeKey) -> Option<InsertionOption<'a>> {
+    fn remove_option(&mut self, option_index: usize) {
+        let parttype_id = self.options[option_index].option.parttype().id();
+        let parttype_position = self.options[option_index].parttype_position;
+        let node_position = self.options[option_index].node_position;
+        debug_assert_eq!(self.option_node_keys[node_position], option_index);
+
+        let parttype_options = &mut self.option_parttype_map[parttype_id];
+        debug_assert_eq!(parttype_options[parttype_position], option_index);
+        let removed_index = parttype_options.swap_remove(parttype_position);
+        debug_assert_eq!(removed_index, option_index);
+        if let Some(&moved_index) = parttype_options.get(parttype_position) {
+            self.options[moved_index].parttype_position = parttype_position;
+        }
+
+        let last_option_index = self.options.len() - 1;
+        self.options.swap_remove(option_index);
+        if option_index != last_option_index {
+            let moved_option = &self.options[option_index];
+            let moved_parttype_id = moved_option.option.parttype().id();
+            debug_assert_eq!(
+                self.option_node_keys[moved_option.node_position],
+                last_option_index
+            );
+            debug_assert_eq!(
+                self.option_parttype_map[moved_parttype_id][moved_option.parttype_position],
+                last_option_index,
+            );
+            self.option_node_keys[moved_option.node_position] = option_index;
+            self.option_parttype_map[moved_parttype_id][moved_option.parttype_position] =
+                option_index;
+        }
+    }
+
+    fn generate_insertion_option(
+        node: &Node,
+        parttype: &'a PartType,
+        layout_i: LayoutIndex,
+        node_i: NodeKey,
+    ) -> Option<InsertionOption<'a>> {
         match parttype.fixed_rotation() {
-            Some(fixed_rotation) => {
-                match node.insertion_possible(parttype, *fixed_rotation) {
-                    true => Some(InsertionOption::new(layout_i, node_i, parttype, Some(*fixed_rotation))),
-                    false => None
-                }
-            }
+            Some(fixed_rotation) => match node.insertion_possible(parttype, *fixed_rotation) {
+                true => Some(InsertionOption::new(
+                    layout_i,
+                    node_i,
+                    parttype,
+                    Some(*fixed_rotation),
+                )),
+                false => None,
+            },
             None => {
                 let default_possible = node.insertion_possible(parttype, Rotation::Default);
                 let rotated_possible = node.insertion_possible(parttype, Rotation::Rotated);
                 match (default_possible, rotated_possible) {
-                    (true, true) => {
-                        Some(InsertionOption::new(layout_i, node_i, parttype, None))
-                    }
-                    (true, false) => {
-                        Some(InsertionOption::new(layout_i, node_i, parttype,  Some(Rotation::Default)))
-                    }
-                    (false, true) => {
-                        Some(InsertionOption::new(layout_i, node_i, parttype, Some(Rotation::Rotated)))
-                    }
-                    (false, false) => {
-                        None
-                    }
+                    (true, true) => Some(InsertionOption::new(layout_i, node_i, parttype, None)),
+                    (true, false) => Some(InsertionOption::new(
+                        layout_i,
+                        node_i,
+                        parttype,
+                        Some(Rotation::Default),
+                    )),
+                    (false, true) => Some(InsertionOption::new(
+                        layout_i,
+                        node_i,
+                        parttype,
+                        Some(Rotation::Rotated),
+                    )),
+                    (false, false) => None,
                 }
             }
         }
@@ -202,7 +273,8 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         layout_i: &LayoutIndex,
     ) -> impl Iterator<Item = &InsertionOption<'a>> {
         let node_key = (*layout_i, *node_i);
-        let option_range = self.option_node_ranges
+        let option_range = self
+            .option_node_ranges
             .binary_search_by_key(&node_key, |(key, _)| *key)
             .map(|index| self.option_node_ranges[index].1.clone())
             .unwrap_or_default();
@@ -214,7 +286,12 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     pub fn is_empty(&self) -> bool {
         let is_empty = self.options.is_empty();
         debug_assert_eq!(is_empty, self.option_parttype_map.iter().all(Vec::is_empty));
-        debug_assert_eq!(is_empty, self.option_node_ranges.iter().all(|(_, range)| range.is_empty()));
+        debug_assert_eq!(
+            is_empty,
+            self.option_node_ranges
+                .iter()
+                .all(|(_, range)| range.is_empty())
+        );
         is_empty
     }
 }
@@ -222,8 +299,5 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 struct CachedInsertionOption<'a> {
     option: InsertionOption<'a>,
     parttype_position: usize,
-}
-
-new_key_type! {
-    struct InsertionOptionKey;
+    node_position: usize,
 }
