@@ -17,7 +17,7 @@ use crate::optimization::rr::cache_updates::IOCUpdates;
 /// It is kept up-to-date throughout the recreate phase, by receiving updates about which nodes are removed or added
 
 pub struct InsertionOptionCache<'a> {
-    options: SlotMap<InsertionOptionKey, InsertionOption<'a>>,
+    options: SlotMap<InsertionOptionKey, CachedInsertionOption<'a>>,
     option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<usize>)>,
     option_node_keys: Vec<InsertionOptionKey>,
     option_parttype_map: Vec<Vec<InsertionOptionKey>>,
@@ -129,10 +129,14 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         };
         let option_range = std::mem::take(&mut self.option_node_ranges[node_range_index].1);
         for option_key in self.option_node_keys[option_range].iter().copied() {
-            let parttype_id = self.options[option_key].parttype().id();
+            let parttype_id = self.options[option_key].option.parttype().id();
+            let parttype_position = self.options[option_key].parttype_position;
             let options = &mut self.option_parttype_map[parttype_id];
-            let index = options.iter().position(|key| *key == option_key).unwrap();
-            options.swap_remove(index);
+            debug_assert_eq!(options[parttype_position], option_key);
+            options.swap_remove(parttype_position);
+            if let Some(moved_key) = options.get(parttype_position) {
+                self.options[*moved_key].parttype_position = parttype_position;
+            }
             self.options.remove(option_key).expect("Insertion option missing");
         }
     }
@@ -146,7 +150,11 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     fn insert_option(&mut self, insertion_option: InsertionOption<'a>) -> InsertionOptionKey {
         let parttype_id = insertion_option.parttype().id();
-        let option_key = self.options.insert(insertion_option);
+        let parttype_position = self.option_parttype_map[parttype_id].len();
+        let option_key = self.options.insert(CachedInsertionOption {
+            option: insertion_option,
+            parttype_position,
+        });
 
         self.option_parttype_map[parttype_id].push(option_key);
         option_key
@@ -187,7 +195,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     ) -> impl ExactSizeIterator<Item = &InsertionOption<'a>> {
         self.option_parttype_map[parttype.id()]
             .iter()
-            .map(|key| &self.options[*key])
+            .map(|key| &self.options[*key].option)
     }
 
     pub fn get_for_node(
@@ -202,7 +210,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
             .unwrap_or_default();
         self.option_node_keys[option_range]
             .iter()
-            .map(|key| &self.options[*key])
+            .map(|key| &self.options[*key].option)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -211,6 +219,11 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         debug_assert_eq!(is_empty, self.option_node_ranges.iter().all(|(_, range)| range.is_empty()));
         is_empty
     }
+}
+
+struct CachedInsertionOption<'a> {
+    option: InsertionOption<'a>,
+    parttype_position: usize,
 }
 
 new_key_type! {
