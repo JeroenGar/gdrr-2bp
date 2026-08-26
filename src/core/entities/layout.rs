@@ -58,6 +58,17 @@ impl<'a> Layout<'a> {
         }
     }
 
+    pub(crate) fn restore_from(&mut self, snapshot: &Self) {
+        self.id = snapshot.id;
+        self.sheettype = snapshot.sheettype;
+        self.leftover_valuation_power = snapshot.leftover_valuation_power;
+        self.nodes.clone_from(&snapshot.nodes);
+        self.top_node_i = snapshot.top_node_i;
+        self.cached_cost.clone_from(&snapshot.cached_cost);
+        self.cached_usage = snapshot.cached_usage;
+        self.sorted_empty_nodes.clone_from(&snapshot.sorted_empty_nodes);
+    }
+
     pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, instance: &'a Instance, updates: &mut IOCUpdates) {
         let original = *blueprint.original_node_index();
         let parent = self.nodes[original].parent().expect("original node has no parent");

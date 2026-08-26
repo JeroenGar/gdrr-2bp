@@ -192,7 +192,7 @@ impl<'a> Problem<'a> {
 
         for layout_key in std::mem::take(&mut self.changed_layouts) {
             match (self.layouts.contains_key(layout_key), solution.layouts().get(layout_key)) {
-                (true, Some(layout)) => self.layouts[layout_key] = layout.as_ref().clone(),
+                (true, Some(layout)) => self.layouts[layout_key].restore_from(layout),
                 (true, None) => {
                     self.layouts.remove(layout_key);
                 },
