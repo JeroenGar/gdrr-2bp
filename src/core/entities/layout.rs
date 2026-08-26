@@ -67,27 +67,25 @@ impl<'a> Layout<'a> {
         updates.add_removed(original);
 
         //create and register the replacements
-        let mut all_created_nodes = vec![];
         for replacement in blueprint.replacements() {
-            self.implement_node_blueprint(parent, replacement, instance, &mut all_created_nodes);
+            self.implement_node_blueprint(parent, replacement, instance, updates);
         }
-        updates.extend_new(all_created_nodes);
 
         debug_assert!(assertions::children_nodes_fit(&parent, &self.nodes), "{:#?}", blueprint);
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
     }
 
-    fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, instance: &'a Instance, new_nodes: &mut Vec<Index>) {
+    fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, instance: &'a Instance, updates: &mut IOCUpdates) {
         let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
 
         let node = Node::new(self.nodes[parent].level() + 1, blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
         let node_index = self.register_node(node, parent, blueprint.is_empty());
 
-        new_nodes.push(node_index);
+        updates.add_new(node_index);
 
         for child_blueprint in blueprint.children() {
-            self.implement_node_blueprint(node_index, child_blueprint, instance, new_nodes);
+            self.implement_node_blueprint(node_index, child_blueprint, instance, updates);
         }
     }
 

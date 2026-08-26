@@ -26,10 +26,6 @@ impl IOCUpdates {
         self.new_nodes.push(item);
     }
 
-    pub fn extend_new(&mut self, items: Vec<Index>) {
-        self.new_nodes.extend(items);
-    }
-
     pub fn removed_nodes(&self) -> &Vec<Index> {
         &self.removed_nodes
     }
