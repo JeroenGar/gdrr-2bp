@@ -235,9 +235,23 @@ impl<'a> GDRR<'a> {
         insertion_option_cache.add_for_parttypes(&parttypes_to_consider, &layouts_to_consider);
         debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider));
 
+        let mut existing_layout_blueprints = Vec::new();
+        let mut new_layout_blueprints = Vec::new();
         while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
+            existing_layout_blueprints.clear();
+            new_layout_blueprints.clear();
+
             let elected_parttype = GDRR::select_next_parttype(&parttypes_to_consider, &insertion_option_cache, self.problem.rng(), &self.config);
-            let elected_blueprint = GDRR::select_insertion_blueprint(elected_parttype, &insertion_option_cache, mat_limit_budget, &mut self.problem, &self.config, &self.cost_comparator);
+            let elected_blueprint = GDRR::select_insertion_blueprint(
+                elected_parttype,
+                &insertion_option_cache,
+                mat_limit_budget,
+                &mut self.problem,
+                &self.config,
+                &self.cost_comparator,
+                &mut existing_layout_blueprints,
+                &mut new_layout_blueprints,
+            );
 
             if let Some(elected_blueprint) = elected_blueprint.as_ref() {
                 let cache_updates = self.problem.implement_insertion_blueprint(elected_blueprint);
@@ -294,11 +308,17 @@ impl<'a> GDRR<'a> {
         parttypes[parttype_index]
     }
 
-    fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mat_limit_budget: i128, problem: &mut Problem, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
+    fn select_insertion_blueprint(
+        parttype: &'a PartType,
+        insertion_option_cache: &InsertionOptionCache<'a>,
+        mat_limit_budget: i128,
+        problem: &mut Problem,
+        config: &Config,
+        cost_comparator: &fn(&Cost, &Cost) -> Ordering,
+        existing_layout_blueprints: &mut Vec<InsertionBlueprint<'a>>,
+        new_layout_blueprints: &mut Vec<InsertionBlueprint<'a>>,
+    ) -> Option<InsertionBlueprint<'a>> {
         let options = insertion_option_cache.get_for_parttype(parttype);
-        //Collect the blueprints
-        let mut existing_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
-        let mut new_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
 
         for option in options {
             if existing_layout_blueprints.len() > 20 {
@@ -306,11 +326,11 @@ impl<'a> GDRR<'a> {
             }
             match option.layout_index() {
                 LayoutIndex::Existing(_) => {
-                    option.append_blueprints(problem, &mut existing_layout_blueprints)
+                    option.append_blueprints(problem, existing_layout_blueprints)
                 }
                 LayoutIndex::Empty(i) => {
                     if mat_limit_budget >= problem.empty_layouts()[*i].sheettype().value() as i128 {
-                        option.append_blueprints(problem, &mut new_layout_blueprints);
+                        option.append_blueprints(problem, new_layout_blueprints);
                     }
                 }
             }
