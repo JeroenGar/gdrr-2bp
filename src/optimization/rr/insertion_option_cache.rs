@@ -1,6 +1,7 @@
 use generational_arena::Index;
 use itertools::Itertools;
 use slotmap::{new_key_type, SlotMap};
+use std::ops::Range;
 
 use crate::core::entities::layout::Layout;
 use crate::core::entities::node::Node;
@@ -11,7 +12,6 @@ use crate::core::rotation::Rotation;
 use crate::optimization::instance::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::rr::cache_updates::IOCUpdates;
-use crate::util::multi_map::MultiMap;
 
 /// A cache for InsertionOptions during the recreate phase
 /// It allows very fast lookup of all InsertionOptions that are valid for a given node or a given parttype
@@ -19,7 +19,8 @@ use crate::util::multi_map::MultiMap;
 
 pub struct InsertionOptionCache<'a> {
     options: SlotMap<InsertionOptionKey, InsertionOption<'a>>,
-    option_node_map: MultiMap<(LayoutIndex, Index), InsertionOptionKey>,
+    option_node_ranges: Vec<((LayoutIndex, Index), Range<usize>)>,
+    option_node_keys: Vec<InsertionOptionKey>,
     option_parttype_map: Vec<Vec<InsertionOptionKey>>,
 }
 
@@ -27,7 +28,8 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     pub fn new(instance: &Instance) -> Self {
         Self {
             options: SlotMap::with_key(),
-            option_node_map: MultiMap::new(),
+            option_node_ranges: Vec::new(),
+            option_node_keys: Vec::new(),
             option_parttype_map: (0..instance.parts().len()).map(|_| Vec::new()).collect_vec(),
         }
     }
@@ -65,6 +67,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                     //The smallest parttype is larger than this node, there are no possible insertion options left.
                     break;
                 }
+                let option_range_start = self.option_node_keys.len();
                 for i in starting_index..sorted_parttypes.len() {
                     let parttype = *sorted_parttypes.get(i).unwrap();
 
@@ -78,22 +81,43 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
                             *layout_i,
                             *empty_node_i,
                         ) {
-                            self.insert_option(insertion_option);
+                            let option_key = self.insert_option(insertion_option);
+                            self.option_node_keys.push(option_key);
                         }
                     }
                 }
+                if option_range_start != self.option_node_keys.len() {
+                    self.option_node_ranges.push((
+                        (*layout_i, *empty_node_i),
+                        option_range_start..self.option_node_keys.len(),
+                    ));
+                }
             }
         }
+        self.option_node_ranges.sort_unstable_by_key(|(node_key, _)| *node_key);
     }
 
     pub fn add_for_node<I>(&mut self, node_i: &Index, node: &Node, layout_i: &LayoutIndex, parttypes: I)
         where I: Iterator<Item=&'b &'a PartType> {
         if node.parttype().is_none() && node.children().is_empty() {
-            for parttype in parttypes.into_iter() {
+            let option_range_start = self.option_node_keys.len();
+            for parttype in parttypes {
                 let insertion_option =
                     InsertionOptionCache::generate_insertion_option(node, parttype, *layout_i, *node_i);
                 if let Some(insertion_option) = insertion_option {
-                    self.insert_option(insertion_option);
+                    let option_key = self.insert_option(insertion_option);
+                    self.option_node_keys.push(option_key);
+                }
+            }
+            if option_range_start != self.option_node_keys.len() {
+                let node_key = (*layout_i, *node_i);
+                let option_range = option_range_start..self.option_node_keys.len();
+                match self.option_node_ranges.binary_search_by_key(&node_key, |(key, _)| *key) {
+                    Ok(index) => {
+                        debug_assert!(self.option_node_ranges[index].1.is_empty());
+                        self.option_node_ranges[index].1 = option_range;
+                    }
+                    Err(index) => self.option_node_ranges.insert(index, (node_key, option_range)),
                 }
             }
         }
@@ -101,17 +125,16 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn remove_for_node(&mut self, layout_i: &LayoutIndex, node_i: &Index) {
         let node_key = (*layout_i, *node_i);
-        match self.option_node_map.remove_all(&node_key) {
-            Some(option_keys) => {
-                for option_key in option_keys {
-                    let parttype_id = self.options[option_key].parttype().id();
-                    let options = &mut self.option_parttype_map[parttype_id];
-                    let index = options.iter().position(|key| *key == option_key).unwrap();
-                    options.swap_remove(index);
-                    self.options.remove(option_key).expect("Insertion option missing");
-                }
-            }
-            None => ()
+        let Ok(node_range_index) = self.option_node_ranges.binary_search_by_key(&node_key, |(key, _)| *key) else {
+            return;
+        };
+        let option_range = std::mem::take(&mut self.option_node_ranges[node_range_index].1);
+        for option_key in self.option_node_keys[option_range].iter().copied() {
+            let parttype_id = self.options[option_key].parttype().id();
+            let options = &mut self.option_parttype_map[parttype_id];
+            let index = options.iter().position(|key| *key == option_key).unwrap();
+            options.swap_remove(index);
+            self.options.remove(option_key).expect("Insertion option missing");
         }
     }
 
@@ -122,16 +145,12 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    fn insert_option(&mut self, insertion_option: InsertionOption<'a>) {
-        let node_key = (
-            *insertion_option.layout_index(),
-            *insertion_option.original_node_index(),
-        );
+    fn insert_option(&mut self, insertion_option: InsertionOption<'a>) -> InsertionOptionKey {
         let parttype_id = insertion_option.parttype().id();
         let option_key = self.options.insert(insertion_option);
 
-        self.option_node_map.insert(node_key, option_key);
         self.option_parttype_map[parttype_id].push(option_key);
+        option_key
     }
 
     fn generate_insertion_option(node: &Node, parttype: &'a PartType, layout_i: LayoutIndex, node_i: Index) -> Option<InsertionOption<'a>> {
@@ -177,17 +196,20 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         node_i: &Index,
         layout_i: &LayoutIndex,
     ) -> impl Iterator<Item = &InsertionOption<'a>> {
-        self.option_node_map
-            .get(&(*layout_i, *node_i))
-            .into_iter()
-            .flatten()
+        let node_key = (*layout_i, *node_i);
+        let option_range = self.option_node_ranges
+            .binary_search_by_key(&node_key, |(key, _)| *key)
+            .map(|index| self.option_node_ranges[index].1.clone())
+            .unwrap_or_default();
+        self.option_node_keys[option_range]
+            .iter()
             .map(|key| &self.options[*key])
     }
 
     pub fn is_empty(&self) -> bool {
         let is_empty = self.options.is_empty();
         debug_assert_eq!(is_empty, self.option_parttype_map.iter().all(Vec::is_empty));
-        debug_assert_eq!(is_empty, self.option_node_map.is_empty());
+        debug_assert_eq!(is_empty, self.option_node_ranges.iter().all(|(_, range)| range.is_empty()));
         is_empty
     }
 }
