@@ -190,42 +190,22 @@ impl<'a> Problem<'a> {
         match self.solution_id_changed_layouts == Some(solution.id()) {
             true => {
                 //A partial restore is possible.
+                //Only layouts changed since this solution was created can differ from it.
+                for layout_id in std::mem::take(&mut self.changed_layouts) {
+                    let current_index = self
+                        .layouts
+                        .iter()
+                        .find_map(|(index, layout)| (layout.id() == layout_id).then_some(index));
 
-                //Check all the layouts in the problem and check if they are either modified, unmodified or absent in the solution.
-                let mut present_layout_ids = vec![];
-                let mut changed_layout_indices = vec![];
-                let mut absent_layout_indices = vec![];
-
-                for (index,layout) in self.layouts.iter() {
-                    //For all layouts in the problem, check which ones occur in the solution
-                    let layout_id = layout.id();
-                    match solution.layouts().contains_key(&layout_id) {
-                        true => {
-                            //layout is present in the solution
-                            if self.changed_layouts.contains(&layout_id) {
-                                changed_layout_indices.push(index)
-                            }
-                            present_layout_ids.push(layout_id);
-                        }
-                        false => {
-                            absent_layout_indices.push(index);
-                        }
-                    }
-                }
-                for i in absent_layout_indices{
-                    self.layouts.remove(i);
-                }
-                for i in changed_layout_indices {
-                    let layout = self.layouts.remove(i).expect("Layout should be present");
-                    let copy = solution.layouts().get(&layout.id()).unwrap().as_ref().clone();
-                    self.layouts.insert(copy);
-                }
-
-                //Some layouts are present in the solution, but not in the problem
-                for id in solution.layouts().keys() {
-                    if !present_layout_ids.contains(id) {
-                        let copy = solution.layouts().get(id).unwrap().as_ref().clone();
-                        self.layouts.insert(copy);
+                    match (current_index, solution.layouts().get(&layout_id)) {
+                        (Some(index), Some(layout)) => self.layouts[index] = layout.as_ref().clone(),
+                        (Some(index), None) => {
+                            self.layouts.remove(index);
+                        },
+                        (None, Some(layout)) => {
+                            self.layouts.insert(layout.as_ref().clone());
+                        },
+                        (None, None) => (),
                     }
                 }
             }
