@@ -33,6 +33,12 @@ The PR description is the public accepted-change report. This file also records 
 - Full-solver Criterion found no change: -0.32% median throughput with a `-1.99%..+1.24%` confidence interval.
 - Reverted rather than add callback plumbing without a measurable gain.
 
+### Reuse recreate scratch vectors after `9fae23e`
+
+- Retained the part-type, blueprint, and selection-index vectors across ruin/recreate iterations.
+- The full-solver fast gate was about 5.1% slower, with a throughput confidence interval of `-10.10%..-1.20%`.
+- Reverted immediately. As with `SlotMap::clear`, retaining high-water storage hurt more than avoiding these allocations helped.
+
 ### Reuse InsertionOptionCache with `SlotMap::clear`
 
 - Tried again immediately after `4ce5b00`.
