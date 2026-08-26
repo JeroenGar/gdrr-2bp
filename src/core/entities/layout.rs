@@ -400,12 +400,11 @@ impl<'a> Layout<'a> {
         &self.sorted_empty_nodes
     }
 
-    pub fn get_removable_nodes(&self) -> Vec<NodeKey> {
+    pub fn removable_nodes(&self) -> impl Iterator<Item = NodeKey> + '_ {
         //All nodes with children or that contain a part are removable
         self.nodes.iter()
             .filter(|(_, node)| node.parttype().is_some() || node.has_children())
             .map(|(index, _)| index)
-            .collect_vec()
     }
 
     pub fn sheettype(&self) -> &'a SheetType {
