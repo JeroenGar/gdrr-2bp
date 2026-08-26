@@ -162,18 +162,14 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
                 return false;
             }
             (_, true) => {
-                let ioc_options = ioc.get_for_parttype(&parttype);
-                let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype);
-                let n_ioc_options = match ioc_options {
-                    Some(ioc_options) => ioc_options.len(),
-                    None => 0
-                };
-                let n_fresh_ioc_options = match fresh_ioc_options {
-                    Some(fresh_ioc_options) => fresh_ioc_options.len(),
-                    None => 0
-                };
+                let ioc_options = ioc.get_for_parttype(&parttype).unwrap().iter()
+                    .map(|option| option.as_ref())
+                    .collect_vec();
+                let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype).unwrap().iter()
+                    .map(|option| option.as_ref())
+                    .collect_vec();
 
-                if n_ioc_options != n_fresh_ioc_options {
+                if !same_multiset(&ioc_options, &fresh_ioc_options) {
                     dbg!(ioc_options);
                     dbg!(fresh_ioc_options);
                     return false;
@@ -187,47 +183,33 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
         for node_index in layout.sorted_empty_nodes(){
             let node = &layout.nodes()[*node_index];
             let ioc_options = ioc.get_for_node(node_index, layout_index)
-                .map(|ioc_opts| ioc_opts.iter().filter(|io| parttypes.contains(&io.parttype())).collect_vec());
-            let fresh_ioc_options = fresh_ioc.get_for_node(node_index, layout_index);
+                .into_iter()
+                .flatten()
+                .filter(|option| parttypes.contains(&option.parttype()))
+                .map(|option| option.as_ref())
+                .collect_vec();
+            let fresh_ioc_options = fresh_ioc.get_for_node(node_index, layout_index)
+                .into_iter()
+                .flatten()
+                .map(|option| option.as_ref())
+                .collect_vec();
 
-            match (ioc_options.as_ref(), fresh_ioc_options) {
-                (None, None) => (),
-                (Some(ioc_options), Some(fresh_ioc_options)) => {
-                    let ioc_len = ioc_options.len();
-                    let fresh_ioc_len = fresh_ioc_options.len();
-
-                    if ioc_len != fresh_ioc_len {
-                        return false;
-                    }
-                }
-                (Some(ioc_options), None) => {
-                    if !ioc_options.is_empty() {
-                        dbg!(node);
-                        dbg!(ioc_options);
-                        dbg!(fresh_ioc_options);
-                        return false;
-                    }
-                }
-                (_, _) => {
-                    let ioc_options_len = match ioc_options.as_ref(){
-                        Some(ioc_options) => ioc_options.len(),
-                        None => 0
-                    };
-                    let fresh_ioc_options_len = match fresh_ioc_options {
-                        Some(fresh_ioc_options) => fresh_ioc_options.len(),
-                        None => 0
-                    };
-                    if ioc_options_len != 0 || fresh_ioc_options_len != 0 {
-                        dbg!(node);
-                        dbg!(ioc_options);
-                        dbg!(fresh_ioc_options);
-                        return false;
-                    }
-                }
+            if !same_multiset(&ioc_options, &fresh_ioc_options) {
+                dbg!(node);
+                dbg!(ioc_options);
+                dbg!(fresh_ioc_options);
+                return false;
             }
         }
     }
     return true;
+}
+
+fn same_multiset<T: PartialEq>(left: &[T], right: &[T]) -> bool {
+    left.len() == right.len() && left.iter().all(|item| {
+        left.iter().filter(|candidate| *candidate == item).count()
+            == right.iter().filter(|candidate| *candidate == item).count()
+    })
 }
 
 pub fn cached_sorted_empty_nodes_correct(nodes: &Arena<Node>, cached_sorted_empty_nodes: &Vec<Index>) -> bool {

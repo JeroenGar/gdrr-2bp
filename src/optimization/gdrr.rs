@@ -38,7 +38,7 @@ pub struct GDRR<'a> {
 
 impl<'a> GDRR<'a> {
     pub fn new(instance: &'a Instance, config: &'a Config, local_sol_collector: LocalSolCollector<'a>) -> Self {
-        let problem = Problem::new(instance);
+        let problem = Problem::new(instance, config.random_seed);
         leftover_valuator::set_power(config.leftover_valuation_power);
         let cost_comparator = crate::COST_COMPARATOR;
         Self {
@@ -50,8 +50,31 @@ impl<'a> GDRR<'a> {
         }
     }
 
+    pub fn lahc(&mut self) {
+        let stats = self.optimize_with_stats();
+        let elapsed_ms = stats.elapsed.as_millis() as f64;
+
+        timed_thread_println!("{}:\t ({:.2} iter/s, {:.2} acc/s, {} impr)",
+                "GDRR finished".bright_magenta(),
+                 stats.n_iterations as f64 / elapsed_ms * 1000.0,
+                 stats.n_accepted as f64 / elapsed_ms * 1000.0,
+                stats.n_improved
+        );
+        timed_thread_println!("{}:\t {}", "Final incomp".bright_yellow(),
+            match self.local_sol_collector.best_incomplete_solution().as_ref() {
+                Some(sol) => {
+                    util::solution_stats_string(sol)
+                }
+                None => "()".to_string()
+            });
+    }
+
+    pub fn optimize(&mut self) {
+        self.optimize_with_stats();
+    }
+
     // Late Acceptance Hill Climbing metaheuristic
-    pub fn lahc(&'a mut self) {
+    fn optimize_with_stats(&mut self) -> OptimizationStats {
         let start_time = std::time::Instant::now();
 
         let max_rr_iterations = self.config.max_rr_iterations.unwrap_or(usize::MAX);
@@ -122,19 +145,12 @@ impl<'a> GDRR<'a> {
 
             debug_assert!(lahc_history.len() <= self.config.history_length, "{}", lahc_history.len());
         }
-        timed_thread_println!("{}:\t ({:.2} iter/s, {:.2} acc/s, {} impr)",
-                "GDRR finished".bright_magenta(),
-                 (n_iterations as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
-                 (n_accepted as f64 / (std::time::Instant::now() - start_time).as_millis() as f64 * 1000.0),
-                n_improved
-        );
-        timed_thread_println!("{}:\t {}", "Final incomp".bright_yellow(),
-            match self.local_sol_collector.best_incomplete_solution().as_ref() {
-                Some(sol) => {
-                    util::solution_stats_string(sol)
-                }
-                None => "()".to_string()
-            });
+        OptimizationStats {
+            elapsed: start_time.elapsed(),
+            n_iterations,
+            n_accepted,
+            n_improved,
+        }
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
@@ -330,4 +346,11 @@ impl<'a> GDRR<'a> {
             }
         }
     }
+}
+
+struct OptimizationStats {
+    elapsed: std::time::Duration,
+    n_iterations: usize,
+    n_accepted: usize,
+    n_improved: usize,
 }

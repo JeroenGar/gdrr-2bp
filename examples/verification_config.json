@@ -1,0 +1,11 @@
+{
+  "maxRunTime": 60,
+  "randomSeed": 0,
+  "nThreads": 1,
+  "rotationAllowed": true,
+  "avgNodesRemoved": 6,
+  "blinkRate": 0.01,
+  "leftoverValuationPower": 2,
+  "historyLength": 500,
+  "sheetValuationMode": "area"
+}

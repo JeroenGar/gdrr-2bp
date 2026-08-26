@@ -170,6 +170,6 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.option_parttype_map.is_empty() && self.option_node_map.is_empty()
+        self.option_parttype_map.iter().all(Vec::is_empty) && self.option_node_map.is_empty()
     }
 }

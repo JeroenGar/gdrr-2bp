@@ -7,7 +7,6 @@ use crate::core::entities::layout::Layout;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
 use crate::core::orientation::Orientation;
-use crate::DETERMINISTIC_MODE;
 use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
@@ -33,12 +32,12 @@ pub struct Problem<'a> {
 }
 
 impl<'a> Problem<'a> {
-    pub fn new(instance: &'a Instance) -> Self {
+    pub fn new(instance: &'a Instance, random_seed: Option<u64>) -> Self {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
-        let random = match DETERMINISTIC_MODE {
-            true => SmallRng::seed_from_u64(0),
-            false => SmallRng::from_rng(&mut rand::rng())
+        let random = match random_seed {
+            Some(seed) => SmallRng::seed_from_u64(seed),
+            None => SmallRng::from_rng(&mut rand::rng())
         };
 
         let mut problem = Problem {
