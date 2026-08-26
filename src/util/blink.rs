@@ -11,13 +11,13 @@ use rand::rngs::SmallRng;
 /// A blink chance of 1% means that 99% of the time, the lowest value will be selected,
 /// 0.99% of the time, the second lowest value will be selected, and so on.
 
-pub fn select_lowest_entry(entries: &Vec<usize>, blink_chance: f32, rand: &mut SmallRng) -> usize {
+pub fn select_lowest_entry(entries: impl Iterator<Item = usize>, blink_chance: f32, rand: &mut SmallRng) -> usize {
     let mut lowest_value = usize::MAX;
     let mut selected_index = 0;
 
-    for (i, entry) in entries.iter().enumerate() {
-        if *entry < lowest_value && rand.random::<f32>() > blink_chance {
-            lowest_value = *entry;
+    for (i, entry) in entries.enumerate() {
+        if entry < lowest_value && rand.random::<f32>() > blink_chance {
+            lowest_value = entry;
             selected_index = i;
         }
     }
@@ -33,4 +33,3 @@ pub fn select_lowest_in_range(range: Range<usize>, blink_chance: f32, rand: &mut
     }
     return range_end - 1;
 }
-
