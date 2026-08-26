@@ -162,12 +162,8 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
                 return false;
             }
             (_, true) => {
-                let ioc_options = ioc.get_for_parttype(&parttype).unwrap().iter()
-                    .map(|option| option.as_ref())
-                    .collect_vec();
-                let fresh_ioc_options = fresh_ioc.get_for_parttype(&parttype).unwrap().iter()
-                    .map(|option| option.as_ref())
-                    .collect_vec();
+                let ioc_options = ioc.get_for_parttype(parttype).collect_vec();
+                let fresh_ioc_options = fresh_ioc.get_for_parttype(parttype).collect_vec();
 
                 if !same_multiset(&ioc_options, &fresh_ioc_options) {
                     dbg!(ioc_options);
@@ -183,15 +179,9 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
         for node_index in layout.sorted_empty_nodes(){
             let node = &layout.nodes()[*node_index];
             let ioc_options = ioc.get_for_node(node_index, layout_index)
-                .into_iter()
-                .flatten()
                 .filter(|option| parttypes.contains(&option.parttype()))
-                .map(|option| option.as_ref())
                 .collect_vec();
             let fresh_ioc_options = fresh_ioc.get_for_node(node_index, layout_index)
-                .into_iter()
-                .flatten()
-                .map(|option| option.as_ref())
                 .collect_vec();
 
             if !same_multiset(&ioc_options, &fresh_ioc_options) {

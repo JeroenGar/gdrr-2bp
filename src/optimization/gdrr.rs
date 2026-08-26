@@ -286,7 +286,7 @@ impl<'a> GDRR<'a> {
 
         let n_options: Vec<usize> = indices.iter().map(|i| {
             let parttype = parttypes[*i];
-            insertion_option_cache.get_for_parttype(parttype).map_or(0, |options| options.len())
+            insertion_option_cache.get_for_parttype(parttype).len()
         }).collect();
 
         let blink = blink::select_lowest_entry(&n_options, config.blink_rate, rand);
@@ -295,56 +295,49 @@ impl<'a> GDRR<'a> {
     }
 
     fn select_insertion_blueprint(parttype: &'a PartType, insertion_option_cache: &InsertionOptionCache<'a>, mat_limit_budget: i128, problem: &mut Problem, config: &Config, cost_comparator: &fn(&Cost, &Cost) -> Ordering) -> Option<InsertionBlueprint<'a>> {
-        let insertion_options = insertion_option_cache.get_for_parttype(parttype);
-        match insertion_options {
-            Some(options) => {
-                //Collect the blueprints
-                let mut existing_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
-                let mut new_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
+        let options = insertion_option_cache.get_for_parttype(parttype);
+        //Collect the blueprints
+        let mut existing_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
+        let mut new_layout_blueprints: Vec<InsertionBlueprint<'a>> = Vec::new();
 
-                for option in options {
-                    if existing_layout_blueprints.len() > 20 {
-                        break; //enough blueprints to consider
-                    }
-                    match option.layout_index() {
-                        LayoutIndex::Existing(_) => {
-                            existing_layout_blueprints.extend(option.generate_blueprints(problem))
-                        }
-                        LayoutIndex::Empty(i) => {
-                            if mat_limit_budget >= problem.empty_layouts()[*i].sheettype().value() as i128 {
-                                new_layout_blueprints.extend(option.generate_blueprints(problem));
-                            }
-                        }
-                    }
+        for option in options {
+            if existing_layout_blueprints.len() > 20 {
+                break; //enough blueprints to consider
+            }
+            match option.layout_index() {
+                LayoutIndex::Existing(_) => {
+                    existing_layout_blueprints.extend(option.generate_blueprints(problem))
                 }
-                match existing_layout_blueprints.is_empty() {
-                    false => {
-                        //Sort the blueprints by cost
-                        existing_layout_blueprints.sort_by(|a, b| {
-                            cost_comparator(a.cost(), b.cost())
-                        });
-                        //Select the best (blinked) one
-                        let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, problem.rng());
-                        Some(existing_layout_blueprints.remove(selected_blinked_index))
-                    }
-                    true => {
-                        //No blueprints for existing layouts, try new layouts
-                        match new_layout_blueprints.is_empty() {
-                            true => {
-                                //No insertion blueprint available
-                                None
-                            }
-                            false => {
-                                //Select a random blueprint from the new layout blueprints
-                                let selected_index = problem.rng().random_range(0..new_layout_blueprints.len());
-                                Some(new_layout_blueprints.remove(selected_index))
-                            }
-                        }
+                LayoutIndex::Empty(i) => {
+                    if mat_limit_budget >= problem.empty_layouts()[*i].sheettype().value() as i128 {
+                        new_layout_blueprints.extend(option.generate_blueprints(problem));
                     }
                 }
             }
-            None => {
-                None
+        }
+        match existing_layout_blueprints.is_empty() {
+            false => {
+                //Sort the blueprints by cost
+                existing_layout_blueprints.sort_by(|a, b| {
+                    cost_comparator(a.cost(), b.cost())
+                });
+                //Select the best (blinked) one
+                let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, problem.rng());
+                Some(existing_layout_blueprints.remove(selected_blinked_index))
+            }
+            true => {
+                //No blueprints for existing layouts, try new layouts
+                match new_layout_blueprints.is_empty() {
+                    true => {
+                        //No insertion blueprint available
+                        None
+                    }
+                    false => {
+                        //Select a random blueprint from the new layout blueprints
+                        let selected_index = problem.rng().random_range(0..new_layout_blueprints.len());
+                        Some(new_layout_blueprints.remove(selected_index))
+                    }
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ generational-arena = "0.2"
 fxhash = "0.2.1"
 ordered-float = "5.0.0"
 mimalloc = "0.1"
+slotmap = "1.1"
 
 [dev-dependencies]
 criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
