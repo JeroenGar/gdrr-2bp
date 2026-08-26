@@ -98,7 +98,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn add_for_node<I>(&mut self, node_i: &NodeKey, node: &Node, layout_i: &LayoutIndex, parttypes: I)
         where I: Iterator<Item=&'b &'a PartType> {
-        if node.parttype().is_none() && node.children().is_empty() {
+        if node.parttype().is_none() && !node.has_children() {
             let option_range_start = self.option_node_keys.len();
             for parttype in parttypes {
                 let insertion_option =

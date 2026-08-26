@@ -22,30 +22,30 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 
 pub fn children_nodes_fit(node_i: &NodeKey, arena: &SlotMap<NodeKey, Node>) -> bool {
     let node = &arena[*node_i];
-    match node.children().is_empty() {
-        true => true,
-        false => {
+    match node.has_children() {
+        false => true,
+        true => {
             match node.next_cut_orient() {
                 Orientation::Horizontal => {
-                    let all_children_same_width = node.children().iter().all(|&c| arena[c].width() == node.width());
-                    let sum_of_children_height = node.children().iter().map(|&c| arena[c].height()).sum::<u64>();
-                    let all_children_vert_cut_orient = node.children().iter().all(|&c| arena[c].next_cut_orient() == Orientation::Vertical);
+                    let all_children_same_width = node.children(arena).all(|c| arena[c].width() == node.width());
+                    let sum_of_children_height = node.children(arena).map(|c| arena[c].height()).sum::<u64>();
+                    let all_children_vert_cut_orient = node.children(arena).all(|c| arena[c].next_cut_orient() == Orientation::Vertical);
 
                     if !all_children_same_width || sum_of_children_height != node.height() || !all_children_vert_cut_orient {
                         return false;
                     }
-                    node.children().iter().all(|c| children_nodes_fit(c, arena))
+                    node.children(arena).all(|c| children_nodes_fit(&c, arena))
                 }
                 Orientation::Vertical => {
-                    let all_children_same_height = node.children().iter().all(|&c| arena[c].height() == node.height());
-                    let sum_of_children_width = node.children().iter().map(|&c| arena[c].width()).sum::<u64>();
-                    let all_children_horz_cut_orient = node.children().iter().all(|&c| arena[c].next_cut_orient() == Orientation::Horizontal);
+                    let all_children_same_height = node.children(arena).all(|c| arena[c].height() == node.height());
+                    let sum_of_children_width = node.children(arena).map(|c| arena[c].width()).sum::<u64>();
+                    let all_children_horz_cut_orient = node.children(arena).all(|c| arena[c].next_cut_orient() == Orientation::Horizontal);
 
 
                     if !all_children_same_height || sum_of_children_width != node.width() || !all_children_horz_cut_orient {
                         return false;
                     }
-                    node.children().iter().all(|c| children_nodes_fit(c, arena))
+                    node.children(arena).all(|c| children_nodes_fit(&c, arena))
                 }
             }
         }
@@ -121,15 +121,18 @@ pub fn nodes_match(n_i_1: &NodeKey, n_i_2: &NodeKey, nodes_1 : &SlotMap<NodeKey,
     let node2 = &nodes_2[*n_i_2];
     if node1.width() != node2.width() ||
         node1.height() != node2.height() ||
-        node1.children().len() != node2.children().len() ||
         node1.parttype() != node2.parttype() ||
         node1.next_cut_orient() != node2.next_cut_orient() ||
         node1.parent().is_some() != node2.parent().is_some() {
         return false;
     }
-    for (child1, child2) in node1.children().iter().zip(node2.children().iter()) {
-        if !nodes_match(child1, child2, nodes_1, nodes_2) {
-            return false;
+    let mut children1 = node1.children(nodes_1);
+    let mut children2 = node2.children(nodes_2);
+    loop {
+        match (children1.next(), children2.next()) {
+            (Some(child1), Some(child2)) if nodes_match(&child1, &child2, nodes_1, nodes_2) => (),
+            (None, None) => break,
+            _ => return false,
         }
     }
     return true;
@@ -244,9 +247,11 @@ pub fn no_ghost_nodes_in_arena(nodes: &SlotMap<NodeKey, Node>, top_node: &NodeKe
 
     while !buffer.is_empty() {
         let index = buffer.pop().unwrap();
-        referenced_indices.insert(index);
+        if !referenced_indices.insert(index) {
+            return false;
+        }
         let node = &nodes[index];
-        buffer.extend(node.children().iter().cloned());
+        buffer.extend(node.children(nodes));
     }
 
     nodes.iter().all(|(i, _n)| {
@@ -254,22 +259,46 @@ pub fn no_ghost_nodes_in_arena(nodes: &SlotMap<NodeKey, Node>, top_node: &NodeKe
     })
 }
 
-pub fn node_child_parent_relations_valid(node: &SlotMap<NodeKey, Node>, top_node: &NodeKey) -> bool {
+pub fn node_child_parent_relations_valid(nodes: &SlotMap<NodeKey, Node>, top_node: &NodeKey) -> bool {
     // every child c of node n should have n as its parent
     // and
     // every node n should be a child of its parent p
 
-    node.iter().all(|(i, n)| {
-        n.children().iter().all(|c| node[*c].parent() == &Some(i))
-    }) &&
-        node.iter().all(|(i, n)| {
-            n.parent().map(|p| node[p].children().contains(&i)).unwrap_or(i == *top_node)
-        })
+    nodes.iter().all(|(parent_key, parent)| {
+        let mut previous_child = None;
+        let mut next_child = parent.first_child();
+        let mut n_children = 0;
+
+        while let Some(child_key) = next_child {
+            n_children += 1;
+            if n_children > nodes.len() {
+                return false;
+            }
+            let Some(child) = nodes.get(child_key) else {
+                return false;
+            };
+            if child.parent() != Some(parent_key) || child.previous_sibling() != previous_child {
+                return false;
+            }
+            previous_child = Some(child_key);
+            next_child = child.next_sibling();
+        }
+
+        previous_child == parent.last_child()
+    }) && nodes.iter().all(|(node_key, node)| {
+        match node.parent() {
+            Some(parent_key) => nodes.get(parent_key)
+                .is_some_and(|parent| parent.children(nodes).any(|child| child == node_key)),
+            None => node_key == *top_node
+                && node.previous_sibling().is_none()
+                && node.next_sibling().is_none(),
+        }
+    })
 }
 
 pub fn node_arena_valid(nodes: &SlotMap<NodeKey, Node>, top_node: &NodeKey) -> bool {
-    assert!(no_ghost_nodes_in_arena(nodes, top_node));
     assert!(node_child_parent_relations_valid(nodes, top_node));
+    assert!(no_ghost_nodes_in_arena(nodes, top_node));
 
     true
 }

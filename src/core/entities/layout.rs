@@ -126,14 +126,14 @@ impl<'a> Layout<'a> {
         let parent_node = &self.nodes[parent_node_index];
 
         //Check if there is an empty_node present
-        let empty_node = parent_node.children().iter().find(|c| { self.nodes[**c].is_empty()});
+        let empty_node = parent_node.children(&self.nodes).find(|child| self.nodes[*child].is_empty());
 
         let mut removed_parts = Some(vec![]);
 
         match empty_node {
-            Some(&empty_node_index) => {
+            Some(empty_node_index) => {
                 //Scenario 1 and 3
-                if parent_node.children().len() > 1 || parent_node.parent().is_none() {
+                if parent_node.first_child != parent_node.last_child || parent_node.parent().is_none() {
                     //Scenario 1 (also do this when the parent node is the root)
                     //Two children are merged into one
 
@@ -156,7 +156,7 @@ impl<'a> Layout<'a> {
                     self.register_node(replacement_node, parent_node_index, true);
                 } else {
                     //Scenario 3: replace the parent with an empty node
-                    let grandparent_index = parent_node.parent().expect("grandparent node needs to be present").clone();
+                    let grandparent_index = parent_node.parent().expect("grandparent node needs to be present");
 
                     //create empty parent
                     let empty_parent_node = Node::new(parent_node.level(), parent_node.width(), parent_node.height(), parent_node.next_cut_orient(), None);
@@ -237,8 +237,14 @@ impl<'a> Layout<'a> {
         }
 
         //Configure relationship between node and parent
-        self.nodes[node_index].set_parent(parent);
-        self.nodes[parent].add_child(node_index);
+        let previous_sibling = self.nodes[parent].last_child;
+        self.nodes[node_index].parent = Some(parent);
+        self.nodes[node_index].previous_sibling = previous_sibling;
+        match previous_sibling {
+            Some(previous_sibling) => self.nodes[previous_sibling].next_sibling = Some(node_index),
+            None => self.nodes[parent].first_child = Some(node_index),
+        }
+        self.nodes[parent].last_child = Some(node_index);
 
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         node_index
@@ -248,8 +254,8 @@ impl<'a> Layout<'a> {
         self.invalidate_caches();
 
         //All empty nodes need to be removed from the sorted empty nodes list
-        let node = &self.nodes[node_index];
-        if node.is_empty() {
+        if self.nodes[node_index].is_empty() {
+            let node = &self.nodes[node_index];
             let lower_index = self.sorted_empty_nodes.partition_point(|n|
                 { self.nodes[*n].area() > node.area() });
 
@@ -276,12 +282,13 @@ impl<'a> Layout<'a> {
         }
 
         //unregister all children
-        for child in node.children().clone() {
+        while let Some(child) = self.nodes[node_index].first_child {
             self.unregister_node(child, removed_part_ids);
         }
 
         //remove the node
         let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
+        debug_assert!(node.first_child.is_none() && node.last_child.is_none());
 
         //unregister part
         if let &Some(parttype) = node.parttype() {
@@ -293,7 +300,14 @@ impl<'a> Layout<'a> {
 
         //break the relationship with parent
         if let Some(parent) = node.parent() {
-            self.nodes[*parent].remove_child(node_index);
+            match node.previous_sibling {
+                Some(previous_sibling) => self.nodes[previous_sibling].next_sibling = node.next_sibling,
+                None => self.nodes[parent].first_child = node.next_sibling,
+            }
+            match node.next_sibling {
+                Some(next_sibling) => self.nodes[next_sibling].previous_sibling = node.previous_sibling,
+                None => self.nodes[parent].last_child = node.previous_sibling,
+            }
         }
 
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
@@ -378,7 +392,7 @@ impl<'a> Layout<'a> {
     pub fn get_removable_nodes(&self) -> Vec<NodeKey> {
         //All nodes with children or that contain a part are removable
         self.nodes.iter()
-            .filter(|(_, node)| node.parttype().is_some() || !node.children().is_empty())
+            .filter(|(_, node)| node.parttype().is_some() || node.has_children())
             .map(|(index, _)| index)
             .collect_vec()
     }

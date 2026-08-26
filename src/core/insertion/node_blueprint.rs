@@ -37,8 +37,8 @@ impl NodeBlueprint {
             Some(pt) => Some(pt.id()),
             None => None
         };
-        let children = node.children().iter()
-            .map(|child_index| NodeBlueprint::from_node(*child_index, nodes))
+        let children = node.children(nodes)
+            .map(|child_index| NodeBlueprint::from_node(child_index, nodes))
             .collect_vec();
 
         Self { width, height, parttype_id, children, next_cut_orient }
