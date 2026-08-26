@@ -58,11 +58,13 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         self.option_parttype_map.iter_mut().for_each(Vec::clear);
     }
 
-    pub fn add_for_parttypes(
+    pub fn add_for_parttypes<'c>(
         &mut self,
         parttypes: &[&'a PartType],
-        layouts: &[(LayoutIndex, &Layout)],
-    ) {
+        layouts: impl Iterator<Item = (LayoutIndex, &'c Layout<'a>)>,
+    ) where
+        'a: 'c,
+    {
         //sort by decreasing area
         let sorted_parttypes: Vec<&&PartType> = parttypes
             .iter()
@@ -93,7 +95,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                     if let Some(insertion_option) = InsertionOptionCache::generate_insertion_option(
                         empty_node,
                         parttype,
-                        *layout_i,
+                        layout_i,
                         *empty_node_i,
                     ) {
                         self.insert_option(insertion_option);
@@ -101,7 +103,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                 }
                 if option_range_start != self.option_node_keys.len() {
                     self.option_node_ranges.push((
-                        (*layout_i, *empty_node_i),
+                        (layout_i, *empty_node_i),
                         option_range_start..self.option_node_keys.len(),
                     ));
                 }

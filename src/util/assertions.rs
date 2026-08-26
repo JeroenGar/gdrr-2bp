@@ -139,19 +139,18 @@ pub fn nodes_match(n_i_1: &NodeKey, n_i_2: &NodeKey, nodes_1 : &SlotMap<NodeKey,
 }
 
 pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &InsertionOptionCache<'a>, parttypes: &Vec<&'a PartType>) -> bool {
-    //Collect all the layouts which should be considered during this recreate iteration
-    let layouts_to_consider = problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
+    //Iterate all layouts which should be considered during this recreate iteration
+    let layouts_to_consider = || problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
         .chain(problem.empty_layouts().iter().enumerate()
             .filter(|(_, l)| problem.sheettype_qtys()[l.sheettype().id()] > 0)
             .map(|(i, l)| (LayoutIndex::Empty(i), l))
-        )
-        .collect_vec();
+        );
 
     let mut fresh_ioc = InsertionOptionCache::new(problem.instance());
 
     fresh_ioc.add_for_parttypes(
         parttypes,
-        &layouts_to_consider,
+        layouts_to_consider(),
     );
 
     if ioc.is_empty() && fresh_ioc.is_empty() {
@@ -178,13 +177,13 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
         }
     }
 
-    for (layout_index, layout) in layouts_to_consider.iter(){
+    for (layout_index, layout) in layouts_to_consider(){
         for node_index in layout.sorted_empty_nodes(){
             let node = &layout.nodes()[*node_index];
-            let ioc_options = ioc.get_for_node(node_index, layout_index)
+            let ioc_options = ioc.get_for_node(node_index, &layout_index)
                 .filter(|option| parttypes.contains(&option.parttype()))
                 .collect_vec();
-            let fresh_ioc_options = fresh_ioc.get_for_node(node_index, layout_index)
+            let fresh_ioc_options = fresh_ioc.get_for_node(node_index, &layout_index)
                 .collect_vec();
 
             if !same_multiset(&ioc_options, &fresh_ioc_options) {

@@ -236,16 +236,15 @@ impl<'a> GDRR<'a> {
         insertion_option_cache.clear();
         let mut part_area_not_included: u64 = 0;
 
-        //Collect all the layouts which should be considered during this recreate iteration
+        //Iterate all layouts which should be considered during this recreate iteration
         let layouts_to_consider = self.problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
             .chain(self.problem.empty_layouts().iter().enumerate()
                 .filter(|(_, l)| self.problem.sheettype_qtys()[l.sheettype().id()] > 0)
                 .map(|(i, l)| (LayoutIndex::Empty(i), l))
-            )
-            .collect_vec();
+            );
 
         //Generate insertion options for all relevant parttypes and layouts
-        insertion_option_cache.add_for_parttypes(&parttypes_to_consider, &layouts_to_consider);
+        insertion_option_cache.add_for_parttypes(&parttypes_to_consider, layouts_to_consider);
         debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider));
 
         let mut existing_layout_blueprints = Vec::new();
