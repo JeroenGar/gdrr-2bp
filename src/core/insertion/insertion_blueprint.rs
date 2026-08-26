@@ -1,6 +1,5 @@
-use generational_arena::Index;
-
 use crate::core::cost::Cost;
+use crate::core::entities::node::NodeKey;
 use crate::core::entities::parttype::PartType;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::layout_index::LayoutIndex;
@@ -11,7 +10,7 @@ use crate::core::layout_index::LayoutIndex;
 #[derive(Debug, Clone)]
 pub struct InsertionBlueprint<'a> {
     layout_i: LayoutIndex,
-    original_node_i: Index,
+    original_node_i: NodeKey,
     replacements: Vec<NodeBlueprint>,
     parttype: &'a PartType,
     cost: Cost,
@@ -19,7 +18,7 @@ pub struct InsertionBlueprint<'a> {
 
 
 impl<'a> InsertionBlueprint<'a> {
-    pub fn new(layout_i: LayoutIndex, original_node_i: Index, replacements: Vec<NodeBlueprint>, parttype: &'a PartType, cost: Cost) -> Self {
+    pub fn new(layout_i: LayoutIndex, original_node_i: NodeKey, replacements: Vec<NodeBlueprint>, parttype: &'a PartType, cost: Cost) -> Self {
         Self {
             layout_i,
             original_node_i,
@@ -45,7 +44,7 @@ impl<'a> InsertionBlueprint<'a> {
         &self.layout_i
     }
 
-    pub fn original_node_index(&self) -> &Index {
+    pub fn original_node_index(&self) -> &NodeKey {
         &self.original_node_i
     }
 

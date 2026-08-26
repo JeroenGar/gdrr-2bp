@@ -1,10 +1,10 @@
-use generational_arena::Index;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 use slotmap::SlotMap;
 
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
+use crate::core::entities::node::NodeKey;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::{LayoutIndex, LayoutKey};
 use crate::core::orientation::Orientation;
@@ -124,7 +124,7 @@ impl<'a> Problem<'a> {
         }
     }
 
-    pub fn remove_node(&mut self, node_index: Index, layout_index: LayoutIndex) -> Option<u64> {
+    pub fn remove_node(&mut self, node_index: NodeKey, layout_index: LayoutIndex) -> Option<u64> {
         let index = match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot remove a node from an empty layout"),
             LayoutIndex::Existing(index) => index,

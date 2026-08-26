@@ -1,7 +1,7 @@
-use generational_arena::{Arena, Index};
+use slotmap::SlotMap;
 use itertools::Itertools;
 use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
-use crate::core::entities::node::Node;
+use crate::core::entities::node::{Node, NodeKey};
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::orientation::Orientation;
 use crate::optimization::instance::Instance;
@@ -15,11 +15,11 @@ pub struct Layout<'a> {
     id : usize,
     sheettype: &'a SheetType,
     leftover_valuation_power: f32,
-    nodes: Arena<Node<'a>>,
-    top_node_i: Index,
+    nodes: SlotMap<NodeKey, Node<'a>>,
+    top_node_i: NodeKey,
     cached_cost: Option<Cost>,
     cached_usage: Option<f64>,
-    sorted_empty_nodes: Vec<Index>, //sorted by descending area
+    sorted_empty_nodes: Vec<NodeKey>, //sorted by descending area
 }
 
 impl<'a> Layout<'a> {
@@ -29,7 +29,7 @@ impl<'a> Layout<'a> {
         first_cut_orientation: Orientation,
         leftover_valuation_power: f32,
     ) -> Self {
-        let mut nodes = Arena::new();
+        let mut nodes = SlotMap::with_key();
         let top_node = Node::new(0, sheettype.width(), sheettype.height(), first_cut_orientation, None);
         let top_node_i = nodes.insert(top_node);
 
@@ -76,7 +76,7 @@ impl<'a> Layout<'a> {
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
     }
 
-    fn implement_node_blueprint(&mut self, parent: Index, blueprint: &NodeBlueprint, instance: &'a Instance, updates: &mut IOCUpdates) {
+    fn implement_node_blueprint(&mut self, parent: NodeKey, blueprint: &NodeBlueprint, instance: &'a Instance, updates: &mut IOCUpdates) {
         let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
 
         let node = Node::new(self.nodes[parent].level() + 1, blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
@@ -89,7 +89,7 @@ impl<'a> Layout<'a> {
         }
     }
 
-    pub fn remove_node(&mut self, node_index: Index) -> Vec<usize>{
+    pub fn remove_node(&mut self, node_index: NodeKey) -> Vec<usize>{
         /*®
            Scenario 1: Empty node present + other child(ren)
             -> expand existing waste piece
@@ -208,7 +208,7 @@ impl<'a> Layout<'a> {
         used_area as f64 / self.sheettype.area() as f64
     }
 
-    fn register_node(&mut self, node: Node<'a>, parent: Index, is_empty: bool) -> Index {
+    fn register_node(&mut self, node: Node<'a>, parent: NodeKey, is_empty: bool) -> NodeKey {
         self.invalidate_caches();
 
         if let Some(parttype) = node.parttype() {
@@ -224,7 +224,7 @@ impl<'a> Layout<'a> {
             debug_assert!(self.nodes[node_index].is_empty());
             let node_area = self.nodes[node_index].area();
             let result = self.sorted_empty_nodes.binary_search_by(
-                &(|n: &Index| {
+                &(|n: &NodeKey| {
                     let n_area = self.nodes[*n].area();
                     n_area.cmp(&node_area).reverse()
                 })
@@ -244,7 +244,7 @@ impl<'a> Layout<'a> {
         node_index
     }
 
-    fn unregister_node(&mut self, node_index: Index, removed_part_ids: &mut Option<Vec<usize>>) {
+    fn unregister_node(&mut self, node_index: NodeKey, removed_part_ids: &mut Option<Vec<usize>>) {
         self.invalidate_caches();
 
         //All empty nodes need to be removed from the sorted empty nodes list
@@ -368,14 +368,14 @@ impl<'a> Layout<'a> {
         usage
     }
 
-    pub fn sorted_empty_nodes(&self) -> &Vec<Index> {
+    pub fn sorted_empty_nodes(&self) -> &Vec<NodeKey> {
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
 
         &self.sorted_empty_nodes
     }
 
-    pub fn get_removable_nodes(&self) -> Vec<Index> {
+    pub fn get_removable_nodes(&self) -> Vec<NodeKey> {
         //All nodes with children or that contain a part are removable
         self.nodes.iter()
             .filter(|(_, node)| node.parttype().is_some() || !node.children().is_empty())
@@ -391,11 +391,11 @@ impl<'a> Layout<'a> {
         self.leftover_valuation_power
     }
 
-    pub fn top_node_index(&self) -> &Index {
+    pub fn top_node_index(&self) -> &NodeKey {
         &self.top_node_i
     }
 
-    pub fn nodes(&self) -> &Arena<Node<'a>> {
+    pub fn nodes(&self) -> &SlotMap<NodeKey, Node<'a>> {
         &self.nodes
     }
 

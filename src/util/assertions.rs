@@ -2,11 +2,11 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::rc::Weak;
 
-use generational_arena::{Arena, Index};
 use itertools::Itertools;
+use slotmap::SlotMap;
 
 use crate::core::entities::layout::Layout;
-use crate::core::entities::node::Node;
+use crate::core::entities::node::{Node, NodeKey};
 use crate::core::entities::parttype::PartType;
 use crate::core::entities::sheettype::SheetType;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
@@ -20,7 +20,7 @@ use crate::optimization::solutions::problem_solution::ProblemSolution;
 /// They are called with debug_assert!() macro throughout the code.
 /// Are not compiled in release mode
 
-pub fn children_nodes_fit(node_i: &Index, arena: &Arena<Node>) -> bool {
+pub fn children_nodes_fit(node_i: &NodeKey, arena: &SlotMap<NodeKey, Node>) -> bool {
     let node = &arena[*node_i];
     match node.children().is_empty() {
         true => true,
@@ -116,7 +116,7 @@ pub fn layouts_match(l1: &Layout, l2: &Layout) -> bool {
     return nodes_match(l1.top_node_index(), l2.top_node_index(), l1.nodes(), l2.nodes());
 }
 
-pub fn nodes_match(n_i_1: &Index, n_i_2: &Index, nodes_1 : &Arena<Node>, nodes_2: &Arena<Node>) -> bool {
+pub fn nodes_match(n_i_1: &NodeKey, n_i_2: &NodeKey, nodes_1 : &SlotMap<NodeKey, Node>, nodes_2: &SlotMap<NodeKey, Node>) -> bool {
     let node1 = &nodes_1[*n_i_1];
     let node2 = &nodes_2[*n_i_2];
     if node1.width() != node2.width() ||
@@ -202,7 +202,7 @@ fn same_multiset<T: PartialEq>(left: &[T], right: &[T]) -> bool {
     })
 }
 
-pub fn cached_sorted_empty_nodes_correct(nodes: &Arena<Node>, cached_sorted_empty_nodes: &Vec<Index>) -> bool {
+pub fn cached_sorted_empty_nodes_correct(nodes: &SlotMap<NodeKey, Node>, cached_sorted_empty_nodes: &Vec<NodeKey>) -> bool {
     let all_empty_nodes = nodes.iter().filter(|(_i,n)| n.is_empty()).map(|(i,_n)| i).collect_vec();
 
     if all_empty_nodes.len() != cached_sorted_empty_nodes.len() {
@@ -236,7 +236,7 @@ pub fn instance_parttypes_and_sheettypes_ids_correct(parttypes: &Vec<(PartType, 
     })
 }
 
-pub fn no_ghost_nodes_in_arena(nodes: &Arena<Node>, top_node: &Index) -> bool {
+pub fn no_ghost_nodes_in_arena(nodes: &SlotMap<NodeKey, Node>, top_node: &NodeKey) -> bool {
     //Every node in the arena (except the top_node should be referenced by another node
 
     let mut buffer = vec![*top_node];
@@ -254,7 +254,7 @@ pub fn no_ghost_nodes_in_arena(nodes: &Arena<Node>, top_node: &Index) -> bool {
     })
 }
 
-pub fn node_child_parent_relations_valid(node: &Arena<Node>, top_node: &Index) -> bool {
+pub fn node_child_parent_relations_valid(node: &SlotMap<NodeKey, Node>, top_node: &NodeKey) -> bool {
     // every child c of node n should have n as its parent
     // and
     // every node n should be a child of its parent p
@@ -267,7 +267,7 @@ pub fn node_child_parent_relations_valid(node: &Arena<Node>, top_node: &Index) -
         })
 }
 
-pub fn node_arena_valid(nodes: &Arena<Node>, top_node: &Index) -> bool {
+pub fn node_arena_valid(nodes: &SlotMap<NodeKey, Node>, top_node: &NodeKey) -> bool {
     assert!(no_ghost_nodes_in_arena(nodes, top_node));
     assert!(node_child_parent_relations_valid(nodes, top_node));
 

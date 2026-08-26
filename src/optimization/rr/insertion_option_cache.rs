@@ -1,10 +1,9 @@
-use generational_arena::Index;
 use itertools::Itertools;
 use slotmap::{new_key_type, SlotMap};
 use std::ops::Range;
 
 use crate::core::entities::layout::Layout;
-use crate::core::entities::node::Node;
+use crate::core::entities::node::{Node, NodeKey};
 use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_option::InsertionOption;
 use crate::core::layout_index::LayoutIndex;
@@ -19,7 +18,7 @@ use crate::optimization::rr::cache_updates::IOCUpdates;
 
 pub struct InsertionOptionCache<'a> {
     options: SlotMap<InsertionOptionKey, InsertionOption<'a>>,
-    option_node_ranges: Vec<((LayoutIndex, Index), Range<usize>)>,
+    option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<usize>)>,
     option_node_keys: Vec<InsertionOptionKey>,
     option_parttype_map: Vec<Vec<InsertionOptionKey>>,
 }
@@ -97,7 +96,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         self.option_node_ranges.sort_unstable_by_key(|(node_key, _)| *node_key);
     }
 
-    pub fn add_for_node<I>(&mut self, node_i: &Index, node: &Node, layout_i: &LayoutIndex, parttypes: I)
+    pub fn add_for_node<I>(&mut self, node_i: &NodeKey, node: &Node, layout_i: &LayoutIndex, parttypes: I)
         where I: Iterator<Item=&'b &'a PartType> {
         if node.parttype().is_none() && node.children().is_empty() {
             let option_range_start = self.option_node_keys.len();
@@ -123,7 +122,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn remove_for_node(&mut self, layout_i: &LayoutIndex, node_i: &Index) {
+    pub fn remove_for_node(&mut self, layout_i: &LayoutIndex, node_i: &NodeKey) {
         let node_key = (*layout_i, *node_i);
         let Ok(node_range_index) = self.option_node_ranges.binary_search_by_key(&node_key, |(key, _)| *key) else {
             return;
@@ -153,7 +152,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         option_key
     }
 
-    fn generate_insertion_option(node: &Node, parttype: &'a PartType, layout_i: LayoutIndex, node_i: Index) -> Option<InsertionOption<'a>> {
+    fn generate_insertion_option(node: &Node, parttype: &'a PartType, layout_i: LayoutIndex, node_i: NodeKey) -> Option<InsertionOption<'a>> {
         match parttype.fixed_rotation() {
             Some(fixed_rotation) => {
                 match node.insertion_possible(parttype, *fixed_rotation) {
@@ -193,7 +192,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
     pub fn get_for_node(
         &self,
-        node_i: &Index,
+        node_i: &NodeKey,
         layout_i: &LayoutIndex,
     ) -> impl Iterator<Item = &InsertionOption<'a>> {
         let node_key = (*layout_i, *node_i);

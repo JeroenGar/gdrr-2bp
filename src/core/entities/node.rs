@@ -1,4 +1,4 @@
-use generational_arena::{Index};
+use slotmap::new_key_type;
 
 use crate::core::cost::Cost;
 use crate::core::entities::parttype::PartType;
@@ -7,13 +7,17 @@ use crate::core::leftover_valuator;
 use crate::core::orientation::Orientation;
 use crate::core::rotation::Rotation;
 
+new_key_type! {
+    pub struct NodeKey;
+}
+
 #[derive(Debug, Clone)]
 pub struct Node<'a> {
     level: u8,
     width: u64,
     height: u64,
-    children: Vec<Index>,
-    parent: Option<Index>,
+    children: Vec<NodeKey>,
+    parent: Option<NodeKey>,
     parttype: Option<&'a PartType>,
     next_cut_orient: Orientation,
 }
@@ -32,15 +36,15 @@ impl<'a> Node<'a> {
         }
     }
 
-    pub fn set_parent(&mut self, parent: Index){
+    pub fn set_parent(&mut self, parent: NodeKey){
         self.parent = Some(parent);
     }
 
-    pub fn add_child(&mut self, child: Index) {
+    pub fn add_child(&mut self, child: NodeKey) {
         self.children.push(child);
     }
 
-    pub fn remove_child(&mut self, old_child: Index) {
+    pub fn remove_child(&mut self, old_child: NodeKey) {
         let old_child_index = self.children.iter().position(|c| *c == old_child).expect("Child not found");
         self.children.remove(old_child_index);
     }
@@ -277,10 +281,10 @@ impl<'a> Node<'a> {
     pub fn area(&self) -> u64 {
         self.width * self.height
     }
-    pub fn children(&self) -> &Vec<Index> {
+    pub fn children(&self) -> &Vec<NodeKey> {
         &self.children
     }
-    pub fn parent(&self) -> &Option<Index> {
+    pub fn parent(&self) -> &Option<NodeKey> {
         &self.parent
     }
     pub fn level(&self) -> u8 {

@@ -1,11 +1,11 @@
 use std::fmt::Debug;
-use generational_arena::Index;
+use crate::core::entities::node::NodeKey;
 use crate::core::layout_index::LayoutIndex;
 
 //Insertion Option Cache Updates
 pub struct IOCUpdates {
-    removed_nodes: Vec<Index>,
-    new_nodes: Vec<Index>,
+    removed_nodes: Vec<NodeKey>,
+    new_nodes: Vec<NodeKey>,
     layout_i: LayoutIndex,
 }
 
@@ -18,19 +18,19 @@ impl IOCUpdates {
         }
     }
 
-    pub fn add_removed(&mut self, item: Index) {
+    pub fn add_removed(&mut self, item: NodeKey) {
         self.removed_nodes.push(item);
     }
 
-    pub fn add_new(&mut self, item: Index) {
+    pub fn add_new(&mut self, item: NodeKey) {
         self.new_nodes.push(item);
     }
 
-    pub fn removed_nodes(&self) -> &Vec<Index> {
+    pub fn removed_nodes(&self) -> &Vec<NodeKey> {
         &self.removed_nodes
     }
 
-    pub fn new_nodes(&self) -> &Vec<Index> {
+    pub fn new_nodes(&self) -> &Vec<NodeKey> {
         &self.new_nodes
     }
 

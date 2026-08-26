@@ -1,8 +1,8 @@
-use generational_arena::{Arena, Index};
 use itertools::Itertools;
+use slotmap::SlotMap;
 
 use crate::core::cost::Cost;
-use crate::core::entities::node::Node;
+use crate::core::entities::node::{Node, NodeKey};
 use crate::core::entities::parttype::PartType;
 use crate::core::leftover_valuator;
 use crate::core::orientation::Orientation;
@@ -28,7 +28,7 @@ impl NodeBlueprint {
         Self { width, height, children, parttype_id, next_cut_orient }
     }
 
-    pub fn from_node(node_index: Index, nodes: &Arena<Node>) -> Self {
+    pub fn from_node(node_index: NodeKey, nodes: &SlotMap<NodeKey, Node>) -> Self {
         let node = &nodes[node_index];
 
         let (width, height) = (node.width(), node.height());

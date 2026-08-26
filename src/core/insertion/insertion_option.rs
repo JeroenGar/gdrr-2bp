@@ -1,8 +1,7 @@
 use std::fmt::Debug;
 
-use generational_arena::Index;
-
 use crate::core::cost::Cost;
+use crate::core::entities::node::NodeKey;
 use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
@@ -18,13 +17,13 @@ use crate::optimization::problem::Problem;
 #[derive(Debug, PartialEq, Eq)]
 pub struct InsertionOption<'a> {
     layout_i: LayoutIndex,
-    original_node_i: Index,
+    original_node_i: NodeKey,
     parttype: &'a PartType,
     rotation: Option<Rotation>, // None means both rotations are possible
 }
 
 impl<'a> InsertionOption<'a> {
-    pub fn new(layout_i: LayoutIndex, original_node_i: Index, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
+    pub fn new(layout_i: LayoutIndex, original_node_i: NodeKey, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
         Self {
             layout_i,
             original_node_i,
@@ -91,7 +90,7 @@ impl<'a> InsertionOption<'a> {
         self.rotation
     }
 
-    pub fn original_node_index(&self) -> &Index {
+    pub fn original_node_index(&self) -> &NodeKey {
         &self.original_node_i
     }
 
