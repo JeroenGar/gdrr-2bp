@@ -39,6 +39,12 @@ The PR description is the public accepted-change report. This file also records 
 - The full-solver fast gate was about 5.1% slower, with a throughput confidence interval of `-10.10%..-1.20%`.
 - Reverted immediately. As with `SlotMap::clear`, retaining high-water storage hurt more than avoiding these allocations helped.
 
+### Reuse biased-sampler layout storage after `274f1ba`
+
+- Changed `BiasedSampler` to borrow a retained layout buffer instead of owning a fresh vector for each ruin selection.
+- Full-solver Criterion found no gain: -1.31% median throughput with a `-2.81%..+0.13%` confidence interval.
+- Reverted because the sampled code is too small to justify changing the sampler's ownership API.
+
 ### Reuse InsertionOptionCache with `SlotMap::clear`
 
 - Tried again immediately after `4ce5b00`.
