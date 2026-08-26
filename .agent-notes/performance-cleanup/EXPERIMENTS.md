@@ -46,6 +46,12 @@ The PR description is the public accepted-change report. This file also records 
 - Full-solver Criterion found no gain: -1.31% median throughput with a `-2.81%..+0.13%` confidence interval.
 - Reverted because the sampled code is too small to justify changing the sampler's ownership API.
 
+### Reuse part-type sorting storage after `3976c34`
+
+- Retained the temporary vector used to area-sort eligible part types inside `InsertionOptionCache`.
+- The probe improved Criterion throughput by 1.88% before insertion blueprints were flattened, but only 0.39% afterward with a `-1.39%..+2.13%` confidence interval.
+- Reverted because the gain did not survive against the new immediate parent.
+
 ### Reuse InsertionOptionCache with `SlotMap::clear`
 
 - Tried again immediately after `4ce5b00`.
