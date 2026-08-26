@@ -32,7 +32,11 @@ pub struct Problem<'a> {
 }
 
 impl<'a> Problem<'a> {
-    pub fn new(instance: &'a Instance, random_seed: Option<u64>) -> Self {
+    pub fn new(
+        instance: &'a Instance,
+        random_seed: Option<u64>,
+        leftover_valuation_power: f32,
+    ) -> Self {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let random = match random_seed {
@@ -57,12 +61,27 @@ impl<'a> Problem<'a> {
         for (sheettype, _) in instance.sheets() {
             match sheettype.fixed_first_cut_orientation() {
                 Some(orientation) => {
-                    let empty_layout = Layout::new(problem.next_layout_id(), sheettype, orientation);
+                    let empty_layout = Layout::new(
+                        problem.next_layout_id(),
+                        sheettype,
+                        orientation,
+                        leftover_valuation_power,
+                    );
                     problem.empty_layouts.push(empty_layout);
                 }
                 None => {
-                    let empty_layout_h = Layout::new(problem.next_layout_id(), sheettype, Orientation::Horizontal);
-                    let empty_layout_v = Layout::new(problem.next_layout_id(), sheettype, Orientation::Vertical);
+                    let empty_layout_h = Layout::new(
+                        problem.next_layout_id(),
+                        sheettype,
+                        Orientation::Horizontal,
+                        leftover_valuation_power,
+                    );
+                    let empty_layout_v = Layout::new(
+                        problem.next_layout_id(),
+                        sheettype,
+                        Orientation::Vertical,
+                        leftover_valuation_power,
+                    );
                     problem.empty_layouts.extend([empty_layout_h, empty_layout_v]);
                 }
             }

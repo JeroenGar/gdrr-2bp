@@ -242,11 +242,14 @@ impl<'a> Node<'a> {
         self.width >= part_size.width() && self.height >= part_size.height()
     }
 
-    pub fn calculate_cost(&self) -> Cost {
+    pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
         match (self.parttype, self.children.is_empty()) {
             (Some(_), true) => Cost::empty(), // part-node
             (None, false) => Cost::empty(), // structure-node
-            (None, true) => Cost::empty().add_leftover_value(leftover_valuator::valuate(self.area())), //leftover node
+            (None, true) => Cost::empty().add_leftover_value(leftover_valuator::valuate(
+                self.area(),
+                leftover_valuation_power,
+            )), //leftover node
             (Some(_), false) => panic!("Parttype set on node with children"),
         }
     }
@@ -280,6 +283,4 @@ impl<'a> Node<'a> {
         self.level
     }
 }
-
-
 

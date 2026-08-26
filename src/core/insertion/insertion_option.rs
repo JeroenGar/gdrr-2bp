@@ -35,6 +35,7 @@ impl<'a> InsertionOption<'a> {
 
     pub fn generate_blueprints(&self, problem: &Problem) -> Vec<InsertionBlueprint<'a>> {
         let layout = problem.get_layout(&self.layout_i);
+        let leftover_valuation_power = layout.leftover_valuation_power();
         let original_node = &layout.nodes()[self.original_node_i];
         let max_stages = layout.sheettype().max_stages();
         let node_blueprints = match self.rotation {
@@ -46,11 +47,13 @@ impl<'a> InsertionOption<'a> {
                 original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Rotated, max_stages, node_blueprints)
             }
         };
-        let original_cost = original_node.calculate_cost();
+        let original_cost = original_node.calculate_cost(leftover_valuation_power);
 
         //Convert the node blueprints into insertion blueprints
         node_blueprints.into_iter().map(|nbs| {
-            let new_cost = nbs.iter().map(|replacement| replacement.calculate_cost()).sum::<Cost>();
+            let new_cost = nbs.iter()
+                .map(|replacement| replacement.calculate_cost(leftover_valuation_power))
+                .sum::<Cost>();
             let insertion_cost = new_cost.subtract(&original_cost);
             InsertionBlueprint::new(self.layout_i, self.original_node_i, nbs, self.parttype, insertion_cost)
         }).collect_vec()

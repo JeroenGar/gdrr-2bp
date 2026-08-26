@@ -14,6 +14,7 @@ use super::{parttype::PartType, sheettype::SheetType};
 pub struct Layout<'a> {
     id : usize,
     sheettype: &'a SheetType,
+    leftover_valuation_power: f32,
     nodes: Arena<Node<'a>>,
     top_node_i: Index,
     cached_cost: Option<Cost>,
@@ -22,7 +23,12 @@ pub struct Layout<'a> {
 }
 
 impl<'a> Layout<'a> {
-    pub fn new(id: usize, sheettype: &'a SheetType, first_cut_orientation: Orientation) -> Self {
+    pub fn new(
+        id: usize,
+        sheettype: &'a SheetType,
+        first_cut_orientation: Orientation,
+        leftover_valuation_power: f32,
+    ) -> Self {
         let mut nodes = Arena::new();
         let top_node = Node::new(0, sheettype.width(), sheettype.height(), first_cut_orientation, None);
         let top_node_i = nodes.insert(top_node);
@@ -30,6 +36,7 @@ impl<'a> Layout<'a> {
         let mut layout = Self {
             id,
             sheettype,
+            leftover_valuation_power,
             nodes,
             top_node_i,
             cached_cost: None,
@@ -188,7 +195,7 @@ impl<'a> Layout<'a> {
     fn calculate_cost(&self) -> Cost {
         let material_cost = Cost::empty().add_material_cost(self.sheettype.value());
         self.nodes.iter()
-            .map(|(_, node)| node.calculate_cost())
+            .map(|(_, node)| node.calculate_cost(self.leftover_valuation_power))
             .fold(material_cost, |acc, cost| acc.add(&cost))
     }
 
@@ -380,6 +387,10 @@ impl<'a> Layout<'a> {
 
     pub fn sheettype(&self) -> &'a SheetType {
         self.sheettype
+    }
+
+    pub fn leftover_valuation_power(&self) -> f32 {
+        self.leftover_valuation_power
     }
 
     pub fn top_node_index(&self) -> &Index {

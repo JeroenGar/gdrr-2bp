@@ -48,15 +48,20 @@ impl NodeBlueprint {
         self.children.push(child);
     }
 
-    pub fn calculate_cost(&self) -> Cost {
+    pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
         if self.parttype_id.is_some() {
             return Cost::new(0, 0.0, 0, 0);
         } else if self.children.is_empty() {
-            return Cost::new(0, leftover_valuator::valuate(self.area()), 0, 0);
+            return Cost::new(
+                0,
+                leftover_valuator::valuate(self.area(), leftover_valuation_power),
+                0,
+                0,
+            );
         } else {
             let mut cost = Cost::new(0, 0.0, 0, 0);
             for child in &self.children {
-                cost = cost + child.calculate_cost();
+                cost = cost + child.calculate_cost(leftover_valuation_power);
             }
             return cost;
         }

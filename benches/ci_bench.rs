@@ -62,7 +62,7 @@ criterion_group! {
     config = Criterion::default()
         .sample_size(10)
         .warm_up_time(Duration::from_secs(1))
-        .measurement_time(Duration::from_secs(40))
+        .measurement_time(Duration::from_secs(3))
         .without_plots();
     targets = ci_bench
 }
