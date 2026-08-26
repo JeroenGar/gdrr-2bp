@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `ef0c65a` - take selected insertion blueprints with `swap_remove` because both candidate buffers are cleared immediately afterward. Criterion +4.12% versus `3976c34`; exact 50,000-iteration behavior; 60-second result 43,339 iter/s.
 - `3976c34` - replace recursive hot insertion-blueprint trees with four compact shapes and at most five stack-backed node descriptors. Criterion +6.05% versus `3579920`; exact 50,000-iteration behavior; 60-second result 41,403 iter/s.
 - `3579920` - specialize the default quadratic leftover valuation as direct multiplication. Criterion +3.31% versus `03f56ba`; exact 50,000-iteration behavior; 60-second result 39,236 iter/s.
 - `03f56ba` - replace the insertion-option SlotMap with dense Vec storage and retain the cache across recreate phases. Dense storage alone was flat; Vec capacity reuse supplied the measured gain. Criterion +1.08% versus `c766607`; exact 50,000-iteration behavior; 60-second result 38,510 iter/s.
