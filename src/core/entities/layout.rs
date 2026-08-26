@@ -1,10 +1,11 @@
 use slotmap::SlotMap;
 use itertools::Itertools;
-use crate::core::{cost::Cost, insertion::insertion_blueprint::InsertionBlueprint};
+use crate::core::{
+    cost::Cost,
+    insertion::insertion_blueprint::{InsertionBlueprint, InsertionNodeKind},
+};
 use crate::core::entities::node::{Node, NodeKey};
-use crate::core::insertion::node_blueprint::NodeBlueprint;
 use crate::core::orientation::Orientation;
-use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::assertions;
 
@@ -69,35 +70,52 @@ impl<'a> Layout<'a> {
         self.sorted_empty_nodes.clone_from(&snapshot.sorted_empty_nodes);
     }
 
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>, instance: &'a Instance, updates: &mut IOCUpdates) {
+    pub fn implement_insertion_blueprint(
+        &mut self,
+        blueprint: &InsertionBlueprint<'a>,
+        updates: &mut IOCUpdates,
+    ) {
         let original = *blueprint.original_node_index();
         let parent = self.nodes[original].parent().expect("original node has no parent");
+        let insertion_nodes = blueprint.nodes(&self.nodes[original]);
 
         //unregister the original node
         self.unregister_node(original, &mut None);
         updates.add_removed(original);
 
         //create and register the replacements
-        for replacement in blueprint.replacements() {
-            self.implement_node_blueprint(parent, replacement, instance, updates);
+        let mut inserted_nodes = [None; 5];
+        for (i, insertion_node) in insertion_nodes.into_iter().enumerate() {
+            let Some(insertion_node) = insertion_node else {
+                break;
+            };
+            let parent = match insertion_node.parent {
+                Some(parent_i) => {
+                    debug_assert!(parent_i < i);
+                    inserted_nodes[parent_i].expect("insertion node parent has not been created")
+                }
+                None => parent,
+            };
+            let parttype = match insertion_node.kind {
+                InsertionNodeKind::Part => Some(blueprint.parttype()),
+                InsertionNodeKind::Structure | InsertionNodeKind::Empty => None,
+            };
+            let is_empty = insertion_node.kind == InsertionNodeKind::Empty;
+            let node = Node::new(
+                self.nodes[parent].level() + 1,
+                insertion_node.width,
+                insertion_node.height,
+                insertion_node.next_cut_orient,
+                parttype,
+            );
+            let node_index = self.register_node(node, parent, is_empty);
+            updates.add_new(node_index);
+            inserted_nodes[i] = Some(node_index);
         }
 
         debug_assert!(assertions::children_nodes_fit(&parent, &self.nodes), "{:#?}", blueprint);
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
-    }
-
-    fn implement_node_blueprint(&mut self, parent: NodeKey, blueprint: &NodeBlueprint, instance: &'a Instance, updates: &mut IOCUpdates) {
-        let parttype = blueprint.parttype_id().map(|id| instance.get_parttype(id));
-
-        let node = Node::new(self.nodes[parent].level() + 1, blueprint.width(), blueprint.height(), blueprint.next_cut_orient(), parttype);
-        let node_index = self.register_node(node, parent, blueprint.is_empty());
-
-        updates.add_new(node_index);
-
-        for child_blueprint in blueprint.children() {
-            self.implement_node_blueprint(node_index, child_blueprint, instance, updates);
-        }
     }
 
     pub fn remove_node(&mut self, node_index: NodeKey) -> Vec<usize>{

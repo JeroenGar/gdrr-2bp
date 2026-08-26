@@ -1,10 +1,8 @@
 use std::fmt::Debug;
 
-use crate::core::cost::Cost;
 use crate::core::entities::node::NodeKey;
 use crate::core::entities::parttype::PartType;
-use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
-use crate::core::insertion::node_blueprint::NodeBlueprint;
+use crate::core::insertion::insertion_blueprint::{InsertionBlueprint, InsertionShape};
 use crate::core::layout_index::LayoutIndex;
 use crate::core::rotation::Rotation;
 use crate::optimization::problem::Problem;
@@ -41,42 +39,39 @@ impl<'a> InsertionOption<'a> {
         let leftover_valuation_power = layout.leftover_valuation_power();
         let original_node = &layout.nodes()[self.original_node_i];
         let max_stages = layout.sheettype().max_stages();
-        let original_cost = original_node.calculate_cost(leftover_valuation_power);
-        let mut append_blueprint = |replacements: Vec<NodeBlueprint>| {
-            let new_cost = replacements.iter()
-                .map(|replacement| replacement.calculate_cost(leftover_valuation_power))
-                .sum::<Cost>();
-            let insertion_cost = new_cost.subtract(&original_cost);
+        let mut append_blueprint = |shape: InsertionShape, rotation| {
             blueprints.push(InsertionBlueprint::new(
                 self.layout_i,
                 self.original_node_i,
-                replacements,
+                shape,
+                rotation,
                 self.parttype,
-                insertion_cost,
+                original_node,
+                leftover_valuation_power,
             ));
         };
 
         match self.rotation {
             Some(rotation) => {
-                original_node.for_each_insertion_replacement(
+                original_node.for_each_insertion_shape(
                     self.parttype,
                     rotation,
                     max_stages,
-                    &mut append_blueprint,
+                    &mut |shape| append_blueprint(shape, rotation),
                 );
             }
             None => {
-                original_node.for_each_insertion_replacement(
+                original_node.for_each_insertion_shape(
                     self.parttype,
                     Rotation::Default,
                     max_stages,
-                    &mut append_blueprint,
+                    &mut |shape| append_blueprint(shape, Rotation::Default),
                 );
-                original_node.for_each_insertion_replacement(
+                original_node.for_each_insertion_shape(
                     self.parttype,
                     Rotation::Rotated,
                     max_stages,
-                    &mut append_blueprint,
+                    &mut |shape| append_blueprint(shape, Rotation::Rotated),
                 );
             }
         }
