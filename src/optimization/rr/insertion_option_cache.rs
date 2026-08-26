@@ -55,6 +55,7 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
         if sorted_parttypes.is_empty() {
             return;
         }
+        let smallest_parttype_area = sorted_parttypes.last().unwrap().area();
 
         for (layout_i, layout) in layouts {
             let sorted_empty_nodes = layout.sorted_empty_nodes();
@@ -62,27 +63,24 @@ impl<'a : 'b, 'b> InsertionOptionCache<'a> {
 
             for empty_node_i in sorted_empty_nodes.iter() {
                 let empty_node = &layout.nodes()[*empty_node_i];
-                if sorted_parttypes[sorted_parttypes.len() - 1].area() > empty_node.area() {
+                let empty_node_area = empty_node.area();
+                if smallest_parttype_area > empty_node_area {
                     //The smallest parttype is larger than this node, there are no possible insertion options left.
                     break;
                 }
+                while empty_node_area < sorted_parttypes[starting_index].area() {
+                    starting_index += 1;
+                }
                 let option_range_start = self.option_node_keys.len();
-                for i in starting_index..sorted_parttypes.len() {
-                    let parttype = *sorted_parttypes.get(i).unwrap();
-
-                    if empty_node.area() < parttype.area() {
-                        //The empty node is smaller than this parttype. For the next (smaller) empty node, start searching from next index
-                        starting_index = i + 1;
-                    } else {
-                        if let Some(insertion_option) = InsertionOptionCache::generate_insertion_option(
-                            empty_node,
-                            parttype,
-                            *layout_i,
-                            *empty_node_i,
-                        ) {
-                            let option_key = self.insert_option(insertion_option);
-                            self.option_node_keys.push(option_key);
-                        }
+                for parttype in sorted_parttypes[starting_index..].iter().copied() {
+                    if let Some(insertion_option) = InsertionOptionCache::generate_insertion_option(
+                        empty_node,
+                        parttype,
+                        *layout_i,
+                        *empty_node_i,
+                    ) {
+                        let option_key = self.insert_option(insertion_option);
+                        self.option_node_keys.push(option_key);
                     }
                 }
                 if option_range_start != self.option_node_keys.len() {
