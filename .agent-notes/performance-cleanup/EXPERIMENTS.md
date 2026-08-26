@@ -1,0 +1,53 @@
+# Experiment ledger
+
+The PR description is the public accepted-change report. This file also records rejected probes so they are not repeated.
+
+## Current accepted head
+
+- `3579920` - specialize the default quadratic leftover valuation as direct multiplication. Criterion +3.31% versus `03f56ba`; exact 50,000-iteration behavior; 60-second result 39,236 iter/s.
+- `03f56ba` - replace the insertion-option SlotMap with dense Vec storage and retain the cache across recreate phases. Dense storage alone was flat; Vec capacity reuse supplied the measured gain. Criterion +1.08% versus `c766607`; exact 50,000-iteration behavior; 60-second result 38,510 iter/s.
+- `c766607` - skip the oversized prefix of area-sorted part types once per empty node. Criterion +1.2% versus `7cb9743`; exact 50,000-iteration behavior; 60-second result 38,255 iter/s.
+- `7cb9743` - reuse the removable-node selection buffer across ruin steps. Criterion +3.7% versus `4ce5b00`; exact 50,000-iteration behavior; 60-second result 35,574 iter/s.
+- `4ce5b00` - cache each insertion option's part-type vector position. Criterion +7.3% versus `4d726cf`; exact 50,000-iteration behavior; 60-second result 35,156 iter/s.
+- `4d726cf` - reuse live layout allocations during rejected-solution restore. Criterion +3.0% versus `ebc175b`; exact behavior; 33,830 iter/s.
+- `ebc175b` - replace per-node child vectors with intrusive typed SlotMap links. Criterion +11.3% versus `d052159`; exact behavior; 32,845 iter/s. Fixed 500,000-worker time 19.7s to 17.6s, restore 2.52s to 1.77s, Node clone 363ms to 88ms.
+- Earlier accepted changes and their measurements are documented in PR #6.
+
+## Rejected experiments
+
+### Unstable part-type sorting after `03f56ba`
+
+- Replaced the recreate cache's area sort with `sorted_unstable_by`.
+- Full-solver Criterion was 2.54% slower than the immediate parent, with the entire confidence interval below zero throughput (`-4.06%..-0.94%`).
+- Reverted immediately. The small slices favor the current stable sort implementation despite its visible profiler samples.
+
+### Unstable blueprint ranking after `03f56ba`
+
+- Replaced the existing-layout blueprint `sort_by` with `sort_unstable_by`.
+- Full-solver Criterion found no change: +0.63% median throughput with a `-0.96%..+2.36%` confidence interval.
+- Reverted because it changes equal-cost tie ordering without a measurable gain.
+
+### Callback-based removed-part reporting after `03f56ba`
+
+- Replaced the fresh removed-part ID vector with an allocation-free callback from `Layout` to `Problem`.
+- Full-solver Criterion found no change: -0.32% median throughput with a `-1.99%..+1.24%` confidence interval.
+- Reverted rather than add callback plumbing without a measurable gain.
+
+### Reuse InsertionOptionCache with `SlotMap::clear`
+
+- Tried again immediately after `4ce5b00`.
+- Kept the cache across recreate cycles and cleared its SlotMap and vectors in place.
+- Criterion warm-up estimated roughly 45 seconds for ten samples versus roughly 20 seconds for the parent, about a 2x regression. Collection was stopped early and the patch reverted.
+- This repeats an earlier failed SlotMap-clear/reuse attempt. Do not try it a third time without changing the representation or explaining why SlotMap high-water/free-list behavior no longer applies.
+
+### Restore allocation reuse, first comparison
+
+- The first parent worktree regenerated an ignored `Cargo.lock` and resolved different dependency versions. Its flat result was invalid.
+- Repeating both sides with the same dependency set showed a real +3.0% gain and produced accepted commit `4d726cf`.
+- Lesson: never trust a detached-worktree benchmark until dependency identity is verified.
+
+## Result interpretation
+
+- Intrusive child links were counterintuitively faster despite linked traversal because removing per-node Vec allocation and clone/drop work dominated traversal locality.
+- Direct cache positions gained much more than the linear-search leaf percentage suggested, likely because they also reduced surrounding mutation and cache costs.
+- Allocation reuse is not automatically faster. Retained capacity and free-list traversal can dominate saved allocator calls.
