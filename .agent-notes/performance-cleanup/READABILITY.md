@@ -23,8 +23,7 @@ These types contain derived state or cross-field invariants. Their accessors are
 Test separately; public-field conversion is appropriate only where the constructor currently accepts every representable state.
 
 - Accepted: `SheetType` is now a public-field record because its input values are independent and it has no cached derived fields.
-- `NodeBlueprint`: a transport tree whose public constructor and `add_child` already permit arbitrary contents.
-- `SendableLayout`: an output record; also remove the unused `convert_to_layout` method that only contains `todo!()`.
+- Accepted: `NodeBlueprint` and `SendableLayout` are public-field transport records; their trivial accessors, unused `add_child`, and panicking `convert_to_layout` API are gone.
 
 ## Accessor experiments
 
@@ -33,9 +32,11 @@ Test separately; public-field conversion is appropriate only where the construct
 - Rejected: returning hot `NodeKey` and `LayoutIndex` values by value regressed throughput by 1.02%; keep those accessors borrowed.
 - Remove repository-unused accessors only with an explicit public-API decision; they may still be external API.
 - Rename Java-style `get_*` methods only as a separate public-API cleanup.
+- Accepted: core `get_*` methods now use Rust noun names, manual quantity matches use `Option::map`, and repository-unused core accessors are removed.
 
 ## Core control-flow cleanup
 
 - Prefer `if let`, `let ... else`, `Option` combinators, and tail expressions when they remove branching ceremony in solver/domain code.
 - Keep mutation-heavy loops imperative; do not introduce iterator chains merely for style.
 - Benchmark changes in `gdrr`, `problem`, `layout`, insertion generation, and cache code. Cold snapshot/collector cleanups need correctness checks but no sustained performance run.
+- Accepted: solution creation uses a lazy cached-cost fallback, avoiding a discarded full-layout scan and improving adjacent Criterion throughput by 2.84%.
