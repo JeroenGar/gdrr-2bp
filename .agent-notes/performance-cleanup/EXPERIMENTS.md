@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `af3799d` - read each part type's insertion-option count directly from its existing bucket instead of constructing a mapped exact-size iterator only to query its length. Criterion found no measurable change at +0.49% versus `bb0d0ad` (`-0.22%..+1.25%`, `p = 0.21`); exact normalized seeded 50,000-iteration behavior; 60-second result 83,369 iter/s, with a complete 291-sheet solution at 98.464% usage and an incomplete 290-sheet state at 98.616% usage/99.810% included.
 - `780da4b` - maintain a flat vector of live layout keys and sample it directly during ruin instead of scanning `SlotMap::keys()` to resolve each of three random positions. Criterion +9.35% versus `47bfaba` (`+8.44%..+10.22%`, `p = 0.00`); equivalent seeded 50,000-iteration behavior because `swap_remove` changes key order while preserving uniform sampling; 60-second result 83,175 iter/s, with a complete 291-sheet solution at 98.464% usage and an incomplete 290-sheet state at 98.616% usage/99.810% included.
 - `9319abc` - store empty-layout indices as checked `u32` values, shrinking `LayoutIndex` from 16 to 8 bytes and every measured insertion-option carrier by 8 bytes. Criterion +2.20% versus `75f0f09` (`+1.69%..+2.70%`, `p = 0.00`); exact normalized seeded 50,000-iteration behavior; 60-second result 73,789 iter/s, with a complete 291-sheet solution at 98.464% usage.
 - `86ff49f` - resolve a node's optional empty sibling from its parent's last-child key instead of scanning the sibling list, while a debug oracle independently checks the old search. Full-solver Criterion found no measurable change at +0.73% versus `a0eb8fb` (`-0.06%..+1.57%`, `p = 0.10`); exact normalized seeded 50,000-iteration behavior; 60-second result 74,218 iter/s, with a complete 291-sheet solution at 98.464% usage and an incomplete 290-sheet solution at 98.520% usage/99.712% included.
@@ -32,6 +33,12 @@ The PR description is the public accepted-change report. This file also records 
 - Earlier accepted changes and their measurements are documented in PR #6.
 
 ## Rejected experiments
+
+### Hand-sort the three sampled ruin layouts after `af3799d`
+
+- Replaced the stable slice sort with a three-comparison stable adjacent-swap network specialized for the fixed three sampled layouts.
+- Full-solver Criterion trended 0.70% slower, with a `-1.48%..-0.02%` throughput interval and `p = 0.10`.
+- Reverted because eight branch-heavy lines do not improve on the standard-library sort.
 
 ### Fuse blueprint empty-index replacement after `d35edf4`
 
