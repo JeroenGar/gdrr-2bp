@@ -14,7 +14,6 @@ use gdrr_2bp::optimization::config::Config;
 use gdrr_2bp::optimization::gdrr::GDRR;
 use gdrr_2bp::optimization::sol_collectors::global_sol_collector::GlobalSolCollector;
 use gdrr_2bp::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
-use gdrr_2bp::timed_println;
 use serde::de::DeserializeOwned;
 
 fn read_json<T: DeserializeOwned>(path: &Path) -> io::Result<T> {
@@ -73,6 +72,7 @@ pub fn run(
     input_path: PathBuf,
     config_path: PathBuf,
     output_dir: Option<PathBuf>,
+    show_progress: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut json_instance: JsonInstance = read_json(&input_path)?;
     let config: Config = read_json(&config_path)?;
@@ -87,16 +87,22 @@ pub fn run(
         .map(|output_dir| prepare_output(&input_path, output_dir))
         .transpose()?;
 
-    timed_println!("Config file loaded: {}", serde_json::to_string(&config)?);
-
     let instance = parser::generate_instance(&mut json_instance, &config);
-    timed_println!(
-        "Starting optimization of {} parts of {} different types for {} seconds",
+    let limit = match (config.max_run_time, config.max_rr_iterations) {
+        (Some(seconds), Some(iterations)) => {
+            format!("time limit: {seconds}s | iteration limit: {iterations} per worker")
+        }
+        (Some(seconds), None) => format!("time limit: {seconds}s"),
+        (None, Some(iterations)) => format!("iteration limit: {iterations} per worker"),
+        (None, None) => "no limit".to_string(),
+    };
+    println!(
+        "Solving {} parts of {} types | workers: {} | {limit}",
         instance.total_part_qty(),
         instance.parts().len(),
-        config.max_run_time.unwrap_or(usize::MAX)
+        config.n_threads
     );
-    timed_println!("Press Ctrl+C to terminate manually");
+    println!("Press Ctrl+C to terminate early.");
 
     let instance = Arc::new(instance);
     let config = Arc::new(config);
@@ -120,10 +126,11 @@ pub fn run(
                 COST_COMPARATOR,
             );
             let mut gdrr = GDRR::new(&instance_thread, &config_thread, local_sol_collector);
-            gdrr.lahc();
+            gdrr.lahc()
         })?;
         gdrr_thread_handlers.push(handle);
     }
+    drop(tx_solution_report);
 
     let mut global_sol_collector = GlobalSolCollector::new(
         instance,
@@ -132,29 +139,30 @@ pub fn run(
         rx_solution_report,
         COST_COMPARATOR,
     );
-    global_sol_collector.monitor(gdrr_thread_handlers);
+    let run_time = global_sol_collector.monitor(gdrr_thread_handlers, show_progress);
 
     let solution = global_sol_collector
         .best_complete_solution()
         .or_else(|| global_sol_collector.best_incomplete_solution());
     let Some(solution) = solution else {
-        timed_println!("No solution available");
+        println!("No solution available");
         return Ok(());
     };
     if let Some((json_path, html_path)) = output_paths {
-        let json_solution = parser::generate_json_solution(&json_instance, solution, &config_path);
+        let json_solution =
+            parser::generate_json_solution(&json_instance, solution, &config_path, run_time);
 
         let mut writer = create_output(&json_path)?;
         serde_json::to_writer_pretty(&mut writer, &json_solution).map_err(|error| {
             io::Error::other(format!("could not write {}: {error}", json_path.display()))
         })?;
         writer.flush()?;
-        timed_println!("JSON solution written to {}", json_path.display());
+        println!("JSON solution written to {}", json_path.display());
 
         let mut writer = create_output(&html_path)?;
         writer.write_all(generate_solution(&json_solution).as_bytes())?;
         writer.flush()?;
-        timed_println!("HTML solution written to {}", html_path.display());
+        println!("HTML solution written to {}", html_path.display());
     }
 
     Ok(())

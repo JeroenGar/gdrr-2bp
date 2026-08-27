@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::time::Duration;
 
 use crate::core::entities::parttype::PartType;
 use itertools::Itertools;
@@ -69,6 +70,7 @@ pub fn generate_json_solution(
     json_instance: &JsonInstance,
     solution: &SendableSolution,
     config_path: &Path,
+    run_time: Duration,
 ) -> JsonSolution {
     let name = json_instance.name.clone();
     let sheettypes = json_instance.sheettypes.clone();
@@ -86,7 +88,7 @@ pub fn generate_json_solution(
         part_area_included_pct: (solution.cost().part_area_fraction_included() * 100.0) as f32,
         n_objects_used: solution.n_layouts(),
         material_cost: solution.cost().material_cost,
-        run_time_ms: crate::EPOCH.elapsed().as_millis() as usize,
+        run_time_ms: run_time.as_millis() as usize,
         config_path: config_path.to_string_lossy().into_owned(),
     };
 

@@ -2,15 +2,12 @@ use std::cmp::Ordering;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 
-use colored::*;
-
 use crate::core::cost::Cost;
 use crate::optimization::instance::Instance;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::optimization::solutions::solution_stats::SolutionStats;
-use crate::timed_thread_println;
 use crate::util::messages::{SolutionReportMessage, SyncMessage};
 
 /// Local solution collectors collect and compare solutions from GDRR threads.
@@ -90,12 +87,10 @@ impl<'a> LocalSolCollector<'a> {
             match message {
                 SyncMessage::SyncMatLimit(mat_limit) => {
                     if mat_limit < self.material_limit.unwrap_or(u64::MAX) {
-                        timed_thread_println!("Syncing lower matlimit: {}", mat_limit);
                         self.lower_matlimit(mat_limit);
                     }
                 }
                 SyncMessage::Terminate => {
-                    timed_thread_println!("{}", "Terminate received".red());
                     self.terminate = true;
                 }
             }

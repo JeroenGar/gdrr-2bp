@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::VecDeque;
 
-use colored::*;
 use ordered_float::NotNan;
 use rand::RngExt;
 use rand::prelude::SliceRandom;
@@ -18,8 +17,6 @@ use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
-use crate::timed_thread_println;
-use crate::util::util;
 use crate::util::{assertions, blink};
 
 /// Goal-Driven Ruin and Recreate algorithm
@@ -47,27 +44,8 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    pub fn lahc(&mut self) {
-        let stats = self.optimize_with_stats();
-        let elapsed_ms = stats.elapsed.as_millis() as f64;
-
-        timed_thread_println!(
-            "{}:\t ({:.2} iter/s, {:.2} acc/s, {} impr)",
-            "GDRR finished".bright_magenta(),
-            stats.n_iterations as f64 / elapsed_ms * 1000.0,
-            stats.n_accepted as f64 / elapsed_ms * 1000.0,
-            stats.n_improved
-        );
-        timed_thread_println!(
-            "{}:\t {}",
-            "Final incomp".bright_yellow(),
-            match self.local_sol_collector.best_incomplete_solution() {
-                Some(sol) => {
-                    util::solution_stats_string(sol)
-                }
-                None => "()".to_string(),
-            }
-        );
+    pub fn lahc(&mut self) -> OptimizationStats {
+        self.optimize_with_stats()
     }
 
     pub fn optimize(&mut self) {
@@ -448,9 +426,9 @@ impl<'a> GDRR<'a> {
     }
 }
 
-struct OptimizationStats {
-    elapsed: std::time::Duration,
-    n_iterations: usize,
-    n_accepted: usize,
-    n_improved: usize,
+pub struct OptimizationStats {
+    pub(crate) elapsed: std::time::Duration,
+    pub(crate) n_iterations: usize,
+    pub(crate) n_accepted: usize,
+    pub(crate) n_improved: usize,
 }
