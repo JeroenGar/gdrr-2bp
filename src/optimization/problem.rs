@@ -12,7 +12,6 @@ use crate::core::orientation::Orientation;
 use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
-use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
 
@@ -106,7 +105,7 @@ impl<'a> Problem<'a> {
                 );
                 blueprint_layout.implement_insertion_blueprint(blueprint, &mut cache_updates);
 
-                self.layout_has_changed(*index);
+                self.layouts.mark_changed(*index);
 
                 cache_updates
             }
@@ -135,7 +134,7 @@ impl<'a> Problem<'a> {
             LayoutIndex::Empty(_) => panic!("Cannot remove a node from an empty layout"),
             LayoutIndex::Existing(index) => index,
         };
-        self.layout_has_changed(index);
+        self.layouts.mark_changed(index);
 
         if node_index == *self.layouts.live[index].top_node_index() {
             return Some(self.unregister_layout(layout_index));
@@ -204,10 +203,6 @@ impl<'a> Problem<'a> {
         debug_assert!(assertions::problem_matches_solution(self, solution));
 
         self.reset_changed_layouts(solution.id());
-    }
-
-    pub fn restore_from_instance_solution(&mut self, _solution: &SendableSolution) {
-        todo!()
     }
 
     pub fn usage(&self) -> f64 {
@@ -287,10 +282,6 @@ impl<'a> Problem<'a> {
                 sheet_value
             }
         }
-    }
-
-    fn layout_has_changed(&mut self, layout_key: LayoutKey) {
-        self.layouts.mark_changed(layout_key);
     }
 
     fn reset_changed_layouts(&mut self, solution_id_changed_layouts: usize) {
