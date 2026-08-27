@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `8701ffa` - sample only the three layouts considered by ruin's low-usage bias instead of allocating and valuing every live layout. Criterion +3.86% versus `84d3cc2`; exact 50,000-iteration behavior; 60-second result 50,210 iter/s.
 - `1734ef7` - record each changed layout only once so rejected-solution restore cannot restore the same snapshot repeatedly after several mutations. Criterion +1.68% versus `8e2129e`; exact 50,000-iteration behavior; 60-second result 45,820 iter/s.
 - `8e2129e` - stream existing and eligible empty layouts directly into initial insertion-cache population. Criterion +3.64% versus `ef0c65a`; exact 50,000-iteration behavior; 60-second result 45,435 iter/s.
 - `ef0c65a` - take selected insertion blueprints with `swap_remove` because both candidate buffers are cleared immediately afterward. Criterion +4.12% versus `3976c34`; exact 50,000-iteration behavior; 60-second result 43,339 iter/s.
