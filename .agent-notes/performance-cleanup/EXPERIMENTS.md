@@ -26,6 +26,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Dense node SlotMap after `234f9b5`
+
+- Replaced each layout's `SlotMap<NodeKey, Node>` with `DenseSlotMap<NodeKey, Node>` while keeping the same typed stable keys.
+- Full-solver Criterion measured a 10.07% throughput regression, with the entire confidence interval below zero (`-10.53%..-9.57%`).
+- Rejected immediately. Dense iteration and cloning did not compensate for the extra indirection on frequent keyed node access.
+
 ### Binary part-type area cutoff after `9d0013d`
 
 - Replaced the monotonic linear scan over area-sorted part types with `partition_point` on the remaining suffix.
