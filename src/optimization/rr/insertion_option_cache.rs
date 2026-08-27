@@ -18,8 +18,8 @@ use crate::optimization::rr::cache_updates::IOCUpdates;
 pub struct InsertionOptionCache<'a> {
     options: Vec<CachedInsertionOption<'a>>,
     option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<usize>)>,
-    option_node_keys: Vec<usize>,
-    option_parttype_map: Vec<Vec<usize>>,
+    option_node_keys: Vec<u32>,
+    option_parttype_map: Vec<Vec<u32>>,
 }
 
 impl<'a: 'b, 'b> InsertionOptionCache<'a> {
@@ -159,7 +159,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         };
         let option_range = std::mem::take(&mut self.option_node_ranges[node_range_index].1);
         for node_position in option_range {
-            let option_index = self.option_node_keys[node_position];
+            let option_index = self.option_node_keys[node_position] as usize;
             self.remove_option(option_index);
         }
     }
@@ -176,46 +176,52 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         let parttype_position = self.option_parttype_map[parttype_id].len();
         let node_position = self.option_node_keys.len();
         let option_index = self.options.len();
+        let stored_option_index =
+            u32::try_from(option_index).expect("insertion option cache exceeds u32 indices");
         self.options.push(CachedInsertionOption {
             option: insertion_option,
             parttype_position,
             node_position,
         });
 
-        self.option_parttype_map[parttype_id].push(option_index);
-        self.option_node_keys.push(option_index);
+        self.option_parttype_map[parttype_id].push(stored_option_index);
+        self.option_node_keys.push(stored_option_index);
     }
 
     fn remove_option(&mut self, option_index: usize) {
         let parttype_id = self.options[option_index].option.parttype().id();
         let parttype_position = self.options[option_index].parttype_position;
         let node_position = self.options[option_index].node_position;
-        debug_assert_eq!(self.option_node_keys[node_position], option_index);
+        debug_assert!(u32::try_from(option_index).is_ok());
+        let stored_option_index = option_index as u32;
+        debug_assert_eq!(self.option_node_keys[node_position], stored_option_index);
 
         let parttype_options = &mut self.option_parttype_map[parttype_id];
-        debug_assert_eq!(parttype_options[parttype_position], option_index);
+        debug_assert_eq!(parttype_options[parttype_position], stored_option_index);
         let removed_index = parttype_options.swap_remove(parttype_position);
-        debug_assert_eq!(removed_index, option_index);
+        debug_assert_eq!(removed_index, stored_option_index);
         if let Some(&moved_index) = parttype_options.get(parttype_position) {
-            self.options[moved_index].parttype_position = parttype_position;
+            self.options[moved_index as usize].parttype_position = parttype_position;
         }
 
         let last_option_index = self.options.len() - 1;
+        debug_assert!(u32::try_from(last_option_index).is_ok());
+        let last_stored_option_index = last_option_index as u32;
         self.options.swap_remove(option_index);
         if option_index != last_option_index {
             let moved_option = &self.options[option_index];
             let moved_parttype_id = moved_option.option.parttype().id();
             debug_assert_eq!(
                 self.option_node_keys[moved_option.node_position],
-                last_option_index
+                last_stored_option_index
             );
             debug_assert_eq!(
                 self.option_parttype_map[moved_parttype_id][moved_option.parttype_position],
-                last_option_index,
+                last_stored_option_index,
             );
-            self.option_node_keys[moved_option.node_position] = option_index;
+            self.option_node_keys[moved_option.node_position] = stored_option_index;
             self.option_parttype_map[moved_parttype_id][moved_option.parttype_position] =
-                option_index;
+                stored_option_index;
         }
     }
 
@@ -253,7 +259,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
     ) -> impl ExactSizeIterator<Item = &InsertionOption<'a>> {
         self.option_parttype_map[parttype.id()]
             .iter()
-            .map(|key| &self.options[*key].option)
+            .map(|key| &self.options[*key as usize].option)
     }
 
     pub fn get_for_node(
@@ -269,7 +275,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
             .unwrap_or_default();
         self.option_node_keys[option_range]
             .iter()
-            .map(|key| &self.options[*key].option)
+            .map(|key| &self.options[*key as usize].option)
     }
 
     pub fn is_empty(&self) -> bool {
