@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Put unrestricted rotation first after `208fd7f`
+
+- Reordered `generate_insertion_option` so its unrestricted-rotation arm, used by every part in the representative workload, appears before the fixed-rotation arm without adding a helper or changing control flow.
+- Full-solver Criterion found no change: +0.18% median throughput with a `-0.46%..+0.88%` confidence interval and `p = 0.62`.
+- Reverted because source arm order did not improve the optimized branch layout.
+
 ### Specialize unrestricted-rotation option generation after `14168d1`
 
 - Detected instances where every part permits both rotations, selected that mode once per empty node, and monomorphized the inner option-generation loop without the per-part fixed-rotation match.
