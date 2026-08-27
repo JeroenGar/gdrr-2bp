@@ -27,11 +27,11 @@ impl Instance {
         }
     }
 
-    pub fn parts(&self) -> &Vec<(PartType, usize)> {
+    pub fn parts(&self) -> &[(PartType, usize)] {
         &self.parts
     }
 
-    pub fn sheets(&self) -> &Vec<(SheetType, usize)> {
+    pub fn sheets(&self) -> &[(SheetType, usize)] {
         &self.sheets
     }
 

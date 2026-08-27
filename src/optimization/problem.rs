@@ -197,9 +197,9 @@ impl<'a> Problem<'a> {
 
         self.layouts.restore_from_solution(solution);
 
-        self.parttype_qtys = solution.parttype_qtys().clone();
+        self.parttype_qtys = solution.parttype_qtys().to_vec();
         self.part_area_excluded = solution.cost().part_area_excluded;
-        self.sheettype_qtys = solution.sheettype_qtys().clone();
+        self.sheettype_qtys = solution.sheettype_qtys().to_vec();
 
         debug_assert!(assertions::problem_matches_solution(self, solution));
 
@@ -223,11 +223,11 @@ impl<'a> Problem<'a> {
         self.instance
     }
 
-    pub fn parttype_qtys(&self) -> &Vec<usize> {
+    pub fn parttype_qtys(&self) -> &[usize] {
         &self.parttype_qtys
     }
 
-    pub fn sheettype_qtys(&self) -> &Vec<usize> {
+    pub fn sheettype_qtys(&self) -> &[usize] {
         &self.sheettype_qtys
     }
 
@@ -330,11 +330,11 @@ impl<'a> Problem<'a> {
         self.solution_id_counter
     }
 
-    pub fn empty_layouts(&self) -> &Vec<Layout<'a>> {
+    pub fn empty_layouts(&self) -> &[Layout<'a>] {
         &self.empty_layouts
     }
 
-    pub fn changed_layouts(&self) -> &Vec<LayoutKey> {
+    pub fn changed_layouts(&self) -> &[LayoutKey] {
         &self.layouts.changed
     }
 

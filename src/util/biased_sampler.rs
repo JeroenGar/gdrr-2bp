@@ -66,7 +66,7 @@ impl<T, V, const N: usize> BiasedSampler<T, V, N> where V: Ord {
         return Some(&samples[N - 1].unwrap().0);
     }
 
-    pub fn entries(&self) -> &Vec<(T, V)> {
+    pub fn entries(&self) -> &[(T, V)] {
         &self.entries
     }
 

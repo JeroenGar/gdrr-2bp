@@ -279,7 +279,7 @@ impl<'a> Layout<'a> {
         self.calculate_usage()
     }
 
-    pub fn sorted_empty_nodes(&self) -> &Vec<NodeKey> {
+    pub fn sorted_empty_nodes(&self) -> &[NodeKey] {
         debug_assert!(assertions::node_arena_valid(&self.nodes.arena, &self.nodes.top_node), "{:#?}", self.nodes.empty_nodes_by_area.iter().map(|n| &self.nodes.arena[*n]).collect_vec());
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes.arena, &self.nodes.empty_nodes_by_area), "{:#?}", self.nodes.empty_nodes_by_area.iter().map(|n| &self.nodes.arena[*n]).collect_vec());
         &self.nodes.empty_nodes_by_area

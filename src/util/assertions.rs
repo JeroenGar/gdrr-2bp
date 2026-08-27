@@ -83,7 +83,7 @@ pub fn children_node_blueprints_fit(node_bp: &NodeBlueprint) -> bool {
     }
 }
 
-pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool {
+pub fn all_weak_references_alive<T>(values: &[Weak<T>]) -> bool {
     for value in values {
         if value.upgrade().is_none() {
             return false;
@@ -138,7 +138,7 @@ pub fn nodes_match(n_i_1: &NodeKey, n_i_2: &NodeKey, nodes_1 : &SlotMap<NodeKey,
     return true;
 }
 
-pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &InsertionOptionCache<'a>, parttypes: &Vec<&'a PartType>) -> bool {
+pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &InsertionOptionCache<'a>, parttypes: &[&'a PartType]) -> bool {
     //Iterate all layouts which should be considered during this recreate iteration
     let layouts_to_consider = || problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
         .chain(problem.empty_layouts().iter().enumerate()
@@ -204,7 +204,7 @@ fn same_multiset<T: PartialEq>(left: &[T], right: &[T]) -> bool {
     })
 }
 
-pub fn cached_sorted_empty_nodes_correct(nodes: &SlotMap<NodeKey, Node>, cached_sorted_empty_nodes: &Vec<NodeKey>) -> bool {
+pub fn cached_sorted_empty_nodes_correct(nodes: &SlotMap<NodeKey, Node>, cached_sorted_empty_nodes: &[NodeKey]) -> bool {
     let all_empty_nodes = nodes.iter().filter(|(_i,n)| n.is_empty()).map(|(i,_n)| i).collect_vec();
 
     if all_empty_nodes.len() != cached_sorted_empty_nodes.len() {
@@ -252,7 +252,7 @@ pub fn cached_removable_nodes_correct(nodes: &SlotMap<NodeKey, Node>, removable_
     })
 }
 
-pub fn instance_parttypes_and_sheettypes_ids_correct(parttypes: &Vec<(PartType, usize)>, sheettypes: &Vec<(SheetType, usize)>) -> bool {
+pub fn instance_parttypes_and_sheettypes_ids_correct(parttypes: &[(PartType, usize)], sheettypes: &[(SheetType, usize)]) -> bool {
     parttypes.iter().enumerate().all(|(i, (p, _qty))| {
         p.id() == i
     }) && sheettypes.iter().enumerate().all(|(i, (s, _qty))| {

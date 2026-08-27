@@ -37,7 +37,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
     pub fn update_cache(
         &mut self,
         cache_updates: &IOCUpdates,
-        parttypes: &Vec<&'a PartType>,
+        parttypes: &[&'a PartType],
         problem: &Problem,
     ) {
         let layout_i = cache_updates.layout_index();

@@ -99,7 +99,7 @@ impl NodeBlueprint {
         self.height
     }
 
-    pub fn children(&self) -> &Vec<NodeBlueprint> {
+    pub fn children(&self) -> &[NodeBlueprint] {
         &self.children
     }
 

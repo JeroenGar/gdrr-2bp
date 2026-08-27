@@ -43,8 +43,8 @@ impl<'a> ProblemSolution<'a> {
 
         prev_solution.cost = cost;
         prev_solution.id = id;
-        prev_solution.parttype_qtys = problem.parttype_qtys().clone();
-        prev_solution.sheettype_qtys = problem.sheettype_qtys().clone();
+        prev_solution.parttype_qtys = problem.parttype_qtys().to_vec();
+        prev_solution.sheettype_qtys = problem.sheettype_qtys().to_vec();
         prev_solution.usage = problem.usage();
         prev_solution
     }
@@ -56,8 +56,8 @@ impl<'a> ProblemSolution<'a> {
             layouts.insert(layout_key, Rc::new(layout.clone()));
         }
 
-        let parttype_qtys = problem.parttype_qtys().clone();
-        let sheettype_qtys = problem.sheettype_qtys().clone();
+        let parttype_qtys = problem.parttype_qtys().to_vec();
+        let sheettype_qtys = problem.sheettype_qtys().to_vec();
 
         let usage = problem.usage();
 
@@ -91,10 +91,10 @@ impl<'a> Solution for ProblemSolution<'a> {
     fn n_layouts(&self) -> usize {
         self.layouts.len()
     }
-    fn parttype_qtys(&self) -> &Vec<usize> {
+    fn parttype_qtys(&self) -> &[usize] {
         &self.parttype_qtys
     }
-    fn sheettype_qtys(&self) -> &Vec<usize> {
+    fn sheettype_qtys(&self) -> &[usize] {
         &self.sheettype_qtys
     }
     fn usage(&self) -> f64 {
