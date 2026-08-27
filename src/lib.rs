@@ -16,4 +16,3 @@ pub const COST_COMPARATOR: fn(&Cost, &Cost) -> Ordering = |a: &Cost, b: &Cost| {
         other => other
     }
 };
-pub const DETERMINISTIC_MODE: bool = false; //fixes seed

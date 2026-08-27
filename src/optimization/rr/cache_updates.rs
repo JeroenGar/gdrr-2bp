@@ -1,41 +1,37 @@
 use std::fmt::Debug;
-use generational_arena::Index;
+use crate::core::entities::node::NodeKey;
 use crate::core::layout_index::LayoutIndex;
 
 //Insertion Option Cache Updates
 pub struct IOCUpdates {
-    removed_nodes: Vec<Index>,
-    new_nodes: Vec<Index>,
+    removed_node: NodeKey,
+    new_empty_nodes: [Option<NodeKey>; 2],
     layout_i: LayoutIndex,
 }
 
 impl IOCUpdates {
-    pub fn new(layout_i: LayoutIndex) -> Self {
+    pub fn new(layout_i: LayoutIndex, removed_node: NodeKey) -> Self {
         IOCUpdates {
-            removed_nodes: vec![],
-            new_nodes: vec![],
+            removed_node,
+            new_empty_nodes: [None; 2],
             layout_i,
         }
     }
 
-    pub fn add_removed(&mut self, item: Index) {
-        self.removed_nodes.push(item);
+    pub fn add_new_empty(&mut self, item: NodeKey) {
+        let slot = self.new_empty_nodes
+            .iter_mut()
+            .find(|node| node.is_none())
+            .expect("insertion creates more than two empty nodes");
+        *slot = Some(item);
     }
 
-    pub fn add_new(&mut self, item: Index) {
-        self.new_nodes.push(item);
+    pub fn removed_node(&self) -> &NodeKey {
+        &self.removed_node
     }
 
-    pub fn extend_new(&mut self, items: Vec<Index>) {
-        self.new_nodes.extend(items);
-    }
-
-    pub fn removed_nodes(&self) -> &Vec<Index> {
-        &self.removed_nodes
-    }
-
-    pub fn new_nodes(&self) -> &Vec<Index> {
-        &self.new_nodes
+    pub fn new_empty_nodes(&self) -> impl Iterator<Item = &NodeKey> {
+        self.new_empty_nodes.iter().flatten()
     }
 
     pub fn layout_index(&self) -> &LayoutIndex {
@@ -47,8 +43,8 @@ impl IOCUpdates {
 impl Debug for IOCUpdates {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "CacheUpdates {{ invalidated: {:#?}, new_entries: {:#?} }}",
-               &self.removed_nodes,
-               &self.new_nodes
+               self.removed_node,
+               self.new_empty_nodes
         )
     }
 }

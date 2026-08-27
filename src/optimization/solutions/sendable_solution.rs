@@ -19,13 +19,13 @@ pub struct SendableSolution {
 
 impl SendableSolution {
     pub fn new(instance: Arc<Instance>, problem_solution: &ProblemSolution) -> SendableSolution {
-        debug_assert!(instance.as_ref() as *const _ == problem_solution.instance() as *const _);
+        debug_assert!(std::ptr::eq(instance.as_ref(), problem_solution.instance()));
 
         let layouts = problem_solution.layouts().iter().map(|(_id, l)| SendableLayout::new(l)).collect();
         let cost = problem_solution.cost().clone();
         let usage = problem_solution.usage();
-        let parttype_qtys = problem_solution.parttype_qtys().clone();
-        let sheettype_qtys = problem_solution.sheettype_qtys().clone();
+        let parttype_qtys = problem_solution.parttype_qtys().to_vec();
+        let sheettype_qtys = problem_solution.sheettype_qtys().to_vec();
 
         Self {
             instance,
@@ -37,7 +37,7 @@ impl SendableSolution {
         }
     }
 
-    pub fn layouts(&self) -> &Vec<SendableLayout> {
+    pub fn layouts(&self) -> &[SendableLayout] {
         &self.layouts
     }
 
@@ -54,10 +54,10 @@ impl Solution for SendableSolution {
     fn n_layouts(&self) -> usize {
         self.layouts.len()
     }
-    fn parttype_qtys(&self) -> &Vec<usize> {
+    fn parttype_qtys(&self) -> &[usize] {
         &self.parttype_qtys
     }
-    fn sheettype_qtys(&self) -> &Vec<usize> {
+    fn sheettype_qtys(&self) -> &[usize] {
         &self.sheettype_qtys
     }
     fn usage(&self) -> f64 {

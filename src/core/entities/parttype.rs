@@ -1,4 +1,3 @@
-use std::hash::{Hash, Hasher};
 use crate::core::rotation::Rotation;
 
 use crate::core::size::Size;
@@ -37,8 +36,8 @@ impl PartType {
         self.height
     }
 
-    pub fn fixed_rotation(&self) -> &Option<Rotation> {
-        &self.fixed_rotation
+    pub fn fixed_rotation(&self) -> Option<Rotation> {
+        self.fixed_rotation
     }
 
     pub fn size(&self) -> &Size {
@@ -51,12 +50,6 @@ impl PartType {
 
     pub fn area(&self) -> u64 {
         self.size.area()
-    }
-}
-
-impl Hash for PartType {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
     }
 }
 

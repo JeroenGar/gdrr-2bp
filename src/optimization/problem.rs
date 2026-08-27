@@ -1,17 +1,17 @@
-use generational_arena::{Arena, Index};
+use rand::prelude::IndexedRandom;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
+use slotmap::SlotMap;
 
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
+use crate::core::entities::node::NodeKey;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
-use crate::core::layout_index::LayoutIndex;
+use crate::core::layout_index::{LayoutIndex, LayoutKey};
 use crate::core::orientation::Orientation;
-use crate::DETERMINISTIC_MODE;
 use crate::optimization::instance::Instance;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
-use crate::optimization::solutions::sendable_solution::SendableSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::assertions;
 
@@ -22,32 +22,37 @@ use crate::util::assertions;
 pub struct Problem<'a> {
     instance: &'a Instance,
     parttype_qtys: Vec<usize>,
+    part_area_excluded: u64,
     sheettype_qtys: Vec<usize>,
-    layouts: Arena<Layout<'a>>,
+    layouts: ProblemLayouts<'a>,
     empty_layouts: Vec<Layout<'a>>,
     rng: SmallRng,
-    changed_layouts: Vec<usize>,
     solution_id_changed_layouts: Option<usize>,
     solution_id_counter: usize,
     layout_id_counter: usize,
 }
 
 impl<'a> Problem<'a> {
-    pub fn new(instance: &'a Instance) -> Self {
+    pub fn new(
+        instance: &'a Instance,
+        random_seed: Option<u64>,
+        leftover_valuation_power: f32,
+    ) -> Self {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
+        let part_area_excluded = instance.total_part_area();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
-        let random = match DETERMINISTIC_MODE {
-            true => SmallRng::seed_from_u64(0),
-            false => SmallRng::from_rng(&mut rand::rng())
+        let random = match random_seed {
+            Some(seed) => SmallRng::seed_from_u64(seed),
+            None => SmallRng::from_rng(&mut rand::rng())
         };
 
         let mut problem = Problem {
             instance,
             parttype_qtys,
+            part_area_excluded,
             sheettype_qtys,
-            layouts : Arena::new(),
+            layouts : ProblemLayouts::new(),
             empty_layouts : Vec::new(),
-            changed_layouts : Vec::new(),
             solution_id_changed_layouts : None,
             rng: random,
             solution_id_counter : 0,
@@ -56,14 +61,29 @@ impl<'a> Problem<'a> {
 
         //Initiate the empty layouts
         for (sheettype, _) in instance.sheets() {
-            match sheettype.fixed_first_cut_orientation() {
+            match sheettype.fixed_first_cut_orientation {
                 Some(orientation) => {
-                    let empty_layout = Layout::new(problem.next_layout_id(), sheettype, orientation);
+                    let empty_layout = Layout::new(
+                        problem.next_layout_id(),
+                        sheettype,
+                        orientation,
+                        leftover_valuation_power,
+                    );
                     problem.empty_layouts.push(empty_layout);
                 }
                 None => {
-                    let empty_layout_h = Layout::new(problem.next_layout_id(), sheettype, Orientation::Horizontal);
-                    let empty_layout_v = Layout::new(problem.next_layout_id(), sheettype, Orientation::Vertical);
+                    let empty_layout_h = Layout::new(
+                        problem.next_layout_id(),
+                        sheettype,
+                        Orientation::Horizontal,
+                        leftover_valuation_power,
+                    );
+                    let empty_layout_v = Layout::new(
+                        problem.next_layout_id(),
+                        sheettype,
+                        Orientation::Vertical,
+                        leftover_valuation_power,
+                    );
                     problem.empty_layouts.extend([empty_layout_h, empty_layout_v]);
                 }
             }
@@ -78,79 +98,76 @@ impl<'a> Problem<'a> {
 
         match blueprint.layout_index() {
             LayoutIndex::Existing(index) => {
-                let blueprint_layout = &mut self.layouts[*index];
-                let mut cache_updates = IOCUpdates::new(*blueprint.layout_index());
-                blueprint_layout.implement_insertion_blueprint(blueprint, self.instance, &mut cache_updates);
+                let blueprint_layout = &mut self.layouts.live[*index];
+                let mut cache_updates = IOCUpdates::new(
+                    *blueprint.layout_index(),
+                    *blueprint.original_node_index(),
+                );
+                blueprint_layout.implement_insertion_blueprint(blueprint, &mut cache_updates);
 
-                let blueprint_layout_id = blueprint_layout.id();
-                self.layout_has_changed(blueprint_layout_id);
+                self.layouts.mark_changed(*index);
 
                 cache_updates
             }
             LayoutIndex::Empty(index) => {
                 let next_layout_id = self.next_layout_id();
-                let empty_layout = &self.empty_layouts[*index];
+                let empty_layout = &self.empty_layouts[*index as usize];
 
                 //Create a copy of the empty layout and register it
                 let empty_layout_clone = empty_layout.clone_with_id(next_layout_id);
                 let clone_index = self.register_layout(empty_layout_clone);
 
                 //Implement the blueprint
-                let mut cache_updates = IOCUpdates::new(LayoutIndex::Existing(clone_index));
-                self.layouts[clone_index].implement_insertion_blueprint(blueprint, self.instance, &mut cache_updates);
+                let mut cache_updates = IOCUpdates::new(
+                    LayoutIndex::Existing(clone_index),
+                    *blueprint.original_node_index(),
+                );
+                self.layouts.live[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates);
 
                 cache_updates
             }
         }
     }
 
-    pub fn remove_node(&mut self, node_index: Index, layout_index: LayoutIndex) -> Option<Layout<'a>> {
-        self.layout_has_changed(self.get_layout(&layout_index).id());
-        match layout_index {
+    pub fn remove_node(&mut self, node_index: NodeKey, layout_index: LayoutIndex) -> Option<u64> {
+        let index = match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot remove a node from an empty layout"),
-            LayoutIndex::Existing(index) => {
-                let layout = &mut self.layouts[index];
-                match node_index == *layout.top_node_index() {
-                    true => {
-                        //Remove the entire layout
-                        Some(self.unregister_layout(layout_index))
-                    }
-                    false => {
-                        let removed_part_ids = layout.remove_node(node_index);
-                        for p_id in removed_part_ids {
-                            self.unregister_part(p_id, 1);
-                        }
+            LayoutIndex::Existing(index) => index,
+        };
+        self.layouts.mark_changed(index);
 
-                        if self.get_layout(&layout_index).is_empty() {
-                            Some(self.unregister_layout(layout_index))
-                        }
-                        else {
-                            None
-                        }
-                    }
-                }
-            }
+        if node_index == *self.layouts.live[index].top_node_index() {
+            return Some(self.unregister_layout(layout_index));
+        }
+
+        let removed_part_ids = self.layouts.live[index].remove_node(node_index);
+        for p_id in removed_part_ids {
+            self.unregister_part(p_id, 1);
+        }
+
+        if self.layouts.live[index].is_empty() {
+            Some(self.unregister_layout(layout_index))
+        } else {
+            None
         }
     }
 
     pub fn cost(&mut self) -> Cost {
-        let mut cost = self.layouts.iter_mut()
+        let mut cost = self.layouts.live.iter_mut()
             .fold(Cost::empty(), |acc, (_,l)| acc + l.cost(false));
 
-        cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
-            .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
+        cost.part_area_excluded = self.part_area_excluded();
 
         cost.part_area_included = self.instance.total_part_area() - cost.part_area_excluded;
 
         cost
     }
 
-    pub fn create_solution(&mut self, old_solution: &Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
-        //TODO: implement cached cost for problem
-
-        debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
+    pub fn create_solution(&mut self, old_solution: Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
+        debug_assert!(cached_cost.as_ref().is_none_or(|cost| cost == &self.cost()));
+        self.layouts.discard_detached();
         let id = self.next_solution_id();
-        let cost = cached_cost.unwrap_or(self.cost());
+        let cost = cached_cost.unwrap_or_else(|| self.cost());
         let solution = match old_solution {
             Some(old_solution) => {
                 debug_assert!(old_solution.id() == self.solution_id_changed_layouts.unwrap());
@@ -169,74 +186,25 @@ impl<'a> Problem<'a> {
     }
 
     pub fn restore_from_problem_solution(&mut self, solution: &ProblemSolution<'a>) {
-        match self.solution_id_changed_layouts == Some(solution.id()) {
-            true => {
-                //A partial restore is possible.
+        assert_eq!(
+            self.solution_id_changed_layouts,
+            Some(solution.id()),
+            "can only restore the latest problem solution",
+        );
 
-                //Check all the layouts in the problem and check if they are either modified, unmodified or absent in the solution.
-                let mut present_layout_ids = vec![];
-                let mut changed_layout_indices = vec![];
-                let mut absent_layout_indices = vec![];
+        self.layouts.restore_from_solution(solution);
 
-                for (index,layout) in self.layouts.iter() {
-                    //For all layouts in the problem, check which ones occur in the solution
-                    let layout_id = layout.id();
-                    match solution.layouts().contains_key(&layout_id) {
-                        true => {
-                            //layout is present in the solution
-                            if self.changed_layouts.contains(&layout_id) {
-                                changed_layout_indices.push(index)
-                            }
-                            present_layout_ids.push(layout_id);
-                        }
-                        false => {
-                            absent_layout_indices.push(index);
-                        }
-                    }
-                }
-                for i in absent_layout_indices{
-                    self.layouts.remove(i);
-                }
-                for i in changed_layout_indices {
-                    let layout = self.layouts.remove(i).expect("Layout should be present");
-                    let copy = solution.layouts().get(&layout.id()).unwrap().as_ref().clone();
-                    self.layouts.insert(copy);
-                }
-
-                //Some layouts are present in the solution, but not in the problem
-                for id in solution.layouts().keys() {
-                    if !present_layout_ids.contains(id) {
-                        let copy = solution.layouts().get(id).unwrap().as_ref().clone();
-                        self.layouts.insert(copy);
-                    }
-                }
-            }
-            false => {
-                //The id of the solution does not match unchanged_layouts_solution_id, a partial restore is not possible
-                self.layouts.clear();
-                for (_, layout) in solution.layouts().iter() {
-                    let copy = layout.as_ref().clone();
-                    self.layouts.insert(copy);
-                }
-            }
-        }
-
-        self.parttype_qtys = solution.parttype_qtys().clone();
-        self.sheettype_qtys = solution.sheettype_qtys().clone();
+        self.parttype_qtys = solution.parttype_qtys().to_vec();
+        self.part_area_excluded = solution.cost().part_area_excluded;
+        self.sheettype_qtys = solution.sheettype_qtys().to_vec();
 
         debug_assert!(assertions::problem_matches_solution(self, solution));
 
         self.reset_changed_layouts(solution.id());
     }
 
-    pub fn restore_from_instance_solution(&mut self, _solution: &SendableSolution) {
-        todo!()
-    }
-
     pub fn usage(&self) -> f64 {
-        let total_included_part_area = self.instance().parts().iter().map(
-            |(parttype, qty)| { parttype.area() * (*qty - self.parttype_qtys.get(parttype.id()).unwrap()) as u64 }
-        ).sum::<u64>();
+        let total_included_part_area = self.instance.total_part_area() - self.part_area_excluded();
         let total_used_sheet_area = self.layouts().iter().map(
             |(_, layout)| { layout.sheettype().area() }
         ).sum::<u64>();
@@ -248,11 +216,11 @@ impl<'a> Problem<'a> {
         self.instance
     }
 
-    pub fn parttype_qtys(&self) -> &Vec<usize> {
+    pub fn parttype_qtys(&self) -> &[usize] {
         &self.parttype_qtys
     }
 
-    pub fn sheettype_qtys(&self) -> &Vec<usize> {
+    pub fn sheettype_qtys(&self) -> &[usize] {
         &self.sheettype_qtys
     }
 
@@ -260,61 +228,71 @@ impl<'a> Problem<'a> {
         &mut self.rng
     }
 
-    pub fn layouts(&self) -> &Arena<Layout<'a>> {
-        &self.layouts
+    pub fn choose_removable_node(&mut self, layout_index: LayoutKey) -> NodeKey {
+        let layouts = &self.layouts.live;
+        *layouts[layout_index]
+            .removable_nodes()
+            .choose(&mut self.rng)
+            .expect("layout has no removable node")
     }
 
-    pub fn layouts_mut(&mut self) -> &mut Arena<Layout<'a>> {
-        &mut self.layouts
+    pub fn layouts(&self) -> &SlotMap<LayoutKey, Layout<'a>> {
+        &self.layouts.live
     }
 
-    pub fn get_layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
+    pub fn layout_keys(&self) -> &[LayoutKey] {
+        self.layouts.keys()
+    }
+
+    pub fn layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
         match layout_index{
-            LayoutIndex::Existing(index) => self.layouts.get(*index).unwrap(),
-            LayoutIndex::Empty(index) => self.empty_layouts.get(*index).unwrap(),
+            LayoutIndex::Existing(index) => &self.layouts.live[*index],
+            LayoutIndex::Empty(index) => &self.empty_layouts[*index as usize],
         }
     }
 
-    pub fn register_layout(&mut self, layout: Layout<'a>) -> Index {
-        self.register_sheet(layout.sheettype().id(), 1);
-        layout.get_included_parts().iter().for_each(
-            |p_id| {
-                self.register_part(*p_id, 1);
-            });
-        self.layout_has_changed(layout.id());
+    pub fn register_layout(&mut self, layout: Layout<'a>) -> LayoutKey {
+        self.register_sheet(layout.sheettype().id, 1);
+        for parttype_id in layout.included_part_ids() {
+            self.register_part(parttype_id, 1);
+        }
         self.layouts.insert(layout)
     }
 
-    pub fn unregister_layout(&mut self, layout_index: LayoutIndex) -> Layout<'a> {
+    pub fn unregister_layout(&mut self, layout_index: LayoutIndex) -> u64 {
         match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot unregister empty layout"),
             LayoutIndex::Existing(li) => {
-                let layout = self.layouts.remove(li).expect("Layout not found");
+                let layout = &self.layouts.live[li];
+                let sheettype_id = layout.sheettype().id;
+                let sheet_value = layout.sheettype().value;
+                let included_parts = layout.included_part_ids();
+                self.layouts.detach(li);
 
-                self.unregister_sheet(layout.sheettype().id(), 1);
-                layout.get_included_parts().iter().for_each(
-                    |p_id| { self.unregister_part(*p_id, 1) });
-                layout
+                self.unregister_sheet(sheettype_id, 1);
+                for parttype_id in included_parts {
+                    self.unregister_part(parttype_id, 1);
+                }
+                sheet_value
             }
         }
     }
 
-    fn layout_has_changed(&mut self, l_id: usize) {
-        self.changed_layouts.push(l_id);
-    }
-
     fn reset_changed_layouts(&mut self, solution_id_changed_layouts: usize) {
-        self.changed_layouts.clear();
+        self.layouts.reset_changes();
         self.solution_id_changed_layouts = Some(solution_id_changed_layouts);
     }
 
     fn register_part(&mut self, parttype_id: usize, qty: usize) {
+        debug_assert!(self.parttype_qtys[parttype_id] >= qty);
         self.parttype_qtys[parttype_id] -= qty;
+        self.part_area_excluded -= self.instance.parttype(parttype_id).area() * qty as u64;
     }
 
     fn unregister_part(&mut self, parttype_id: usize, qty: usize) {
-        debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.get_parttype_qty(parttype_id).unwrap());
+        debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.parttype_qty(parttype_id).unwrap());
         self.parttype_qtys[parttype_id] += qty;
+        self.part_area_excluded += self.instance.parttype(parttype_id).area() * qty as u64;
     }
 
     fn register_sheet(&mut self, sheettype_id: usize, qty: usize) {
@@ -323,7 +301,7 @@ impl<'a> Problem<'a> {
     }
 
     fn unregister_sheet(&mut self, sheettype_id: usize, qty: usize) {
-        debug_assert!(self.sheettype_qtys[sheettype_id] + qty <= self.instance.get_sheettype_qty(sheettype_id).unwrap());
+        debug_assert!(self.sheettype_qtys[sheettype_id] + qty <= self.instance.sheettype_qty(sheettype_id).unwrap());
         self.sheettype_qtys[sheettype_id] += qty;
     }
 
@@ -337,12 +315,115 @@ impl<'a> Problem<'a> {
         self.solution_id_counter
     }
 
-    pub fn empty_layouts(&self) -> &Vec<Layout<'a>> {
+    pub fn empty_layouts(&self) -> &[Layout<'a>] {
         &self.empty_layouts
     }
 
-    pub fn changed_layouts(&self) -> &Vec<usize> {
-        &self.changed_layouts
+    pub fn changed_layouts(&self) -> &[LayoutKey] {
+        &self.layouts.changed
+    }
+
+    fn part_area_excluded(&self) -> u64 {
+        debug_assert_eq!(
+            self.part_area_excluded,
+            self.parttype_qtys.iter().enumerate().fold(0, |area, (id, qty)| {
+                area + self.instance.parttype(id).area() * *qty as u64
+            }),
+        );
+        self.part_area_excluded
+    }
+}
+
+/// Owns live layout membership and the bookkeeping needed to sample, snapshot, and restore it.
+///
+/// All insertions, detachments, and restores pass through this type so live keys, detached layouts,
+/// and the changed-layout set stay synchronized with the layout arena.
+struct ProblemLayouts<'a> {
+    live: SlotMap<LayoutKey, Layout<'a>>,
+    keys: Vec<LayoutKey>,
+    detached: Vec<(LayoutKey, Layout<'a>)>,
+    changed: Vec<LayoutKey>,
+}
+
+impl<'a> ProblemLayouts<'a> {
+    fn new() -> Self {
+        Self {
+            live: SlotMap::with_key(),
+            keys: Vec::new(),
+            detached: Vec::new(),
+            changed: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, layout: Layout<'a>) -> LayoutKey {
+        let key = self.live.insert(layout);
+        debug_assert!(!self.keys.contains(&key));
+        self.keys.push(key);
+        self.mark_changed(key);
+        key
+    }
+
+    fn detach(&mut self, key: LayoutKey) {
+        let layout = self.live.detach(key).expect("Layout not found");
+        let position = self.keys.iter()
+            .position(|candidate| *candidate == key)
+            .expect("live layout key is not tracked");
+        self.keys.swap_remove(position);
+        self.detached.push((key, layout));
+        self.mark_changed(key);
+    }
+
+    fn restore_from_solution(&mut self, solution: &ProblemSolution<'a>) {
+        for key in std::mem::take(&mut self.changed) {
+            match (self.live.contains_key(key), solution.layouts().get(key)) {
+                (true, Some(layout)) => self.live[key].restore_from(layout),
+                (true, None) => {
+                    self.live.remove(key);
+                    self.untrack(key);
+                },
+                (false, Some(layout)) => {
+                    let detached_index = self.detached.iter()
+                        .position(|(detached_key, _)| *detached_key == key)
+                        .expect("changed layout key was not detached");
+                    self.detached.swap_remove(detached_index);
+                    self.live.reattach(key, layout.as_ref().clone());
+                    self.keys.push(key);
+                },
+                (false, None) => (),
+            }
+        }
+        self.discard_detached();
+    }
+
+    fn discard_detached(&mut self) {
+        for (key, layout) in self.detached.drain(..) {
+            self.live.reattach(key, layout);
+            self.live.remove(key);
+        }
+    }
+
+    fn mark_changed(&mut self, key: LayoutKey) {
+        if !self.changed.contains(&key) {
+            self.changed.push(key);
+        }
+    }
+
+    fn reset_changes(&mut self) {
+        self.changed.clear();
+    }
+
+    fn keys(&self) -> &[LayoutKey] {
+        debug_assert_eq!(self.keys.len(), self.live.len());
+        debug_assert!(self.keys.iter().all(|key| self.live.contains_key(*key)));
+        debug_assert!(self.keys.iter().enumerate().all(|(i, key)| !self.keys[..i].contains(key)));
+        &self.keys
+    }
+
+    fn untrack(&mut self, key: LayoutKey) {
+        let position = self.keys.iter()
+            .position(|candidate| *candidate == key)
+            .expect("live layout key is not tracked");
+        self.keys.swap_remove(position);
     }
 }
 

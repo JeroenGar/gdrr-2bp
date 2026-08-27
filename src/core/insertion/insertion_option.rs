@@ -1,11 +1,8 @@
 use std::fmt::Debug;
 
-use generational_arena::Index;
-use itertools::Itertools;
-
-use crate::core::cost::Cost;
+use crate::core::entities::node::NodeKey;
 use crate::core::entities::parttype::PartType;
-use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
+use crate::core::insertion::insertion_blueprint::{InsertionBlueprint, InsertionShape};
 use crate::core::layout_index::LayoutIndex;
 use crate::core::rotation::Rotation;
 use crate::optimization::problem::Problem;
@@ -18,13 +15,13 @@ use crate::optimization::problem::Problem;
 #[derive(Debug, PartialEq, Eq)]
 pub struct InsertionOption<'a> {
     layout_i: LayoutIndex,
-    original_node_i: Index,
+    original_node_i: NodeKey,
     parttype: &'a PartType,
-    rotation: Option<Rotation>, // None means both rotations are possible
+    rotation: Option<Rotation>, // None means both rotations are checked lazily
 }
 
 impl<'a> InsertionOption<'a> {
-    pub fn new(layout_i: LayoutIndex, original_node_i: Index, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
+    pub fn new(layout_i: LayoutIndex, original_node_i: NodeKey, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
         Self {
             layout_i,
             original_node_i,
@@ -33,38 +30,56 @@ impl<'a> InsertionOption<'a> {
         }
     }
 
-    pub fn generate_blueprints(&self, problem: &Problem) -> Vec<InsertionBlueprint<'a>> {
-        let layout = problem.get_layout(&self.layout_i);
+    pub fn append_blueprints(
+        &self,
+        problem: &Problem,
+        blueprints: &mut Vec<InsertionBlueprint<'a>>,
+    ) {
+        let layout = problem.layout(&self.layout_i);
+        let leftover_valuation_power = layout.leftover_valuation_power();
         let original_node = &layout.nodes()[self.original_node_i];
-        let max_stages = layout.sheettype().max_stages();
-        let node_blueprints = match self.rotation {
+        let max_stages = layout.sheettype().max_stages;
+        let mut append_blueprint = |shape: InsertionShape, rotation| {
+            blueprints.push(InsertionBlueprint::new(
+                self.layout_i,
+                self.original_node_i,
+                shape,
+                rotation,
+                self.parttype,
+                original_node,
+                leftover_valuation_power,
+            ));
+        };
+
+        match self.rotation {
             Some(rotation) => {
-                original_node.generate_insertion_node_blueprints(self.parttype, rotation, max_stages, vec![])
+                original_node.for_each_insertion_shape(
+                    self.parttype,
+                    rotation,
+                    max_stages,
+                    &mut |shape| append_blueprint(shape, rotation),
+                );
             }
             None => {
-                let node_blueprints = original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Default, max_stages, vec![]);
-                original_node.generate_insertion_node_blueprints(self.parttype, Rotation::Rotated, max_stages, node_blueprints)
+                for rotation in [Rotation::Default, Rotation::Rotated] {
+                    if original_node.insertion_possible(self.parttype, rotation) {
+                        original_node.for_each_insertion_shape(
+                            self.parttype,
+                            rotation,
+                            max_stages,
+                            &mut |shape| append_blueprint(shape, rotation),
+                        );
+                    }
+                }
             }
-        };
-        let original_cost = original_node.calculate_cost();
-
-        //Convert the node blueprints into insertion blueprints
-        node_blueprints.into_iter().map(|nbs| {
-            let new_cost = nbs.iter().map(|replacement| replacement.calculate_cost()).sum::<Cost>();
-            let insertion_cost = new_cost.subtract(&original_cost);
-            InsertionBlueprint::new(self.layout_i, self.original_node_i, nbs, self.parttype, insertion_cost)
-        }).collect_vec()
+        }
     }
 
     pub fn parttype(&self) -> &'a PartType {
         self.parttype
     }
 
-    pub fn rotation(&self) -> Option<Rotation> {
-        self.rotation
-    }
-
-    pub fn original_node_index(&self) -> &Index {
+    pub fn original_node_index(&self) -> &NodeKey {
         &self.original_node_i
     }
 

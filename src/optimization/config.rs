@@ -10,6 +10,7 @@ pub struct Config {
     pub max_run_time: Option<usize>,
     #[serde(rename = "maxRRIterations")]
     pub max_rr_iterations: Option<usize>,
+    pub random_seed: Option<u64>,
     pub leftover_valuation_power: f32,
     pub history_length: usize,
     pub rotation_allowed: bool,

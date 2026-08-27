@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
-use indexmap::IndexMap;
+use slotmap::SecondaryMap;
 
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
+use crate::core::layout_index::LayoutKey;
 use crate::optimization::instance::Instance;
 use crate::optimization::problem::Problem;
 use crate::optimization::solutions::solution::Solution;
@@ -14,7 +15,7 @@ use crate::util::assertions;
 /// Its primary use is restoring a Problem to a prior state.
 pub struct ProblemSolution<'a> {
     instance: &'a Instance,
-    layouts: IndexMap<usize, Rc<Layout<'a>>>,
+    layouts: SecondaryMap<LayoutKey, Rc<Layout<'a>>>,
     cost: Cost,
     id: usize,
     parttype_qtys: Vec<usize>,
@@ -23,49 +24,40 @@ pub struct ProblemSolution<'a> {
 }
 
 impl<'a> ProblemSolution<'a> {
-    pub fn new(problem: &Problem<'a>, cost: Cost, id: usize, prev_solution: &ProblemSolution<'a>) -> ProblemSolution<'a> {
-        let mut layouts = IndexMap::new();
-
-        for (_,layout) in problem.layouts() {
-            let layout_id = layout.id();
-            if problem.changed_layouts().contains(&layout_id) {
-                layouts.insert(layout_id, Rc::new(layout.clone()));
-            } else {
-                let prev_solution_layout = prev_solution.layouts.get(&layout_id).expect("Unchanged layout not found in previous solution");
-                layouts.insert(layout_id, prev_solution_layout.clone());
+    pub fn new(problem: &Problem<'a>, cost: Cost, id: usize, mut prev_solution: ProblemSolution<'a>) -> ProblemSolution<'a> {
+        for &layout_key in problem.changed_layouts() {
+            match problem.layouts().get(layout_key) {
+                Some(layout) => {
+                    prev_solution.layouts.insert(layout_key, Rc::new(layout.clone()));
+                }
+                None => {
+                    prev_solution.layouts.remove(layout_key);
+                }
             }
         }
 
-        debug_assert!(layouts.iter().all(|(_id, l)| {
+        debug_assert!(prev_solution.layouts.iter().all(|(_id, l)| {
             let top_node = l.top_node_index();
             assertions::children_nodes_fit(top_node, l.nodes())
         }));
 
-        let parttype_qtys = problem.parttype_qtys().clone();
-        let sheettype_qtys = problem.sheettype_qtys().clone();
-
-        let usage = problem.usage();
-
-        Self {
-            instance: problem.instance(),
-            layouts,
-            cost,
-            id,
-            parttype_qtys,
-            sheettype_qtys,
-            usage,
-        }
+        prev_solution.cost = cost;
+        prev_solution.id = id;
+        prev_solution.parttype_qtys = problem.parttype_qtys().to_vec();
+        prev_solution.sheettype_qtys = problem.sheettype_qtys().to_vec();
+        prev_solution.usage = problem.usage();
+        prev_solution
     }
 
     pub fn new_force_copy_all(problem: &Problem<'a>, cost: Cost, id: usize) -> ProblemSolution<'a> {
-        let mut layouts = IndexMap::new();
+        let mut layouts = SecondaryMap::with_capacity(problem.layouts().capacity());
 
-        for (_,layout) in problem.layouts() {
-            layouts.insert(layout.id(), Rc::new(layout.clone()));
+        for (layout_key, layout) in problem.layouts() {
+            layouts.insert(layout_key, Rc::new(layout.clone()));
         }
 
-        let parttype_qtys = problem.parttype_qtys().clone();
-        let sheettype_qtys = problem.sheettype_qtys().clone();
+        let parttype_qtys = problem.parttype_qtys().to_vec();
+        let sheettype_qtys = problem.sheettype_qtys().to_vec();
 
         let usage = problem.usage();
 
@@ -84,7 +76,7 @@ impl<'a> ProblemSolution<'a> {
     pub fn instance(&self) -> &'a Instance {
         self.instance
     }
-    pub fn layouts(&self) -> &IndexMap<usize, Rc<Layout<'a>>> {
+    pub fn layouts(&self) -> &SecondaryMap<LayoutKey, Rc<Layout<'a>>> {
         &self.layouts
     }
     pub fn id(&self) -> usize {
@@ -99,10 +91,10 @@ impl<'a> Solution for ProblemSolution<'a> {
     fn n_layouts(&self) -> usize {
         self.layouts.len()
     }
-    fn parttype_qtys(&self) -> &Vec<usize> {
+    fn parttype_qtys(&self) -> &[usize] {
         &self.parttype_qtys
     }
-    fn sheettype_qtys(&self) -> &Vec<usize> {
+    fn sheettype_qtys(&self) -> &[usize] {
         &self.sheettype_qtys
     }
     fn usage(&self) -> f64 {
