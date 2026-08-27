@@ -36,20 +36,22 @@ The algorithm currently has support for:
 
 General usage:
 ```bash
-cargo run --release  \
-    [path to input JSON] \
-    [path to config JSON] \
-    [path to write result JSON (optional)] \
-    [path to write result HTML (optional)]
+cargo run --release -- \
+    <INPUT> \
+    --config <CONFIG> \
+    [--output <DIR>]
 ```
 Concrete example:
 ```bash
-cargo run --release \
+cargo run --release -- \
     examples/large_example_input.json \
-    examples/config.json \
-    examples/large_example_result.json \
-    examples/large_example_result.html
+    --config examples/config.json \
+    --output examples/results
 ```
+
+When an output directory is provided, the solver writes both JSON and HTML files. For example, the command above creates `large_example_input_solution.json` and `large_example_input_solution.html` inside `examples/results`.
+
+Run `cargo run --release -- --help` to see all options.
 
 Make sure to include the `--release` flag to build the optimized version of the binary. 
 Omitting the flag not only leads to an unoptimized binary but also enables many (highly costly) assertions that validate the correctness of the algorithm (for use during debugging).
@@ -57,8 +59,8 @@ Omitting the flag not only leads to an unoptimized binary but also enables many 
 The default build uses Rust's system allocator for maximum portability. Enabling the optional `mimalloc` feature improves solver throughput by roughly 4% on the benchmark machine:
 ```bash
 cargo run --release --features mimalloc -- \
-    [path to input JSON] \
-    [path to config JSON]
+    <INPUT> \
+    --config <CONFIG>
 ```
 
 Run the solver throughput benchmark with `cargo bench --bench ci_bench`.

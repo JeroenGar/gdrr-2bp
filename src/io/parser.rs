@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use itertools::Itertools;
 use crate::core::entities::parttype::PartType;
@@ -58,7 +58,7 @@ pub fn generate_instance(json_instance: &mut JsonInstance, config: &Config) -> I
     Instance::new(parts, sheets)
 }
 
-pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableSolution, config_path: &PathBuf) -> JsonSolution {
+pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableSolution, config_path: &Path) -> JsonSolution {
     let name = json_instance.name.clone();
     let sheettypes = json_instance.sheettypes.clone();
     let parttypes = json_instance.parttypes.clone();
@@ -74,7 +74,7 @@ pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableS
         n_objects_used: solution.n_layouts(),
         material_cost: solution.cost().material_cost,
         run_time_ms: crate::EPOCH.elapsed().as_millis() as usize,
-        config_path: config_path.to_str().unwrap().to_string(),
+        config_path: config_path.to_string_lossy().into_owned(),
     };
 
     JsonSolution {
