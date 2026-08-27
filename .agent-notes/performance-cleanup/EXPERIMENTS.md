@@ -27,6 +27,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Force-inline scalar size accessors after `e30de3b`
+
+- Added `#[inline(always)]` to `Size::width`, `Size::height`, and `Size::area` after the symbolized profile attributed 4.7% of worker leaf samples to the accessors.
+- Full-solver Criterion found no change: +0.09% median throughput with a `-0.44%..+0.68%` confidence interval and `p = 0.77`.
+- Reverted because the leaf symbols represented surrounding optimized work rather than meaningful call overhead; forced inlining adds annotation noise without improving the solver.
+
 ### Direct solver cost comparator after `f54e845`
 
 - Removed `GDRR`'s stored function pointer and called the fixed solver cost comparator directly, while preserving the public configurable comparator used by solution collectors.
