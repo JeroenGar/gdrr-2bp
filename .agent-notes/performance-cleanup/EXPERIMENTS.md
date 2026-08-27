@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `0bc4e6b` - copy part-type references directly into the sort buffer and sort them in place. Criterion +1.79% versus `c25a270` (`+1.42%..+2.16%`, `p = 0.00`); exact normalized seeded 50,000-iteration behavior; 60-second result 65,960 iter/s.
 - `c25a270` - maintain each layout's used part area at node registration, recursive removal, clone, and restore boundaries. Criterion +5.83% versus `ed5f5a0` (`+5.39%..+6.25%`, `p = 0.00`); exact normalized seeded 50,000-iteration behavior; 60-second result 66,494 iter/s.
 - `172d012` - defer rotatable-part fit checks from insertion-cache population until blueprint generation. Criterion +6.88% versus `166aa4e` (`+6.46%..+7.31%`, `p = 0.00`); exact normalized seeded 50,000-iteration behavior; 60-second result 59,991 iter/s.
 - `2418100` - calculate layout cost from the maintained empty-node index instead of scanning every SlotMap node. Criterion +6.90% versus `1da65a9` (`+6.55%..+7.25%`, `p = 0.00`); normalized seeded 50,000-iteration output exact, conservatively classified equivalent because `f32` summation order changes; 60-second result 58,021 iter/s.
