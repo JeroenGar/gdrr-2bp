@@ -95,10 +95,7 @@ impl GlobalSolCollector {
         timed_println!("{}","Terminating global monitor".bold().red());
         //Send the termination signal to all threads
         for tx_sync in &self.tx_syncs {
-            match tx_sync.send(SyncMessage::Terminate) {
-                Ok(_) => {}
-                Err(_) => {}
-            }
+            let _ = tx_sync.send(SyncMessage::Terminate);
         }
         //Wait for them to finish
         for handler in gdrr_thread_handlers {
@@ -120,8 +117,9 @@ impl GlobalSolCollector {
 
     fn report_new_complete_solution(&mut self, thread_name: String, solution: SendableSolution) {
         if solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX) {
-            if self.best_complete_solution.is_none()
-                || solution.cost().material_cost < self.best_complete_solution.as_ref().unwrap().cost().material_cost {
+            if self.best_complete_solution.as_ref().is_none_or(
+                |best| solution.cost().material_cost < best.cost().material_cost,
+            ) {
                 self.best_incomplete_cost = None;
                 self.best_incomplete_solution = None;
                 self.material_limit = Some(solution.cost().material_cost);
@@ -129,11 +127,8 @@ impl GlobalSolCollector {
                 self.best_complete_solution = Some(solution.clone());
 
                 for tx_sync in &self.tx_syncs {
-                    match tx_sync.send(SyncMessage::SyncMatLimit(solution.cost().material_cost)) {
-                        Ok(_) => {},
-                        Err(err) => {
-                            timed_println!("{}: {:?}", "Error syncing material limit".bright_red().bold(), err.to_string());
-                        },
+                    if let Err(err) = tx_sync.send(SyncMessage::SyncMatLimit(solution.cost().material_cost)) {
+                        timed_println!("{}: {:?}", "Error syncing material limit".bright_red().bold(), err.to_string());
                     }
                 }
             }
@@ -142,8 +137,9 @@ impl GlobalSolCollector {
 
     fn report_new_incomplete_solution(&mut self, thread_name: String, solution: SendableSolution) {
         if self.best_complete_solution.is_none() {
-            if self.best_incomplete_solution.is_none()
-                || (self.cost_comparator)(&solution.cost(), &self.best_incomplete_solution.as_ref().unwrap().cost()) == Ordering::Less {
+            if self.best_incomplete_solution.as_ref().is_none_or(
+                |best| (self.cost_comparator)(solution.cost(), best.cost()) == Ordering::Less,
+            ) {
                 timed_println!("[{}]\t{}{}", thread_name, "<incomplete>\t".bright_green(), util::solution_stats_string(&solution));
                 self.best_incomplete_solution = Some(solution.clone());
             }
@@ -152,8 +148,9 @@ impl GlobalSolCollector {
 
     fn report_new_incomplete_cost(&mut self, thread_name: String, stats: SolutionStats) {
         if stats.cost.material_cost < self.material_limit.unwrap_or(u64::MAX) {
-            if self.best_incomplete_cost.is_none()
-                || (self.cost_comparator)(&stats.cost, &self.best_incomplete_cost.as_ref().unwrap()) == Ordering::Less {
+            if self.best_incomplete_cost.as_ref().is_none_or(
+                |best| (self.cost_comparator)(&stats.cost, best) == Ordering::Less,
+            ) {
                 timed_println!("[{}]\t{}{}", thread_name, "<incomplete>\t".bright_green(), util::compact_stats_string(&stats));
                 self.best_incomplete_cost = Some(stats.cost.clone());
             }

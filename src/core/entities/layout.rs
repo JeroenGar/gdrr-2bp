@@ -360,10 +360,8 @@ impl<'a> LayoutNodes<'a> {
             let result = self.empty_nodes_by_area.binary_search_by(&|key: &NodeKey| {
                 self.arena[*key].area().cmp(&node_area).reverse()
             });
-            match result {
-                Ok(position) => self.empty_nodes_by_area.insert(position, node_index),
-                Err(position) => self.empty_nodes_by_area.insert(position, node_index),
-            }
+            let position = result.unwrap_or_else(|position| position);
+            self.empty_nodes_by_area.insert(position, node_index);
         }
 
         let previous_sibling = self.arena[parent].last_child;

@@ -21,10 +21,7 @@ pub struct NodeBlueprint {
 impl NodeBlueprint {
     pub fn new(width: u64, height: u64, parttype: Option<&PartType>, next_cut_orient: Orientation) -> Self {
         let children = Vec::new();
-        let parttype_id = match parttype {
-            Some(parttype) => Some(parttype.id()),
-            None => None,
-        };
+        let parttype_id = parttype.map(PartType::id);
         Self { width, height, children, parttype_id, next_cut_orient }
     }
 
@@ -33,10 +30,7 @@ impl NodeBlueprint {
 
         let (width, height) = (node.width(), node.height());
         let next_cut_orient = node.next_cut_orient();
-        let parttype_id = match node.parttype() {
-            Some(pt) => Some(pt.id()),
-            None => None
-        };
+        let parttype_id = node.parttype().map(PartType::id);
         let children = node.children(nodes)
             .map(|child_index| NodeBlueprint::from_node(child_index, nodes))
             .collect_vec();
@@ -46,20 +40,19 @@ impl NodeBlueprint {
 
     pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
         if self.parttype_id.is_some() {
-            return Cost::new(0, 0.0, 0, 0);
+            Cost::empty()
         } else if self.children.is_empty() {
-            return Cost::new(
+            Cost::new(
                 0,
                 leftover_valuator::valuate(self.area(), leftover_valuation_power),
                 0,
                 0,
-            );
+            )
         } else {
-            let mut cost = Cost::new(0, 0.0, 0, 0);
-            for child in &self.children {
-                cost = cost + child.calculate_cost(leftover_valuation_power);
-            }
-            return cost;
+            self.children
+                .iter()
+                .map(|child| child.calculate_cost(leftover_valuation_power))
+                .sum()
         }
     }
 
@@ -69,11 +62,10 @@ impl NodeBlueprint {
         } else if self.children.is_empty() {
             0.0
         } else {
-            let mut usage = 0.0;
-            for child in &self.children {
-                usage += child.area() as f64 * child.calculate_usage();
-            }
-            usage /= self.area() as f64;
+            let usage = self.children
+                .iter()
+                .map(|child| child.area() as f64 * child.calculate_usage())
+                .sum::<f64>() / self.area() as f64;
             debug_assert!(usage <= 1.0);
             usage
         }
