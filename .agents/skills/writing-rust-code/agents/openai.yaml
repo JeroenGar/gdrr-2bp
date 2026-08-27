@@ -1,4 +1,0 @@
-interface:
-  display_name: "Rust Engineering"
-  short_description: "Write correct, robust, readable, and efficient Rust"
-  default_prompt: "Use $writing-rust-code to write or review this Rust code for correctness, robustness, readability, and measured performance."
