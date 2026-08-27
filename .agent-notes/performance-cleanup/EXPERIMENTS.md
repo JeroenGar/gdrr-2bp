@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Reject oversized incremental cache candidates by area after `1a8a0eb`
+
+- Compared each part area with the empty-node area before the existing dimensional fit checks during incremental cache updates. A larger part area proves that neither orientation can fit, so the surviving candidate order and solver behavior would remain unchanged.
+- The initial ten-sample gate ran while another benchmark was active and misleadingly measured +4.09% throughput (`+3.28%..+4.92%`). The isolated sequential 20-sample comparison in one worktree and target found no change: +0.22% with a `-0.29%..+0.73%` confidence interval and `p = 0.44`.
+- Reverted because the extra area multiplication and branch do not improve the full solver; the existing dimensional checks already reject these candidates cheaply.
+
 ### Reuse uniquely owned layout snapshot buffers after `1a8a0eb`
 
 - Used `Rc::get_mut` to restore changed layouts into uniquely owned snapshot allocations, retaining the existing fresh-clone path for shared or missing snapshots.
