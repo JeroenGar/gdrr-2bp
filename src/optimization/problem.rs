@@ -166,10 +166,10 @@ impl<'a> Problem<'a> {
     pub fn create_solution(&mut self, old_solution: Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
         //TODO: implement cached cost for problem
 
-        debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
+        debug_assert!(cached_cost.as_ref().is_none_or(|cost| cost == &self.cost()));
         self.layouts.discard_detached();
         let id = self.next_solution_id();
-        let cost = cached_cost.unwrap_or(self.cost());
+        let cost = cached_cost.unwrap_or_else(|| self.cost());
         let solution = match old_solution {
             Some(old_solution) => {
                 debug_assert!(old_solution.id() == self.solution_id_changed_layouts.unwrap());
