@@ -2,6 +2,22 @@
 
 This is a hypothesis list, not a commitment. Re-profile after every accepted patch and let current evidence reorder it.
 
+## Approved cleanup sequence
+
+Work interactively and finish one item before starting the next. Keep every implementation uncommitted until the user reviews the diff and evidence. Use one focused commit per approved item.
+
+1. Gate mimalloc behind a default-off Cargo feature, including the production binary and solver benchmark.
+2. A/B test the current head without maintained removable-node indexing (#36). Prefer the old scan if the difference is not measurable or is too small to justify the bidirectional index.
+3. A/B test removing the reusable blueprint and part-type-index scratch buffers (#5 and #8). Split them only if the combined result cannot identify a clear decision.
+4. A/B test the current head without compact `u32` insertion-option indices (#35). Prefer `usize` if the compact representation has no measurable gain.
+5. Draft a private `LayoutNodes` boundary in `layout.rs` for review. If approved, move the existing node storage and its coupled indexes without changing their representation or behavior.
+6. Draft a private `ProblemLayouts` boundary in `problem.rs` for review. If approved, move the existing live, detached, sampled, and changed-layout state without changing solver policy.
+7. Reconcile the PR report and run the final correctness, behavior, quality, and sustained-throughput gates.
+
+For every A/B test, compare sequentially against the immediate parent with the same target directory, lockfile, allocator feature, compiler, and benchmark input. Reject added complexity when the result is flat. A simpler implementation may replace a faster one only after reporting the measured cost and receiving user approval.
+
+Do not start new optimization experiments during this cleanup sequence.
+
 ## Data representation
 
 - Flatten `option_parttype_map: Vec<Vec<InsertionOptionKey>>` only with a dynamic-update design that avoids shifting all later ranges. A naive CSR-style flattening turns each update into O(total options) memmove.
@@ -27,7 +43,5 @@ This is a hypothesis list, not a commitment. Re-profile after every accepted pat
 
 ## Allocator end state
 
-- Keep mimalloc while it remains materially faster.
-- At `abfed3d`, an isolated 20-sample comparison measured the system allocator 3.54% slower than mimalloc (`-4.14%..-2.91%`, `p = 0.00`). This is much smaller than the earlier 24.0% gap but still material.
-- Re-test system allocator versus mimalloc only after hot-path allocations have fallen substantially.
-- If the delta becomes inconsequential, remove mimalloc in its own measured commit to improve portability and compatibility.
+- Make mimalloc an opt-in Cargo feature so the default build uses Rust's system allocator.
+- At `9895def`, the system allocator measured 3.99% slower than mimalloc (`-4.62%..-3.36%`, `p = 0.00`). Users can opt into that gain when their target supports mimalloc.
