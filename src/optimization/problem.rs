@@ -26,6 +26,7 @@ pub struct Problem<'a> {
     part_area_excluded: u64,
     sheettype_qtys: Vec<usize>,
     layouts: SlotMap<LayoutKey, Layout<'a>>,
+    layout_keys: Vec<LayoutKey>,
     detached_layouts: Vec<(LayoutKey, Layout<'a>)>,
     empty_layouts: Vec<Layout<'a>>,
     rng: SmallRng,
@@ -55,6 +56,7 @@ impl<'a> Problem<'a> {
             part_area_excluded,
             sheettype_qtys,
             layouts : SlotMap::with_key(),
+            layout_keys : Vec::new(),
             detached_layouts : Vec::new(),
             empty_layouts : Vec::new(),
             changed_layouts : Vec::new(),
@@ -204,6 +206,7 @@ impl<'a> Problem<'a> {
                 (true, Some(layout)) => self.layouts[layout_key].restore_from(layout),
                 (true, None) => {
                     self.layouts.remove(layout_key);
+                    self.untrack_layout(layout_key);
                 },
                 (false, Some(layout)) => {
                     let detached_index = self.detached_layouts.iter()
@@ -211,6 +214,7 @@ impl<'a> Problem<'a> {
                         .expect("changed layout key was not detached");
                     self.detached_layouts.swap_remove(detached_index);
                     self.layouts.reattach(layout_key, layout.as_ref().clone());
+                    self.track_layout(layout_key);
                 },
                 (false, None) => (),
             }
@@ -267,8 +271,15 @@ impl<'a> Problem<'a> {
         &self.layouts
     }
 
-    pub fn layouts_mut(&mut self) -> &mut SlotMap<LayoutKey, Layout<'a>> {
+    pub(crate) fn layouts_mut(&mut self) -> &mut SlotMap<LayoutKey, Layout<'a>> {
         &mut self.layouts
+    }
+
+    pub fn layout_keys(&self) -> &[LayoutKey] {
+        debug_assert_eq!(self.layout_keys.len(), self.layouts.len());
+        debug_assert!(self.layout_keys.iter().all(|key| self.layouts.contains_key(*key)));
+        debug_assert!(self.layout_keys.iter().enumerate().all(|(i, key)| !self.layout_keys[..i].contains(key)));
+        &self.layout_keys
     }
 
     pub fn get_layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
@@ -285,6 +296,7 @@ impl<'a> Problem<'a> {
                 self.register_part(*p_id, 1);
             });
         let layout_key = self.layouts.insert(layout);
+        self.track_layout(layout_key);
         self.layout_has_changed(layout_key);
         layout_key
     }
@@ -294,6 +306,7 @@ impl<'a> Problem<'a> {
             LayoutIndex::Empty(_) => panic!("Cannot unregister empty layout"),
             LayoutIndex::Existing(li) => {
                 let layout = self.layouts.detach(li).expect("Layout not found");
+                self.untrack_layout(li);
 
                 self.unregister_sheet(layout.sheettype().id(), 1);
                 layout.get_included_parts().iter().for_each(
@@ -309,6 +322,19 @@ impl<'a> Problem<'a> {
         if !self.changed_layouts.contains(&layout_key) {
             self.changed_layouts.push(layout_key);
         }
+    }
+
+    fn track_layout(&mut self, layout_key: LayoutKey) {
+        debug_assert!(self.layouts.contains_key(layout_key));
+        debug_assert!(!self.layout_keys.contains(&layout_key));
+        self.layout_keys.push(layout_key);
+    }
+
+    fn untrack_layout(&mut self, layout_key: LayoutKey) {
+        let position = self.layout_keys.iter()
+            .position(|key| *key == layout_key)
+            .expect("live layout key is not tracked");
+        self.layout_keys.swap_remove(position);
     }
 
     fn discard_detached_layouts(&mut self) {

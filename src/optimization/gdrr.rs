@@ -171,7 +171,7 @@ impl<'a> GDRR<'a> {
                 }
                 let mut sampled_layouts: [_; 3] = std::array::from_fn(|_| {
                     let sample_index = self.problem.rng().random_range(0..n_layouts);
-                    let layout_index = self.problem.layouts().keys().nth(sample_index).unwrap();
+                    let layout_index = self.problem.layout_keys()[sample_index];
                     let usage = self.problem.layouts_mut()[layout_index].usage(false);
                     (layout_index, NotNan::new(usage).expect("layout usage is NaN"))
                 });
