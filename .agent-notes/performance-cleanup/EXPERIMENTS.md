@@ -33,6 +33,24 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Select only the blink-ranked blueprint after `909d083`
+
+- Replaced the full stable blueprint sort with `select_nth_unstable_by` for the same blink-selected rank, leaving unused candidates unordered.
+- Full-solver Criterion measured a 1.30% throughput regression, with the entire confidence interval below zero (`-2.13%..-0.46%`, `p = 0.01`).
+- Rejected immediately. Candidate lists are small enough that Rust's stable sort is faster than linear partition selection, and equal-cost tie order would also change.
+
+### Skip the impossible empty-layout scan after `909d083`
+
+- Replaced the release scan after non-root node removal with a debug assertion: top-node removal already unregisters the whole layout, while every non-root mutation leaves a replacement child under the immutable top node.
+- Full-solver Criterion measured a 2.02% throughput regression, with the entire confidence interval below zero (`-3.09%..-0.86%`, `p = 0.01`).
+- Rejected immediately. The invariant is sound, but the release code-layout change made the representative full solver slower.
+
+### Copy cached layout costs directly after `909d083`
+
+- Derived `Copy` for the four-number `Cost` value and matched cached `Option<Cost>` values directly instead of borrowing and cloning them.
+- The fast gate was inconclusive at +0.45%. The isolated 20-sample comparison measured a 1.84% throughput regression (`-2.64%..-1.12%`, `p = 0.00`).
+- Reverted because the semantic cleanup is not worth a measured full-solver regression.
+
 ### Re-shuffle retained part-type indices after `2b74da0`
 
 - Reused the existing shuffled permutation when the active part-type count stayed unchanged, rebuilding `0..len` only after a part type left the active set.
