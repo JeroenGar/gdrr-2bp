@@ -19,7 +19,7 @@ pub struct Layout<'a> {
     nodes: SlotMap<NodeKey, Node<'a>>,
     top_node_i: NodeKey,
     cached_cost: Option<Cost>,
-    cached_usage: Option<f64>,
+    used_part_area: u64,
     sorted_empty_nodes: Vec<NodeKey>, //sorted by descending area
 }
 
@@ -41,7 +41,7 @@ impl<'a> Layout<'a> {
             nodes,
             top_node_i,
             cached_cost: None,
-            cached_usage: None,
+            used_part_area: 0,
             sorted_empty_nodes: vec![],
         };
 
@@ -66,7 +66,7 @@ impl<'a> Layout<'a> {
         self.nodes.clone_from(&snapshot.nodes);
         self.top_node_i = snapshot.top_node_i;
         self.cached_cost.clone_from(&snapshot.cached_cost);
-        self.cached_usage = snapshot.cached_usage;
+        self.used_part_area = snapshot.used_part_area;
         self.sorted_empty_nodes.clone_from(&snapshot.sorted_empty_nodes);
     }
 
@@ -216,7 +216,6 @@ impl<'a> Layout<'a> {
 
     fn invalidate_caches(&mut self) {
         self.cached_cost = None;
-        self.cached_usage = None;
     }
 
     fn calculate_cost(&self) -> Cost {
@@ -228,14 +227,7 @@ impl<'a> Layout<'a> {
     }
 
     fn calculate_usage(&self) -> f64 {
-        let used_area = self.nodes.iter().map(|(_, node)| {
-            match node.parttype(){
-                Some(_) => node.area(),
-                None => 0
-            }
-        }).sum::<u64>();
-
-        used_area as f64 / self.sheettype.area() as f64
+        self.used_part_area as f64 / self.sheettype.area() as f64
     }
 
     fn register_node(&mut self, node: Node<'a>, parent: NodeKey, is_empty: bool) -> NodeKey {
@@ -343,12 +335,12 @@ impl<'a> Layout<'a> {
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
     }
 
-    fn register_part(&mut self, _parttype: &PartType) {
-        self.invalidate_caches();
+    fn register_part(&mut self, parttype: &PartType) {
+        self.used_part_area += parttype.area();
     }
 
-    fn unregister_part(&mut self, _parttype: &PartType) {
-        self.invalidate_caches();
+    fn unregister_part(&mut self, parttype: &PartType) {
+        self.used_part_area -= parttype.area();
     }
 
     pub fn get_included_parts(&self) -> Vec<usize> {
@@ -387,29 +379,14 @@ impl<'a> Layout<'a> {
         cost
     }
 
-    pub fn usage(&mut self, force_recalc: bool) -> f64 {
-        let usage = match (self.cached_usage.as_ref(), force_recalc) {
-            (Some(usage), false) => *usage,
-            _ => {
-                let usage = self.calculate_usage();
-                self.cached_usage = Some(usage);
-                usage
-            }
-        };
-        debug_assert!(force_recalc || usage == self.usage(true));
-        usage
+    pub fn usage(&mut self, _force_recalc: bool) -> f64 {
+        debug_assert!(assertions::cached_used_part_area_correct(&self.nodes, self.used_part_area));
+        self.calculate_usage()
     }
 
-    pub fn usage_immut(&self, force_recalc: bool) -> f64 {
-        let usage = match (self.cached_usage.as_ref(), force_recalc) {
-            (Some(usage), false) => *usage,
-            _ => {
-                let usage = self.calculate_usage();
-                usage
-            }
-        };
-        debug_assert!(force_recalc || usage == self.usage_immut(true));
-        usage
+    pub fn usage_immut(&self, _force_recalc: bool) -> f64 {
+        debug_assert!(assertions::cached_used_part_area_correct(&self.nodes, self.used_part_area));
+        self.calculate_usage()
     }
 
     pub fn sorted_empty_nodes(&self) -> &Vec<NodeKey> {

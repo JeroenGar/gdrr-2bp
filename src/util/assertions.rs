@@ -230,6 +230,13 @@ pub fn cached_sorted_empty_nodes_correct(nodes: &SlotMap<NodeKey, Node>, cached_
     return true;
 }
 
+pub fn cached_used_part_area_correct(nodes: &SlotMap<NodeKey, Node>, cached_used_part_area: u64) -> bool {
+    nodes.iter()
+        .filter_map(|(_, node)| *node.parttype())
+        .map(PartType::area)
+        .sum::<u64>() == cached_used_part_area
+}
+
 pub fn instance_parttypes_and_sheettypes_ids_correct(parttypes: &Vec<(PartType, usize)>, sheettypes: &Vec<(SheetType, usize)>) -> bool {
     parttypes.iter().enumerate().all(|(i, (p, _qty))| {
         p.id() == i
