@@ -26,6 +26,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Circular sibling-tail links after `ce15909`
+
+- Removed each node's last-child key and stored the tail key in the first child's previous-sibling field, shrinking `Node` from 72 to 64 bytes and each SlotMap slot from 80 to 72 bytes.
+- An initial ten-sample probe measured +1.41%, but an isolated 20-sample comparison found no change: +0.06% median throughput with a `-0.70%..+0.74%` confidence interval and `p = 0.86`.
+- Reverted because the stronger result did not reproduce the gain, and overloading the first child's previous-sibling link makes list mutation harder to reason about.
+
 ### Singly linked layout nodes after `4e3f903`
 
 - Removed each node's previous-sibling key and found the predecessor by scanning the parent's children during removal.
