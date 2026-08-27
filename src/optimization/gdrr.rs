@@ -56,7 +56,7 @@ impl<'a> GDRR<'a> {
                 stats.n_improved
         );
         timed_thread_println!("{}:\t {}", "Final incomp".bright_yellow(),
-            match self.local_sol_collector.best_incomplete_solution().as_ref() {
+            match self.local_sol_collector.best_incomplete_solution() {
                 Some(sol) => {
                     util::solution_stats_string(sol)
                 }

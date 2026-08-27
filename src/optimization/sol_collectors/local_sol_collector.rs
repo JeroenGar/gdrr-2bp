@@ -133,8 +133,8 @@ impl<'a> LocalSolCollector<'a> {
         self.best_incomplete_solution = None;
     }
 
-    pub fn best_incomplete_solution(&self) -> &Option<ProblemSolution<'a>> {
-        &self.best_incomplete_solution
+    pub fn best_incomplete_solution(&self) -> Option<&ProblemSolution<'a>> {
+        self.best_incomplete_solution.as_ref()
     }
 
     pub fn material_limit(&self) -> u64 {

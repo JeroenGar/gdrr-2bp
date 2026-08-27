@@ -158,10 +158,10 @@ impl GlobalSolCollector {
     }
 
 
-    pub fn best_complete_solution(&self) -> &Option<SendableSolution> {
-        &self.best_complete_solution
+    pub fn best_complete_solution(&self) -> Option<&SendableSolution> {
+        self.best_complete_solution.as_ref()
     }
-    pub fn best_incomplete_solution(&self) -> &Option<SendableSolution> {
-        &self.best_incomplete_solution
+    pub fn best_incomplete_solution(&self) -> Option<&SendableSolution> {
+        self.best_incomplete_solution.as_ref()
     }
 }
