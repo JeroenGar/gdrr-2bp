@@ -27,7 +27,7 @@ impl<'a> Layout<'a> {
         first_cut_orientation: Orientation,
         leftover_valuation_power: f32,
     ) -> Self {
-        let top_node = Node::new(0, sheettype.width(), sheettype.height(), first_cut_orientation, None);
+        let top_node = Node::new(0, sheettype.width, sheettype.height, first_cut_orientation, None);
         let nodes = LayoutNodes::new(top_node);
 
         let mut layout = Self {
@@ -39,7 +39,7 @@ impl<'a> Layout<'a> {
         };
 
         //The top node cannot be modified, so we register a placeholder node to be able to insert parts
-        let placeholder_node = Node::new(1, sheettype.width(), sheettype.height(), first_cut_orientation.rotate(), None);
+        let placeholder_node = Node::new(1, sheettype.width, sheettype.height, first_cut_orientation.rotate(), None);
         layout.register_node(placeholder_node, layout.nodes.top_node, true);
 
         layout
@@ -213,7 +213,7 @@ impl<'a> Layout<'a> {
 
     fn calculate_cost(&self) -> Cost {
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes.arena, &self.nodes.empty_nodes_by_area));
-        let material_cost = Cost::empty().add_material_cost(self.sheettype.value());
+        let material_cost = Cost::empty().add_material_cost(self.sheettype.value);
         self.nodes.empty_nodes_by_area.iter()
             .map(|node_index| self.nodes.arena[*node_index].calculate_cost(self.leftover_valuation_power))
             .fold(material_cost, |acc, cost| acc.add(&cost))

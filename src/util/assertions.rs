@@ -142,7 +142,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
     //Iterate all layouts which should be considered during this recreate iteration
     let layouts_to_consider = || problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
         .chain(problem.empty_layouts().iter().enumerate()
-            .filter(|(_, l)| problem.sheettype_qtys()[l.sheettype().id()] > 0)
+            .filter(|(_, l)| problem.sheettype_qtys()[l.sheettype().id] > 0)
             .map(|(i, l)| (LayoutIndex::empty(i), l))
         );
 
@@ -256,7 +256,7 @@ pub fn instance_parttypes_and_sheettypes_ids_correct(parttypes: &[(PartType, usi
     parttypes.iter().enumerate().all(|(i, (p, _qty))| {
         p.id() == i
     }) && sheettypes.iter().enumerate().all(|(i, (s, _qty))| {
-        s.id() == i
+        s.id == i
     })
 }
 

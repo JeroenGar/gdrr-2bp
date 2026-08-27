@@ -233,7 +233,7 @@ impl<'a> GDRR<'a> {
         //Iterate all layouts which should be considered during this recreate iteration
         let layouts_to_consider = self.problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
             .chain(self.problem.empty_layouts().iter().enumerate()
-                .filter(|(_, l)| self.problem.sheettype_qtys()[l.sheettype().id()] > 0)
+                .filter(|(_, l)| self.problem.sheettype_qtys()[l.sheettype().id] > 0)
                 .map(|(i, l)| (LayoutIndex::empty(i), l))
             );
 
@@ -275,13 +275,13 @@ impl<'a> GDRR<'a> {
                 if let LayoutIndex::Empty(index) = elected_blueprint.layout_index() {
                     //update mat_limit_budget
                     let empty_layout = &self.problem.empty_layouts()[*index as usize];
-                    mat_limit_budget -= empty_layout.sheettype().value() as i128;
-                    let sheettype_id = empty_layout.sheettype().id();
+                    mat_limit_budget -= empty_layout.sheettype().value as i128;
+                    let sheettype_id = empty_layout.sheettype().id;
 
                     if self.problem.sheettype_qtys()[sheettype_id] == 0 {
                         //There is no more stock left of this sheettype, remove all empty layouts with this sheettype from the cache
                         self.problem.empty_layouts().iter().enumerate()
-                            .filter(|(_, l)| l.sheettype().id() == sheettype_id)
+                            .filter(|(_, l)| l.sheettype().id == sheettype_id)
                             .for_each(|(i, l)| {
                                 insertion_option_cache.remove_all_for_layout(&LayoutIndex::empty(i), l);
                             });
@@ -354,7 +354,7 @@ impl<'a> GDRR<'a> {
 
         for option in insertion_option_cache.get_for_parttype(parttype) {
             if let LayoutIndex::Empty(i) = option.layout_index() {
-                if mat_limit_budget >= problem.empty_layouts()[*i as usize].sheettype().value() as i128 {
+                if mat_limit_budget >= problem.empty_layouts()[*i as usize].sheettype().value as i128 {
                     option.append_blueprints(problem, new_layout_blueprints);
                 }
             }

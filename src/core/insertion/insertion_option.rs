@@ -38,7 +38,7 @@ impl<'a> InsertionOption<'a> {
         let layout = problem.get_layout(&self.layout_i);
         let leftover_valuation_power = layout.leftover_valuation_power();
         let original_node = &layout.nodes()[self.original_node_i];
-        let max_stages = layout.sheettype().max_stages();
+        let max_stages = layout.sheettype().max_stages;
         let mut append_blueprint = |shape: InsertionShape, rotation| {
             blueprints.push(InsertionBlueprint::new(
                 self.layout_i,

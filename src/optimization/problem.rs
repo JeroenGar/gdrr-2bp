@@ -62,7 +62,7 @@ impl<'a> Problem<'a> {
 
         //Initiate the empty layouts
         for (sheettype, _) in instance.sheets() {
-            match sheettype.fixed_first_cut_orientation() {
+            match sheettype.fixed_first_cut_orientation {
                 Some(orientation) => {
                     let empty_layout = Layout::new(
                         problem.next_layout_id(),
@@ -263,7 +263,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn register_layout(&mut self, layout: Layout<'a>) -> LayoutKey {
-        self.register_sheet(layout.sheettype().id(), 1);
+        self.register_sheet(layout.sheettype().id, 1);
         layout.get_included_parts().iter().for_each(
             |p_id| {
                 self.register_part(*p_id, 1);
@@ -276,8 +276,8 @@ impl<'a> Problem<'a> {
             LayoutIndex::Empty(_) => panic!("Cannot unregister empty layout"),
             LayoutIndex::Existing(li) => {
                 let layout = &self.layouts.live[li];
-                let sheettype_id = layout.sheettype().id();
-                let sheet_value = layout.sheettype().value();
+                let sheettype_id = layout.sheettype().id;
+                let sheet_value = layout.sheettype().value;
                 let included_parts = layout.get_included_parts();
                 self.layouts.detach(li);
 
