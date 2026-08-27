@@ -24,6 +24,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Remove redundant insertion-option rotation after `172d012`
+
+- Removed `InsertionOption::rotation` after cache-created options began storing the same value as `PartType::fixed_rotation`.
+- An initial ten-sample probe measured +0.74%, but an isolated 20-sample comparison found no change: +0.17% median throughput with a `-0.22%..+0.51%` confidence interval and `p = 0.39`.
+- Reverted because `InsertionOption::new` is public and its rotation argument can intentionally restrict an otherwise rotatable part. A flat result does not justify breaking that API or removing the behavior it can represent.
+
 ### Cache part-type areas during insertion-cache population after `572db05`
 
 - Cached each part type's area beside its reference while sorting, then reused it when skipping oversized prefixes for empty nodes.
