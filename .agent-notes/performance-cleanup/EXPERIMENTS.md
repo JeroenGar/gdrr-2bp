@@ -37,6 +37,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Flatten per-part-type option buckets after `42cfc3c`
+
+- Replaced the per-part-type `Vec<Vec<u32>>` index with compact intrusive head/tail chains stored beside the dense cached options. This removed the inner allocations while preserving `swap_remove` iteration order and the size of each cached option.
+- Full-solver Criterion with mimalloc measured a 7.44% throughput regression, with the entire confidence interval below zero (`-8.04%..-6.85%`, `p = 0.00`).
+- Rejected immediately. Contiguous per-part-type traversal is substantially more valuable than removing these small, reused allocations; do not repeat the linked-bucket design.
+
 ### Restore `usize` insertion-option indices after `c9b6ad1`
 
 - Replaced the two compact `u32` reverse-index buffers with native `usize` indices. This removed six net lines, all checked narrowing conversions, and the cache-size bound introduced by #35.
