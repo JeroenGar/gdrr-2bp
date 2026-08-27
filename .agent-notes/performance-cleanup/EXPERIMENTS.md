@@ -22,6 +22,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Batch empty-node index maintenance after `3d5d6f8`
+
+- Replaced sorted insertion and shifting removal in each internal node mutation with `push` and `swap_remove`, then restored descending area order once at the public layout-mutation boundary.
+- Full-solver Criterion measured a 1.75% throughput regression, with the entire confidence interval below zero (`-2.76%..-0.85%`).
+- Rejected immediately. The final stable sort costs more than the avoided shifts on the solver's small empty-node lists.
+
 ### Unstable part-type sorting after `03f56ba`
 
 - Replaced the recreate cache's area sort with `sorted_unstable_by`.
