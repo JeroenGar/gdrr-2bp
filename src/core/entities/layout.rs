@@ -216,7 +216,7 @@ impl<'a> Layout<'a> {
         let material_cost = Cost::empty().add_material_cost(self.sheettype.value);
         self.nodes.empty_nodes_by_area.iter()
             .map(|node_index| self.nodes.arena[*node_index].calculate_cost(self.leftover_valuation_power))
-            .fold(material_cost, |acc, cost| acc.add(&cost))
+            .fold(material_cost, |acc, cost| acc + cost)
     }
 
     fn calculate_usage(&self) -> f64 {
@@ -259,10 +259,7 @@ impl<'a> Layout<'a> {
     pub fn cost_immut(&self, force_recalc: bool) -> Cost {
         let cost = match (self.cached_cost.as_ref(), force_recalc) {
             (Some(cost), false) => cost.clone(),
-            _ => {
-                let cost = self.calculate_cost();
-                cost
-            }
+            _ => self.calculate_cost(),
         };
         debug_assert!(force_recalc || cost == self.cost_immut(true));
         cost

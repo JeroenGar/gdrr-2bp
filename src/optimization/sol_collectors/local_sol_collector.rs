@@ -63,7 +63,7 @@ impl<'a> LocalSolCollector<'a> {
             }
             Some(best_incomplete_solution) => {
                 debug_assert!(solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX));
-                if (self.cost_comparator)(&solution.cost(), &best_incomplete_solution.cost()) == Ordering::Less {
+                if (self.cost_comparator)(solution.cost(), best_incomplete_solution.cost()) == Ordering::Less {
                     self.accept_solution(solution);
                     self.tx_solution_report();
                 }

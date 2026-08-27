@@ -14,7 +14,6 @@ use crate::optimization::rr::cache_updates::IOCUpdates;
 /// A cache for InsertionOptions during the recreate phase
 /// It allows very fast lookup of all InsertionOptions that are valid for a given node or a given parttype
 /// It is kept up-to-date throughout the recreate phase, by receiving updates about which nodes are removed or added
-
 pub struct InsertionOptionCache<'a> {
     options: Vec<CachedInsertionOption<'a>>,
     option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<u32>)>,

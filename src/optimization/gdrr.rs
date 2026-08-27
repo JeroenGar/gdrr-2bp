@@ -23,7 +23,6 @@ use crate::timed_thread_println;
 use crate::util::util;
 
 /// Goal-Driven Ruin and Recreate algorithm
-
 pub struct GDRR<'a> {
     config: &'a Config,
     problem: Problem<'a>,
@@ -233,7 +232,7 @@ impl<'a> GDRR<'a> {
 
         //Generate insertion options for all relevant parttypes and layouts
         insertion_option_cache.add_for_parttypes(&parttypes_to_consider, layouts_to_consider);
-        debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider));
+        debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, insertion_option_cache, &parttypes_to_consider));
 
         let mut existing_layout_blueprints = Vec::new();
         let mut new_layout_blueprints = Vec::new();
@@ -244,17 +243,17 @@ impl<'a> GDRR<'a> {
 
             let elected_parttype = GDRR::select_next_parttype(
                 &parttypes_to_consider,
-                &insertion_option_cache,
+                insertion_option_cache,
                 &mut parttype_indices,
                 self.problem.rng(),
-                &self.config,
+                self.config,
             );
             let elected_blueprint = GDRR::select_insertion_blueprint(
                 elected_parttype,
-                &insertion_option_cache,
+                insertion_option_cache,
                 mat_limit_budget,
                 &mut self.problem,
-                &self.config,
+                self.config,
                 &mut existing_layout_blueprints,
                 &mut new_layout_blueprints,
             );
@@ -285,7 +284,7 @@ impl<'a> GDRR<'a> {
                     break;
                 }
 
-                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
+                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
             } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem
                 part_area_not_included += self.problem.parttype_qtys()[elected_parttype.id()] as u64
@@ -293,7 +292,7 @@ impl<'a> GDRR<'a> {
 
                 parttypes_to_consider.retain(|pt| pt.id() != elected_parttype.id());
 
-                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
+                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
             }
         }
     }

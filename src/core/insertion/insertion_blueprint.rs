@@ -49,7 +49,7 @@ impl<'a> InsertionBlueprint<'a> {
                 ))
             });
         blueprint.cost =
-            replacement_cost.subtract(&original_node.calculate_cost(leftover_valuation_power));
+            replacement_cost - original_node.calculate_cost(leftover_valuation_power);
         blueprint
     }
 

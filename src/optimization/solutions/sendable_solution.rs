@@ -19,7 +19,7 @@ pub struct SendableSolution {
 
 impl SendableSolution {
     pub fn new(instance: Arc<Instance>, problem_solution: &ProblemSolution) -> SendableSolution {
-        debug_assert!(instance.as_ref() as *const _ == problem_solution.instance() as *const _);
+        debug_assert!(std::ptr::eq(instance.as_ref(), problem_solution.instance()));
 
         let layouts = problem_solution.layouts().iter().map(|(_id, l)| SendableLayout::new(l)).collect();
         let cost = problem_solution.cost().clone();
