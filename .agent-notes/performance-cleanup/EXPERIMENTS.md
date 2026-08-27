@@ -22,6 +22,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Constant-time selected part-type removal after `572db05`
+
+- Returned the selected part-type vector index and removed exhausted or infeasible entries with `swap_remove` instead of scanning the vector with `retain`.
+- An initial ten-sample probe measured +2.94%, but an isolated 20-sample comparison found no change: +0.88% median throughput with a `-0.67%..+1.90%` confidence interval and `p = 0.23`.
+- Reverted because the stronger result did not reproduce the gain, while unordered removal also changes the seeded solver trajectory.
+
 ### Batch empty-node index maintenance after `3d5d6f8`
 
 - Replaced sorted insertion and shifting removal in each internal node mutation with `push` and `swap_remove`, then restored descending area order once at the public layout-mutation boundary.
