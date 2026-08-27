@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Cache the active part-area cutoff after `bc04200`
+
+- Kept the current area-sorted part type's area in one scalar while advancing the monotonic cutoff during initial cache population, avoiding a repeated `PartType::area` load when the cutoff did not move.
+- An initial ten-sample comparison was inconclusive at +0.43%. The isolated 20-sample comparison found no gain: -0.22% throughput with a `-0.66%..+0.21%` confidence interval and `p = 0.33`.
+- Reverted because three extra lines and explicit loop state did not improve the full solver. The temporary no-inline profile over-attributed surrounding optimized work to the source line, or the production build already retained the value effectively.
+
 ### Sort the active part-type vector in place after `90f945a`
 
 - Let initial cache population area-sort the recreate loop's existing active part-type vector instead of allocating and sorting a second copy.
