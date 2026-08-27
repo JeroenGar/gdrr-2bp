@@ -17,7 +17,7 @@ use crate::optimization::rr::cache_updates::IOCUpdates;
 
 pub struct InsertionOptionCache<'a> {
     options: Vec<CachedInsertionOption<'a>>,
-    option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<usize>)>,
+    option_node_ranges: Vec<((LayoutIndex, NodeKey), Range<u32>)>,
     option_node_keys: Vec<u32>,
     option_parttype_map: Vec<Vec<u32>>,
 }
@@ -86,7 +86,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                 while empty_node_area < sorted_parttypes[starting_index].area() {
                     starting_index += 1;
                 }
-                let option_range_start = self.option_node_keys.len();
+                let option_range_start = self.option_node_len();
                 for parttype in sorted_parttypes[starting_index..].iter().copied() {
                     if let Some(insertion_option) = InsertionOptionCache::generate_insertion_option(
                         empty_node,
@@ -97,10 +97,11 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                         self.insert_option(insertion_option);
                     }
                 }
-                if option_range_start != self.option_node_keys.len() {
+                let option_range_end = self.option_node_len();
+                if option_range_start != option_range_end {
                     self.option_node_ranges.push((
                         (layout_i, *empty_node_i),
-                        option_range_start..self.option_node_keys.len(),
+                        option_range_start..option_range_end,
                     ));
                 }
             }
@@ -119,7 +120,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         I: Iterator<Item = &'b &'a PartType>,
     {
         if node.parttype().is_none() && !node.has_children() {
-            let option_range_start = self.option_node_keys.len();
+            let option_range_start = self.option_node_len();
             for parttype in parttypes {
                 let insertion_option = InsertionOptionCache::generate_insertion_option(
                     node, parttype, *layout_i, *node_i,
@@ -128,9 +129,10 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                     self.insert_option(insertion_option);
                 }
             }
-            if option_range_start != self.option_node_keys.len() {
+            let option_range_end = self.option_node_len();
+            if option_range_start != option_range_end {
                 let node_key = (*layout_i, *node_i);
-                let option_range = option_range_start..self.option_node_keys.len();
+                let option_range = option_range_start..option_range_end;
                 match self
                     .option_node_ranges
                     .binary_search_by_key(&node_key, |(key, _)| *key)
@@ -157,7 +159,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         };
         let option_range = std::mem::take(&mut self.option_node_ranges[node_range_index].1);
         for node_position in option_range {
-            let option_index = self.option_node_keys[node_position] as usize;
+            let option_index = self.option_node_keys[node_position as usize] as usize;
             self.remove_option(option_index);
         }
     }
@@ -271,7 +273,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
             .binary_search_by_key(&node_key, |(key, _)| *key)
             .map(|index| self.option_node_ranges[index].1.clone())
             .unwrap_or_default();
-        self.option_node_keys[option_range]
+        self.option_node_keys[option_range.start as usize..option_range.end as usize]
             .iter()
             .map(|key| &self.options[*key as usize].option)
     }
@@ -286,6 +288,11 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                 .all(|(_, range)| range.is_empty())
         );
         is_empty
+    }
+
+    fn option_node_len(&self) -> u32 {
+        u32::try_from(self.option_node_keys.len())
+            .expect("insertion option cache exceeds u32 indices")
     }
 }
 
