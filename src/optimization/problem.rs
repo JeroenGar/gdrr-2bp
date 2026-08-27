@@ -255,19 +255,18 @@ impl<'a> Problem<'a> {
         self.layouts.keys()
     }
 
-    pub fn get_layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
+    pub fn layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
         match layout_index{
-            LayoutIndex::Existing(index) => self.layouts.live.get(*index).unwrap(),
-            LayoutIndex::Empty(index) => self.empty_layouts.get(*index as usize).unwrap(),
+            LayoutIndex::Existing(index) => &self.layouts.live[*index],
+            LayoutIndex::Empty(index) => &self.empty_layouts[*index as usize],
         }
     }
 
     pub fn register_layout(&mut self, layout: Layout<'a>) -> LayoutKey {
         self.register_sheet(layout.sheettype().id, 1);
-        layout.get_included_parts().iter().for_each(
-            |p_id| {
-                self.register_part(*p_id, 1);
-            });
+        for parttype_id in layout.included_part_ids() {
+            self.register_part(parttype_id, 1);
+        }
         self.layouts.insert(layout)
     }
 
@@ -278,12 +277,13 @@ impl<'a> Problem<'a> {
                 let layout = &self.layouts.live[li];
                 let sheettype_id = layout.sheettype().id;
                 let sheet_value = layout.sheettype().value;
-                let included_parts = layout.get_included_parts();
+                let included_parts = layout.included_part_ids();
                 self.layouts.detach(li);
 
                 self.unregister_sheet(sheettype_id, 1);
-                included_parts.iter().for_each(
-                    |p_id| { self.unregister_part(*p_id, 1) });
+                for parttype_id in included_parts {
+                    self.unregister_part(parttype_id, 1);
+                }
                 sheet_value
             }
         }
@@ -301,13 +301,13 @@ impl<'a> Problem<'a> {
     fn register_part(&mut self, parttype_id: usize, qty: usize) {
         debug_assert!(self.parttype_qtys[parttype_id] >= qty);
         self.parttype_qtys[parttype_id] -= qty;
-        self.part_area_excluded -= self.instance.get_parttype(parttype_id).area() * qty as u64;
+        self.part_area_excluded -= self.instance.parttype(parttype_id).area() * qty as u64;
     }
 
     fn unregister_part(&mut self, parttype_id: usize, qty: usize) {
-        debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.get_parttype_qty(parttype_id).unwrap());
+        debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.parttype_qty(parttype_id).unwrap());
         self.parttype_qtys[parttype_id] += qty;
-        self.part_area_excluded += self.instance.get_parttype(parttype_id).area() * qty as u64;
+        self.part_area_excluded += self.instance.parttype(parttype_id).area() * qty as u64;
     }
 
     fn register_sheet(&mut self, sheettype_id: usize, qty: usize) {
@@ -316,7 +316,7 @@ impl<'a> Problem<'a> {
     }
 
     fn unregister_sheet(&mut self, sheettype_id: usize, qty: usize) {
-        debug_assert!(self.sheettype_qtys[sheettype_id] + qty <= self.instance.get_sheettype_qty(sheettype_id).unwrap());
+        debug_assert!(self.sheettype_qtys[sheettype_id] + qty <= self.instance.sheettype_qty(sheettype_id).unwrap());
         self.sheettype_qtys[sheettype_id] += qty;
     }
 
@@ -342,7 +342,7 @@ impl<'a> Problem<'a> {
         debug_assert_eq!(
             self.part_area_excluded,
             self.parttype_qtys.iter().enumerate().fold(0, |area, (id, qty)| {
-                area + self.instance.get_parttype(id).area() * *qty as u64
+                area + self.instance.parttype(id).area() * *qty as u64
             }),
         );
         self.part_area_excluded

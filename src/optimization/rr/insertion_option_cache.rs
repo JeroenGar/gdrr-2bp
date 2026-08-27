@@ -42,7 +42,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
     ) {
         let layout_i = cache_updates.layout_index();
         self.remove_for_node(layout_i, cache_updates.removed_node());
-        let layout = problem.get_layout(layout_i);
+        let layout = problem.layout(layout_i);
         cache_updates.new_empty_nodes().for_each(|node_i| {
             let node = &layout.nodes()[*node_i];
             self.add_for_node(node_i, node, layout_i, parttypes.iter());

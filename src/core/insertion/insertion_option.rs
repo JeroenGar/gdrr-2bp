@@ -35,7 +35,7 @@ impl<'a> InsertionOption<'a> {
         problem: &Problem,
         blueprints: &mut Vec<InsertionBlueprint<'a>>,
     ) {
-        let layout = problem.get_layout(&self.layout_i);
+        let layout = problem.layout(&self.layout_i);
         let leftover_valuation_power = layout.leftover_valuation_power();
         let original_node = &layout.nodes()[self.original_node_i];
         let max_stages = layout.sheettype().max_stages;
@@ -77,10 +77,6 @@ impl<'a> InsertionOption<'a> {
 
     pub fn parttype(&self) -> &'a PartType {
         self.parttype
-    }
-
-    pub fn rotation(&self) -> Option<Rotation> {
-        self.rotation
     }
 
     pub fn original_node_index(&self) -> &NodeKey {

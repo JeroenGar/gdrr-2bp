@@ -167,11 +167,4 @@ impl GlobalSolCollector {
     pub fn best_incomplete_solution(&self) -> &Option<SendableSolution> {
         &self.best_incomplete_solution
     }
-    pub fn best_incomplete_cost(&self) -> &Option<Cost> {
-        &self.best_incomplete_cost
-    }
-
-    pub fn material_limit(&self) -> Option<u64> {
-        self.material_limit
-    }
 }

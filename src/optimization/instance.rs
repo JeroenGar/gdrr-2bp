@@ -35,26 +35,20 @@ impl Instance {
         &self.sheets
     }
 
-    pub fn get_parttype(&self, index: usize) -> &PartType {
-        &self.parts.get(index).as_ref().unwrap().0
+    pub fn parttype(&self, index: usize) -> &PartType {
+        &self.parts[index].0
     }
 
-    pub fn get_parttype_qty(&self, index: usize) -> Option<usize> {
-        match self.parts.get(index) {
-            Some((_, qty)) => Some(*qty),
-            None => None
-        }
+    pub fn parttype_qty(&self, index: usize) -> Option<usize> {
+        self.parts.get(index).map(|(_, qty)| *qty)
     }
 
-    pub fn get_sheettype(&self, index: usize) -> &SheetType {
-        &self.sheets.get(index).as_ref().unwrap().0
+    pub fn sheettype(&self, index: usize) -> &SheetType {
+        &self.sheets[index].0
     }
 
-    pub fn get_sheettype_qty(&self, index: usize) -> Option<usize> {
-        match self.sheets.get(index) {
-            Some((_, qty)) => Some(*qty),
-            None => None
-        }
+    pub fn sheettype_qty(&self, index: usize) -> Option<usize> {
+        self.sheets.get(index).map(|(_, qty)| *qty)
     }
 
     pub fn smallest_sheet_value(&self) -> u64 {

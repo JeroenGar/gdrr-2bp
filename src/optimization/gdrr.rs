@@ -224,7 +224,7 @@ impl<'a> GDRR<'a> {
     ) {
         let mut parttypes_to_consider: Vec<&PartType> = self.problem.parttype_qtys().iter().enumerate()
             .filter(|(_i, q)| { **q > 0 })
-            .map(|(i, _q)| -> &PartType { self.problem.instance().get_parttype(i) }).collect();
+            .map(|(i, _q)| -> &PartType { self.problem.instance().parttype(i) }).collect();
 
 
         insertion_option_cache.clear();

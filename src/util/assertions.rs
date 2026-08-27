@@ -158,7 +158,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
     }
 
     for (i, q) in problem.parttype_qtys().iter().enumerate() {
-        let parttype = problem.instance().get_parttype(i);
+        let parttype = problem.instance().parttype(i);
         match (q, parttypes.contains(&parttype)) {
             (0, true) => {
                 return false;

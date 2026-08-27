@@ -233,10 +233,9 @@ impl<'a> Layout<'a> {
         self.nodes.remove_subtree(node_index, removed_part_ids);
     }
 
-    pub fn get_included_parts(&self) -> Vec<usize> {
+    pub fn included_part_ids(&self) -> Vec<usize> {
         self.nodes.arena.iter()
-            .map(|(_, n)| n.parttype().map(|p| p.id()))
-            .flatten()
+            .filter_map(|(_, node)| node.parttype().map(|parttype| parttype.id()))
             .collect_vec()
     }
 
@@ -306,9 +305,6 @@ impl<'a> Layout<'a> {
         &self.nodes.arena
     }
 
-    pub fn id(&self) -> usize {
-        self.id
-    }
 }
 
 /// Owns a layout's mutable node topology and its derived lookup state.

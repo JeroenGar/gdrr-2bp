@@ -149,14 +149,8 @@ impl<'a> LocalSolCollector<'a> {
         self.best_incomplete_solution = None;
     }
 
-    pub fn best_complete_solution(&self) -> &Option<ProblemSolution<'a>> {
-        &self.best_complete_solution
-    }
     pub fn best_incomplete_solution(&self) -> &Option<ProblemSolution<'a>> {
         &self.best_incomplete_solution
-    }
-    pub fn cost_comparator(&self) -> fn(&Cost, &Cost) -> Ordering {
-        self.cost_comparator
     }
 
     pub fn material_limit(&self) -> u64 {
