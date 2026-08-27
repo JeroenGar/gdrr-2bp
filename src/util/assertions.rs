@@ -143,7 +143,7 @@ pub fn insertion_option_cache_is_valid<'a>(problem: &Problem<'a>, ioc: &Insertio
     let layouts_to_consider = || problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
         .chain(problem.empty_layouts().iter().enumerate()
             .filter(|(_, l)| problem.sheettype_qtys()[l.sheettype().id()] > 0)
-            .map(|(i, l)| (LayoutIndex::Empty(i), l))
+            .map(|(i, l)| (LayoutIndex::empty(i), l))
         );
 
     let mut fresh_ioc = InsertionOptionCache::new(problem.instance());

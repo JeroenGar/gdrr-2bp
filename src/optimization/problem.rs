@@ -116,7 +116,7 @@ impl<'a> Problem<'a> {
             }
             LayoutIndex::Empty(index) => {
                 let next_layout_id = self.next_layout_id();
-                let empty_layout = &self.empty_layouts[*index];
+                let empty_layout = &self.empty_layouts[*index as usize];
 
                 //Create a copy of the empty layout and register it
                 let empty_layout_clone = empty_layout.clone_with_id(next_layout_id);
@@ -274,7 +274,7 @@ impl<'a> Problem<'a> {
     pub fn get_layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
         match layout_index{
             LayoutIndex::Existing(index) => self.layouts.get(*index).unwrap(),
-            LayoutIndex::Empty(index) => self.empty_layouts.get(*index).unwrap(),
+            LayoutIndex::Empty(index) => self.empty_layouts.get(*index as usize).unwrap(),
         }
     }
 
