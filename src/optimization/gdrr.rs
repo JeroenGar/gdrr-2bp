@@ -3,8 +3,8 @@ use std::collections::VecDeque;
 
 use colored::*;
 use ordered_float::NotNan;
-use rand::prelude::SliceRandom;
 use rand::RngExt;
+use rand::prelude::SliceRandom;
 use rand::rngs::SmallRng;
 
 use crate::core::cost::Cost;
@@ -18,9 +18,9 @@ use crate::optimization::rr::insertion_option_cache::InsertionOptionCache;
 use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
-use crate::util::{assertions, blink};
 use crate::timed_thread_println;
 use crate::util::util;
+use crate::util::{assertions, blink};
 
 /// Goal-Driven Ruin and Recreate algorithm
 pub struct GDRR<'a> {
@@ -29,9 +29,12 @@ pub struct GDRR<'a> {
     local_sol_collector: LocalSolCollector<'a>,
 }
 
-
 impl<'a> GDRR<'a> {
-    pub fn new(instance: &'a Instance, config: &'a Config, local_sol_collector: LocalSolCollector<'a>) -> Self {
+    pub fn new(
+        instance: &'a Instance,
+        config: &'a Config,
+        local_sol_collector: LocalSolCollector<'a>,
+    ) -> Self {
         let problem = Problem::new(
             instance,
             config.random_seed,
@@ -48,19 +51,23 @@ impl<'a> GDRR<'a> {
         let stats = self.optimize_with_stats();
         let elapsed_ms = stats.elapsed.as_millis() as f64;
 
-        timed_thread_println!("{}:\t ({:.2} iter/s, {:.2} acc/s, {} impr)",
-                "GDRR finished".bright_magenta(),
-                 stats.n_iterations as f64 / elapsed_ms * 1000.0,
-                 stats.n_accepted as f64 / elapsed_ms * 1000.0,
-                stats.n_improved
+        timed_thread_println!(
+            "{}:\t ({:.2} iter/s, {:.2} acc/s, {} impr)",
+            "GDRR finished".bright_magenta(),
+            stats.n_iterations as f64 / elapsed_ms * 1000.0,
+            stats.n_accepted as f64 / elapsed_ms * 1000.0,
+            stats.n_improved
         );
-        timed_thread_println!("{}:\t {}", "Final incomp".bright_yellow(),
+        timed_thread_println!(
+            "{}:\t {}",
+            "Final incomp".bright_yellow(),
             match self.local_sol_collector.best_incomplete_solution() {
                 Some(sol) => {
                     util::solution_stats_string(sol)
                 }
-                None => "()".to_string()
-            });
+                None => "()".to_string(),
+            }
+        );
     }
 
     pub fn optimize(&mut self) {
@@ -92,8 +99,11 @@ impl<'a> GDRR<'a> {
 
             let mat_limit_budget = self.ruin(mat_limit_budget);
             let max_part_area_not_included = match local_optimum.as_ref() {
-                Some(local_optimum) => u64::max(lahc_history.front().unwrap().part_area_excluded, local_optimum.cost().part_area_excluded),
-                None => lahc_history.front().unwrap().part_area_excluded
+                Some(local_optimum) => u64::max(
+                    lahc_history.front().unwrap().part_area_excluded,
+                    local_optimum.cost().part_area_excluded,
+                ),
+                None => lahc_history.front().unwrap().part_area_excluded,
             };
 
             self.recreate(
@@ -104,20 +114,29 @@ impl<'a> GDRR<'a> {
 
             let cost = self.problem.cost();
 
-            if crate::COST_COMPARATOR(&cost, lahc_history.front().unwrap()) <= Ordering::Equal ||
-                (local_optimum.is_some() && crate::COST_COMPARATOR(&cost, local_optimum.as_ref().unwrap().cost()) <= Ordering::Equal) {
+            if crate::COST_COMPARATOR(&cost, lahc_history.front().unwrap()) <= Ordering::Equal
+                || (local_optimum.is_some()
+                    && crate::COST_COMPARATOR(&cost, local_optimum.as_ref().unwrap().cost())
+                        <= Ordering::Equal)
+            {
                 //Solution is better or equivalent to the last entry in the history queue or the local optimum.
 
-                local_optimum = Some(self.problem.create_solution(local_optimum.take(), Some(cost.clone())));
+                local_optimum = Some(
+                    self.problem
+                        .create_solution(local_optimum.take(), Some(cost.clone())),
+                );
 
                 lahc_history.pop_front();
 
-                if crate::COST_COMPARATOR(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
+                if crate::COST_COMPARATOR(&cost, lahc_history.back().unwrap_or(&empty_problem_cost))
+                    == Ordering::Less
+                {
                     //Current local optimum is better than the last value of the history queue
                     for _ in 0..(self.config.history_length - lahc_history.len()) {
                         lahc_history.push_back(cost.clone());
                     }
-                    self.local_sol_collector.report_problem_solution(local_optimum.as_ref().unwrap());
+                    self.local_sol_collector
+                        .report_problem_solution(local_optimum.as_ref().unwrap());
                     n_improved += 1;
                 } else {
                     //Current local optimum is not better, add the best cost to the history queue
@@ -128,7 +147,8 @@ impl<'a> GDRR<'a> {
                 }
                 n_accepted += 1;
             } else {
-                self.problem.restore_from_problem_solution(local_optimum.as_ref().unwrap());
+                self.problem
+                    .restore_from_problem_solution(local_optimum.as_ref().unwrap());
             }
 
             if self.local_sol_collector.material_limit() < mat_limit {
@@ -142,7 +162,11 @@ impl<'a> GDRR<'a> {
                 self.local_sol_collector.rx_sync()
             }
 
-            debug_assert!(lahc_history.len() <= self.config.history_length, "{}", lahc_history.len());
+            debug_assert!(
+                lahc_history.len() <= self.config.history_length,
+                "{}",
+                lahc_history.len()
+            );
         }
         OptimizationStats {
             elapsed: start_time.elapsed(),
@@ -153,7 +177,11 @@ impl<'a> GDRR<'a> {
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
-        let n_nodes_to_remove = self.problem.rng().random_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
+        let n_nodes_to_remove = self
+            .problem
+            .rng()
+            .random_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1)
+            + 2;
 
         if mat_limit_budget >= 0 {
             for _i in 0..n_nodes_to_remove {
@@ -167,7 +195,10 @@ impl<'a> GDRR<'a> {
                     let sample_index = self.problem.rng().random_range(0..n_layouts);
                     let layout_index = self.problem.layout_keys()[sample_index];
                     let usage = self.problem.layouts()[layout_index].usage();
-                    (layout_index, NotNan::new(usage).expect("layout usage is NaN"))
+                    (
+                        layout_index,
+                        NotNan::new(usage).expect("layout usage is NaN"),
+                    )
                 });
                 sampled_layouts.sort_by(|a, b| a.1.cmp(&b.1));
                 let sample = self.problem.rng().random::<f64>();
@@ -175,11 +206,14 @@ impl<'a> GDRR<'a> {
                     sample if sample <= 0.625 => 0,
                     sample if sample <= 0.875 => 1,
                     _ => 2,
-                }].0;
+                }]
+                .0;
 
                 let selected_node = self.problem.choose_removable_node(layout_index);
 
-                let removed_sheet_value = self.problem.remove_node(selected_node, LayoutIndex::Existing(layout_index));
+                let removed_sheet_value = self
+                    .problem
+                    .remove_node(selected_node, LayoutIndex::Existing(layout_index));
                 if let Some(removed_sheet_value) = removed_sheet_value {
                     mat_limit_budget += removed_sheet_value as i128;
                 }
@@ -187,11 +221,12 @@ impl<'a> GDRR<'a> {
         } else {
             while mat_limit_budget < 0 {
                 //Search the lowest usage layout
-                let min_usage_layout_index = self.problem.layouts().iter()
+                let min_usage_layout_index = self
+                    .problem
+                    .layouts()
+                    .iter()
                     .map(|(i, l)| (i, l.usage()))
-                    .min_by(|(_, a), (_, b)| {
-                        a.partial_cmp(b).unwrap()
-                    })
+                    .min_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
                     .map(|(i, _)| i);
 
                 let Some(min_usage_layout_index) = min_usage_layout_index else {
@@ -200,7 +235,8 @@ impl<'a> GDRR<'a> {
                 let top_node = *self.problem.layouts()[min_usage_layout_index].top_node_index();
 
                 // Release it and update mat_limit_exceedance.
-                let removed_sheet_value = self.problem
+                let removed_sheet_value = self
+                    .problem
                     .remove_node(top_node, LayoutIndex::Existing(min_usage_layout_index))
                     .expect("top node should remove entire layout");
                 mat_limit_budget += removed_sheet_value as i128;
@@ -215,29 +251,46 @@ impl<'a> GDRR<'a> {
         max_part_area_excluded: u64,
         insertion_option_cache: &mut InsertionOptionCache<'a>,
     ) {
-        let mut parttypes_to_consider: Vec<&PartType> = self.problem.parttype_qtys().iter().enumerate()
-            .filter(|(_i, q)| { **q > 0 })
-            .map(|(i, _q)| -> &PartType { self.problem.instance().parttype(i) }).collect();
-
+        let mut parttypes_to_consider: Vec<&PartType> = self
+            .problem
+            .parttype_qtys()
+            .iter()
+            .enumerate()
+            .filter(|(_i, q)| **q > 0)
+            .map(|(i, _q)| -> &PartType { self.problem.instance().parttype(i) })
+            .collect();
 
         insertion_option_cache.clear();
         let mut part_area_not_included: u64 = 0;
 
         //Iterate all layouts which should be considered during this recreate iteration
-        let layouts_to_consider = self.problem.layouts().iter().map(|(i, l)| (LayoutIndex::Existing(i), l))
-            .chain(self.problem.empty_layouts().iter().enumerate()
-                .filter(|(_, l)| self.problem.sheettype_qtys()[l.sheettype().id] > 0)
-                .map(|(i, l)| (LayoutIndex::empty(i), l))
+        let layouts_to_consider = self
+            .problem
+            .layouts()
+            .iter()
+            .map(|(i, l)| (LayoutIndex::Existing(i), l))
+            .chain(
+                self.problem
+                    .empty_layouts()
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, l)| self.problem.sheettype_qtys()[l.sheettype().id] > 0)
+                    .map(|(i, l)| (LayoutIndex::empty(i), l)),
             );
 
         //Generate insertion options for all relevant parttypes and layouts
         insertion_option_cache.add_for_parttypes(&parttypes_to_consider, layouts_to_consider);
-        debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, insertion_option_cache, &parttypes_to_consider));
+        debug_assert!(assertions::insertion_option_cache_is_valid(
+            &self.problem,
+            insertion_option_cache,
+            &parttypes_to_consider
+        ));
 
         let mut existing_layout_blueprints = Vec::new();
         let mut new_layout_blueprints = Vec::new();
         let mut parttype_indices = Vec::new();
-        while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded {
+        while !parttypes_to_consider.is_empty() && part_area_not_included <= max_part_area_excluded
+        {
             existing_layout_blueprints.clear();
             new_layout_blueprints.clear();
 
@@ -259,11 +312,17 @@ impl<'a> GDRR<'a> {
             );
 
             if let Some(elected_blueprint) = elected_blueprint.as_ref() {
-                let cache_updates = self.problem.implement_insertion_blueprint(elected_blueprint);
+                let cache_updates = self
+                    .problem
+                    .implement_insertion_blueprint(elected_blueprint);
                 if self.problem.parttype_qtys()[elected_parttype.id()] == 0 {
                     parttypes_to_consider.retain(|pt| pt.id() != elected_parttype.id());
                 }
-                insertion_option_cache.update_cache(&cache_updates, &parttypes_to_consider, &self.problem);
+                insertion_option_cache.update_cache(
+                    &cache_updates,
+                    &parttypes_to_consider,
+                    &self.problem,
+                );
 
                 if let LayoutIndex::Empty(index) = elected_blueprint.layout_index() {
                     //update mat_limit_budget
@@ -273,10 +332,15 @@ impl<'a> GDRR<'a> {
 
                     if self.problem.sheettype_qtys()[sheettype_id] == 0 {
                         //There is no more stock left of this sheettype, remove all empty layouts with this sheettype from the cache
-                        for (i, layout) in self.problem.empty_layouts().iter().enumerate()
+                        for (i, layout) in self
+                            .problem
+                            .empty_layouts()
+                            .iter()
+                            .enumerate()
                             .filter(|(_, layout)| layout.sheettype().id == sheettype_id)
                         {
-                            insertion_option_cache.remove_all_for_layout(&LayoutIndex::empty(i), layout);
+                            insertion_option_cache
+                                .remove_all_for_layout(&LayoutIndex::empty(i), layout);
                         }
                     }
                 }
@@ -284,15 +348,33 @@ impl<'a> GDRR<'a> {
                     break;
                 }
 
-                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
+                debug_assert!(
+                    assertions::insertion_option_cache_is_valid(
+                        &self.problem,
+                        insertion_option_cache,
+                        &parttypes_to_consider
+                    ),
+                    "{:#?}\n{:#?}",
+                    elected_blueprint,
+                    cache_updates
+                );
             } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem
-                part_area_not_included += self.problem.parttype_qtys()[elected_parttype.id()] as u64
+                part_area_not_included += self.problem.parttype_qtys()[elected_parttype.id()]
+                    as u64
                     * elected_parttype.area();
 
                 parttypes_to_consider.retain(|pt| pt.id() != elected_parttype.id());
 
-                debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
+                debug_assert!(
+                    assertions::insertion_option_cache_is_valid(
+                        &self.problem,
+                        insertion_option_cache,
+                        &parttypes_to_consider
+                    ),
+                    "{:#?}",
+                    elected_blueprint
+                );
             }
         }
     }
@@ -338,16 +420,20 @@ impl<'a> GDRR<'a> {
         }
 
         if !existing_layout_blueprints.is_empty() {
-            existing_layout_blueprints.sort_by(|a, b| {
-                crate::COST_COMPARATOR(a.cost(), b.cost())
-            });
-            let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, problem.rng());
+            existing_layout_blueprints.sort_by(|a, b| crate::COST_COMPARATOR(a.cost(), b.cost()));
+            let selected_blinked_index = blink::select_lowest_in_range(
+                0..existing_layout_blueprints.len(),
+                config.blink_rate,
+                problem.rng(),
+            );
             return Some(existing_layout_blueprints.swap_remove(selected_blinked_index));
         }
 
         for option in insertion_option_cache.options_for_parttype(parttype) {
             if let LayoutIndex::Empty(i) = option.layout_index() {
-                if mat_limit_budget >= problem.empty_layouts()[*i as usize].sheettype().value as i128 {
+                if mat_limit_budget
+                    >= problem.empty_layouts()[*i as usize].sheettype().value as i128
+                {
                     option.append_blueprints(problem, new_layout_blueprints);
                 }
             }

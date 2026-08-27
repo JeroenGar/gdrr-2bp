@@ -1,4 +1,4 @@
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::num::NonZeroU32;
 
 use crate::core::cost::Cost;
@@ -27,9 +27,14 @@ pub struct Node<'a> {
     removable_position: Option<NonZeroU32>,
 }
 
-
 impl<'a> Node<'a> {
-    pub fn new(level: u8, width: u64, height: u64, next_cut_orient: Orientation, parttype: Option<&'a PartType>) -> Node<'a> {
+    pub fn new(
+        level: u8,
+        width: u64,
+        height: u64,
+        next_cut_orient: Orientation,
+        parttype: Option<&'a PartType>,
+    ) -> Node<'a> {
         Node {
             level,
             width,
@@ -85,12 +90,14 @@ impl<'a> Node<'a> {
     }
 
     pub fn insertion_possible(&self, parttype: &PartType, rotation: Rotation) -> bool {
-        debug_assert!(parttype.fixed_rotation().is_none() || parttype.fixed_rotation() == Some(rotation));
+        debug_assert!(
+            parttype.fixed_rotation().is_none() || parttype.fixed_rotation() == Some(rotation)
+        );
         debug_assert!(!self.has_children() && self.parttype.is_none());
 
         let part_size = match rotation {
             Rotation::Default => parttype.size(),
-            Rotation::Rotated => parttype.rotated_size()
+            Rotation::Rotated => parttype.rotated_size(),
         };
 
         self.width >= part_size.width() && self.height >= part_size.height()
@@ -99,7 +106,7 @@ impl<'a> Node<'a> {
     pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
         match (self.parttype, self.has_children()) {
             (Some(_), false) => Cost::empty(), // part-node
-            (None, true) => Cost::empty(), // structure-node
+            (None, true) => Cost::empty(),     // structure-node
             (None, false) => Cost::empty().add_leftover_value(leftover_valuator::valuate(
                 self.area(),
                 leftover_valuation_power,
@@ -130,7 +137,10 @@ impl<'a> Node<'a> {
     pub fn has_children(&self) -> bool {
         self.first_child.is_some()
     }
-    pub fn children<'n>(&self, nodes: &'n SlotMap<NodeKey, Node<'a>>) -> impl Iterator<Item = NodeKey> + 'n {
+    pub fn children<'n>(
+        &self,
+        nodes: &'n SlotMap<NodeKey, Node<'a>>,
+    ) -> impl Iterator<Item = NodeKey> + 'n {
         let mut next_child = self.first_child;
         std::iter::from_fn(move || {
             let child = next_child?;
@@ -157,12 +167,13 @@ impl<'a> Node<'a> {
         self.level
     }
     pub(crate) fn removable_position(&self) -> Option<usize> {
-        self.removable_position.map(|position| position.get() as usize - 1)
+        self.removable_position
+            .map(|position| position.get() as usize - 1)
     }
     pub(super) fn set_removable_position(&mut self, position: Option<usize>) {
         self.removable_position = position.map(|position| {
-            let position = u32::try_from(position + 1)
-                .expect("layout exceeds u32 removable-node positions");
+            let position =
+                u32::try_from(position + 1).expect("layout exceeds u32 removable-node positions");
             NonZeroU32::new(position).unwrap()
         });
     }

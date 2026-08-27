@@ -13,4 +13,3 @@ pub enum SolutionReportMessage {
     NewIncompleteStats(String, SolutionStats),
     NewIncompleteSolution(String, SendableSolution),
 }
-

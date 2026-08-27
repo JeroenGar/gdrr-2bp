@@ -7,7 +7,8 @@ pub fn solution_stats_string(solution: &dyn Solution) -> String {
         solution.usage() * 100.0,
         solution.cost().part_area_fraction_included() * 100.0,
         solution.n_layouts(),
-        solution.cost().material_cost)
+        solution.cost().material_cost
+    )
 }
 
 pub fn compact_stats_string(stats: &SolutionStats) -> String {
@@ -16,5 +17,6 @@ pub fn compact_stats_string(stats: &SolutionStats) -> String {
         stats.usage * 100.0,
         stats.cost.part_area_fraction_included() * 100.0,
         stats.n_sheets,
-        stats.cost.material_cost)
+        stats.cost.material_cost
+    )
 }

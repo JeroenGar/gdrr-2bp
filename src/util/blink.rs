@@ -1,6 +1,6 @@
-use std::ops::Range;
 use rand::RngExt;
 use rand::rngs::SmallRng;
+use std::ops::Range;
 
 /// Christiaens, J., & Vanden Berghe, G. (2020). Slack Induction by String Removals for Vehicle Routing Problems. (https://lirias.kuleuven.be/retrieve/510989)
 ///
@@ -11,7 +11,11 @@ use rand::rngs::SmallRng;
 /// A blink chance of 1% means that 99% of the time, the lowest value will be selected,
 /// 0.99% of the time, the second lowest value will be selected, and so on.
 
-pub fn select_lowest_entry(entries: impl Iterator<Item = usize>, blink_chance: f32, rand: &mut SmallRng) -> usize {
+pub fn select_lowest_entry(
+    entries: impl Iterator<Item = usize>,
+    blink_chance: f32,
+    rand: &mut SmallRng,
+) -> usize {
     let mut lowest_value = usize::MAX;
     let mut selected_index = 0;
 
@@ -24,7 +28,11 @@ pub fn select_lowest_entry(entries: impl Iterator<Item = usize>, blink_chance: f
     return selected_index;
 }
 
-pub fn select_lowest_in_range(range: Range<usize>, blink_chance: f32, rand: &mut SmallRng) -> usize {
+pub fn select_lowest_in_range(
+    range: Range<usize>,
+    blink_chance: f32,
+    rand: &mut SmallRng,
+) -> usize {
     let range_end = range.end;
     for i in range {
         if rand.random::<f32>() > blink_chance {

@@ -1,8 +1,8 @@
 pub mod cost;
-pub mod size;
-pub mod insertion;
-pub mod orientation;
 pub mod entities;
-pub mod rotation;
-pub mod leftover_valuator;
+pub mod insertion;
 pub mod layout_index;
+pub mod leftover_valuator;
+pub mod orientation;
+pub mod rotation;
+pub mod size;

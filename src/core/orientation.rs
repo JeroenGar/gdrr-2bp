@@ -8,7 +8,7 @@ impl Orientation {
     pub fn rotate(&self) -> Orientation {
         match self {
             Orientation::Horizontal => Orientation::Vertical,
-            Orientation::Vertical => Orientation::Horizontal
+            Orientation::Vertical => Orientation::Horizontal,
         }
     }
 }

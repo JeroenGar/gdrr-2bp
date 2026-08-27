@@ -1,5 +1,5 @@
-use rand::prelude::IndexedRandom;
 use rand::SeedableRng;
+use rand::prelude::IndexedRandom;
 use rand::rngs::SmallRng;
 use slotmap::SlotMap;
 
@@ -38,12 +38,20 @@ impl<'a> Problem<'a> {
         random_seed: Option<u64>,
         leftover_valuation_power: f32,
     ) -> Self {
-        let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
+        let parttype_qtys = instance
+            .parts()
+            .iter()
+            .map(|(_, qty)| *qty)
+            .collect::<Vec<_>>();
         let part_area_excluded = instance.total_part_area();
-        let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
+        let sheettype_qtys = instance
+            .sheets()
+            .iter()
+            .map(|(_, qty)| *qty)
+            .collect::<Vec<_>>();
         let random = match random_seed {
             Some(seed) => SmallRng::seed_from_u64(seed),
-            None => SmallRng::from_rng(&mut rand::rng())
+            None => SmallRng::from_rng(&mut rand::rng()),
         };
 
         let mut problem = Problem {
@@ -51,12 +59,12 @@ impl<'a> Problem<'a> {
             parttype_qtys,
             part_area_excluded,
             sheettype_qtys,
-            layouts : ProblemLayouts::new(),
-            empty_layouts : Vec::new(),
-            solution_id_changed_layouts : None,
+            layouts: ProblemLayouts::new(),
+            empty_layouts: Vec::new(),
+            solution_id_changed_layouts: None,
             rng: random,
-            solution_id_counter : 0,
-            layout_id_counter : 0,
+            solution_id_counter: 0,
+            layout_id_counter: 0,
         };
 
         //Initiate the empty layouts
@@ -84,7 +92,9 @@ impl<'a> Problem<'a> {
                         Orientation::Vertical,
                         leftover_valuation_power,
                     );
-                    problem.empty_layouts.extend([empty_layout_h, empty_layout_v]);
+                    problem
+                        .empty_layouts
+                        .extend([empty_layout_h, empty_layout_v]);
                 }
             }
         }
@@ -93,16 +103,17 @@ impl<'a> Problem<'a> {
 
     /// Modifies the problem by inserting an part according to the InsertionBlueprint.
     /// It returns which updates should be made to the InsertionOptionCache and whether or not a new layout was created.
-    pub fn implement_insertion_blueprint(&mut self, blueprint: &InsertionBlueprint<'a>) -> IOCUpdates {
+    pub fn implement_insertion_blueprint(
+        &mut self,
+        blueprint: &InsertionBlueprint<'a>,
+    ) -> IOCUpdates {
         self.register_part(blueprint.parttype().id(), 1);
 
         match blueprint.layout_index() {
             LayoutIndex::Existing(index) => {
                 let blueprint_layout = &mut self.layouts.live[*index];
-                let mut cache_updates = IOCUpdates::new(
-                    *blueprint.layout_index(),
-                    *blueprint.original_node_index(),
-                );
+                let mut cache_updates =
+                    IOCUpdates::new(*blueprint.layout_index(), *blueprint.original_node_index());
                 blueprint_layout.implement_insertion_blueprint(blueprint, &mut cache_updates);
 
                 self.layouts.mark_changed(*index);
@@ -122,7 +133,8 @@ impl<'a> Problem<'a> {
                     LayoutIndex::Existing(clone_index),
                     *blueprint.original_node_index(),
                 );
-                self.layouts.live[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates);
+                self.layouts.live[clone_index]
+                    .implement_insertion_blueprint(blueprint, &mut cache_updates);
 
                 cache_updates
             }
@@ -153,8 +165,11 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&mut self) -> Cost {
-        let mut cost = self.layouts.live.iter_mut()
-            .fold(Cost::empty(), |acc, (_,l)| acc + l.cost(false));
+        let mut cost = self
+            .layouts
+            .live
+            .iter_mut()
+            .fold(Cost::empty(), |acc, (_, l)| acc + l.cost(false));
 
         cost.part_area_excluded = self.part_area_excluded();
 
@@ -163,7 +178,11 @@ impl<'a> Problem<'a> {
         cost
     }
 
-    pub fn create_solution(&mut self, old_solution: Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
+    pub fn create_solution(
+        &mut self,
+        old_solution: Option<ProblemSolution<'a>>,
+        cached_cost: Option<Cost>,
+    ) -> ProblemSolution<'a> {
         debug_assert!(cached_cost.as_ref().is_none_or(|cost| cost == &self.cost()));
         self.layouts.discard_detached();
         let id = self.next_solution_id();
@@ -173,12 +192,15 @@ impl<'a> Problem<'a> {
                 debug_assert!(old_solution.id() == self.solution_id_changed_layouts.unwrap());
                 ProblemSolution::new(self, cost, id, old_solution)
             }
-            None => {
-                ProblemSolution::new_force_copy_all(self, cost, id)
-            }
+            None => ProblemSolution::new_force_copy_all(self, cost, id),
         };
 
-        debug_assert!(assertions::problem_matches_solution(self, &solution), "{:#?},{:#?}", id, self.solution_id_changed_layouts);
+        debug_assert!(
+            assertions::problem_matches_solution(self, &solution),
+            "{:#?},{:#?}",
+            id,
+            self.solution_id_changed_layouts
+        );
 
         self.reset_changed_layouts(solution.id());
 
@@ -205,9 +227,11 @@ impl<'a> Problem<'a> {
 
     pub fn usage(&self) -> f64 {
         let total_included_part_area = self.instance.total_part_area() - self.part_area_excluded();
-        let total_used_sheet_area = self.layouts().iter().map(
-            |(_, layout)| { layout.sheettype().area() }
-        ).sum::<u64>();
+        let total_used_sheet_area = self
+            .layouts()
+            .iter()
+            .map(|(_, layout)| layout.sheettype().area())
+            .sum::<u64>();
 
         total_included_part_area as f64 / total_used_sheet_area as f64
     }
@@ -244,8 +268,8 @@ impl<'a> Problem<'a> {
         self.layouts.keys()
     }
 
-    pub fn layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
-        match layout_index{
+    pub fn layout(&self, layout_index: &LayoutIndex) -> &Layout<'a> {
+        match layout_index {
             LayoutIndex::Existing(index) => &self.layouts.live[*index],
             LayoutIndex::Empty(index) => &self.empty_layouts[*index as usize],
         }
@@ -290,7 +314,10 @@ impl<'a> Problem<'a> {
     }
 
     fn unregister_part(&mut self, parttype_id: usize, qty: usize) {
-        debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.parttype_qty(parttype_id).unwrap());
+        debug_assert!(
+            self.parttype_qtys[parttype_id] + qty
+                <= self.instance.parttype_qty(parttype_id).unwrap()
+        );
         self.parttype_qtys[parttype_id] += qty;
         self.part_area_excluded += self.instance.parttype(parttype_id).area() * qty as u64;
     }
@@ -301,7 +328,10 @@ impl<'a> Problem<'a> {
     }
 
     fn unregister_sheet(&mut self, sheettype_id: usize, qty: usize) {
-        debug_assert!(self.sheettype_qtys[sheettype_id] + qty <= self.instance.sheettype_qty(sheettype_id).unwrap());
+        debug_assert!(
+            self.sheettype_qtys[sheettype_id] + qty
+                <= self.instance.sheettype_qty(sheettype_id).unwrap()
+        );
         self.sheettype_qtys[sheettype_id] += qty;
     }
 
@@ -326,9 +356,12 @@ impl<'a> Problem<'a> {
     fn part_area_excluded(&self) -> u64 {
         debug_assert_eq!(
             self.part_area_excluded,
-            self.parttype_qtys.iter().enumerate().fold(0, |area, (id, qty)| {
-                area + self.instance.parttype(id).area() * *qty as u64
-            }),
+            self.parttype_qtys
+                .iter()
+                .enumerate()
+                .fold(0, |area, (id, qty)| {
+                    area + self.instance.parttype(id).area() * *qty as u64
+                }),
         );
         self.part_area_excluded
     }
@@ -365,7 +398,9 @@ impl<'a> ProblemLayouts<'a> {
 
     fn detach(&mut self, key: LayoutKey) {
         let layout = self.live.detach(key).expect("Layout not found");
-        let position = self.keys.iter()
+        let position = self
+            .keys
+            .iter()
             .position(|candidate| *candidate == key)
             .expect("live layout key is not tracked");
         self.keys.swap_remove(position);
@@ -380,15 +415,17 @@ impl<'a> ProblemLayouts<'a> {
                 (true, None) => {
                     self.live.remove(key);
                     self.untrack(key);
-                },
+                }
                 (false, Some(layout)) => {
-                    let detached_index = self.detached.iter()
+                    let detached_index = self
+                        .detached
+                        .iter()
                         .position(|(detached_key, _)| *detached_key == key)
                         .expect("changed layout key was not detached");
                     self.detached.swap_remove(detached_index);
                     self.live.reattach(key, layout.as_ref().clone());
                     self.keys.push(key);
-                },
+                }
                 (false, None) => (),
             }
         }
@@ -415,12 +452,19 @@ impl<'a> ProblemLayouts<'a> {
     fn keys(&self) -> &[LayoutKey] {
         debug_assert_eq!(self.keys.len(), self.live.len());
         debug_assert!(self.keys.iter().all(|key| self.live.contains_key(*key)));
-        debug_assert!(self.keys.iter().enumerate().all(|(i, key)| !self.keys[..i].contains(key)));
+        debug_assert!(
+            self.keys
+                .iter()
+                .enumerate()
+                .all(|(i, key)| !self.keys[..i].contains(key))
+        );
         &self.keys
     }
 
     fn untrack(&mut self, key: LayoutKey) {
-        let position = self.keys.iter()
+        let position = self
+            .keys
+            .iter()
             .position(|candidate| *candidate == key)
             .expect("live layout key is not tracked");
         self.keys.swap_remove(position);

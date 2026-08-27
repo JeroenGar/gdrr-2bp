@@ -19,10 +19,21 @@ pub struct NodeBlueprint {
 }
 
 impl NodeBlueprint {
-    pub fn new(width: u64, height: u64, parttype: Option<&PartType>, next_cut_orient: Orientation) -> Self {
+    pub fn new(
+        width: u64,
+        height: u64,
+        parttype: Option<&PartType>,
+        next_cut_orient: Orientation,
+    ) -> Self {
         let children = Vec::new();
         let parttype_id = parttype.map(PartType::id);
-        Self { width, height, children, parttype_id, next_cut_orient }
+        Self {
+            width,
+            height,
+            children,
+            parttype_id,
+            next_cut_orient,
+        }
     }
 
     pub fn from_node(node_index: NodeKey, nodes: &SlotMap<NodeKey, Node>) -> Self {
@@ -31,11 +42,18 @@ impl NodeBlueprint {
         let (width, height) = (node.width(), node.height());
         let next_cut_orient = node.next_cut_orient();
         let parttype_id = node.parttype().map(PartType::id);
-        let children = node.children(nodes)
+        let children = node
+            .children(nodes)
             .map(|child_index| NodeBlueprint::from_node(child_index, nodes))
             .collect_vec();
 
-        Self { width, height, parttype_id, children, next_cut_orient }
+        Self {
+            width,
+            height,
+            parttype_id,
+            children,
+            next_cut_orient,
+        }
     }
 
     pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
@@ -62,10 +80,12 @@ impl NodeBlueprint {
         } else if self.children.is_empty() {
             0.0
         } else {
-            let usage = self.children
+            let usage = self
+                .children
                 .iter()
                 .map(|child| child.area() as f64 * child.calculate_usage())
-                .sum::<f64>() / self.area() as f64;
+                .sum::<f64>()
+                / self.area() as f64;
             debug_assert!(usage <= 1.0);
             usage
         }
@@ -78,5 +98,4 @@ impl NodeBlueprint {
     pub fn area(&self) -> u64 {
         self.width * self.height
     }
-
 }

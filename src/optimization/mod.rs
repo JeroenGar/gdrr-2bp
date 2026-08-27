@@ -1,7 +1,7 @@
-pub mod problem;
+pub mod config;
 pub mod gdrr;
+pub mod instance;
+pub mod problem;
 pub mod rr;
 pub mod sol_collectors;
-pub mod instance;
-pub mod config;
 pub mod solutions;
