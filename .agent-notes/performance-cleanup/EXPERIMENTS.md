@@ -26,6 +26,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Compact insertion-cache positions after `00f3b6a`
+
+- Stored each cached option's part-type and node reverse positions as `u32`, shrinking `CachedInsertionOption` from 56 to 48 bytes.
+- Full-solver Criterion found no gain: -0.54% median throughput with a `-1.05%..-0.01%` confidence interval and `p = 0.08`.
+- Reverted because the smaller cache entry did not improve the full solver and adds integer conversion and a representable-size invariant.
+
 ### Circular sibling-tail links after `ce15909`
 
 - Removed each node's last-child key and stored the tail key in the first child's previous-sibling field, shrinking `Node` from 72 to 64 bytes and each SlotMap slot from 80 to 72 bytes.
