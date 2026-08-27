@@ -39,7 +39,8 @@ General usage:
 cargo run --release -- \
     <INPUT> \
     --config <CONFIG> \
-    [--output <DIR>]
+    [--output <DIR>] \
+    [--no-progress]
 ```
 Concrete example:
 ```bash
@@ -135,28 +136,7 @@ Examples can be found in the [examples](examples/) folder.
 
 ## Console
 
-During the optimization, improving solutions are logged to the console (among other things). 
-Both `complete` and `incomplete` solutions are reported.
-
-Example:
-```
-[00:00:13]	[T3]	<incomplete>	(usage: 96.467%, p_incl: 99.992%, sheets: 297, mat: 60112800000000)
-[00:00:13]	[T3]	<incomplete>	(usage: 96.469%, p_incl: 99.994%, sheets: 297, mat: 60112800000000)
-[00:00:13]	[T3]	<incomplete>	(usage: 96.470%, p_incl: 99.995%, sheets: 297, mat: 60112800000000)
-[00:00:13]	[T3]	<incomplete>	(usage: 96.472%, p_incl: 99.997%, sheets: 297, mat: 60112800000000)
-[00:00:14]	[T3]	<complete>      (usage: 96.475%, p_incl: 100.000%, sheets: 297, mat: 60112800000000)
-[00:00:14]	[T2]	<incomplete>	(usage: 96.492%, p_incl: 99.681%, sheets: 296, mat: 59910400000000)
-[00:00:14]	[T2]	<incomplete>	(usage: 96.493%, p_incl: 99.682%, sheets: 296, mat: 59910400000000)
-```
-| Value          | Explanation                                                                  |
-|----------------|------------------------------------------------------------------------------|
-| [HH:MM:SS]     | Time passed since the start of the optimization                              |
-| [T_]           | Thread that found the solution                                               |
-| <(in)complete> | Denotes whether the solution contains all required items or is incomplete    |
-| usage          | (total included item area) / (total used bin area) * 100                     |
-| p_incl         | (total included item area) / (total required item area) * 100                |
-| sheets         | Number of bins used in the solution                                          |
-| mat            | Total value of the bins used in the solution                 
+Interactive terminals show one live status line per worker, with the leading worker in green. New best feasible solutions remain in the terminal history. Redirected output and `--no-progress` use timestamped lines instead. Both modes finish with an aggregate throughput and solution summary.
 
 ## Acknowledgements
 

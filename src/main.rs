@@ -2,15 +2,11 @@ mod optimization_pipeline;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::time::Instant;
 
 use clap::Parser;
-use once_cell::sync::Lazy;
 
 #[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
-
-pub static EPOCH: Lazy<Instant> = Lazy::new(Instant::now);
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -34,11 +30,15 @@ struct Cli {
     /// Write JSON and HTML solutions to this directory.
     #[arg(short, long, value_name = "DIR")]
     output: Option<PathBuf>,
+
+    /// Disable the interactive progress display.
+    #[arg(long)]
+    no_progress: bool,
 }
 
 fn main() -> ExitCode {
     let args = Cli::parse();
-    match optimization_pipeline::run(args.input, args.config, args.output) {
+    match optimization_pipeline::run(args.input, args.config, args.output, !args.no_progress) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("error: {error}");
