@@ -116,7 +116,7 @@ impl<'a> GDRR<'a> {
                 (local_optimum.is_some() && (self.cost_comparator)(&cost, local_optimum.as_ref().unwrap().cost()) <= Ordering::Equal) {
                 //Solution is better or equivalent to the last entry in the history queue or the local optimum.
 
-                local_optimum = Some(self.problem.create_solution(&local_optimum, Some(cost.clone())));
+                local_optimum = Some(self.problem.create_solution(local_optimum.take(), Some(cost.clone())));
 
                 lahc_history.pop_front();
 

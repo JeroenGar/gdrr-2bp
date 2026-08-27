@@ -24,37 +24,29 @@ pub struct ProblemSolution<'a> {
 }
 
 impl<'a> ProblemSolution<'a> {
-    pub fn new(problem: &Problem<'a>, cost: Cost, id: usize, prev_solution: &ProblemSolution<'a>) -> ProblemSolution<'a> {
-        let mut layouts = SecondaryMap::with_capacity(problem.layouts().capacity());
-
-        for (layout_key, layout) in problem.layouts() {
-            if problem.changed_layouts().contains(&layout_key) {
-                layouts.insert(layout_key, Rc::new(layout.clone()));
-            } else {
-                let prev_solution_layout = prev_solution.layouts.get(layout_key).expect("Unchanged layout not found in previous solution");
-                layouts.insert(layout_key, prev_solution_layout.clone());
+    pub fn new(problem: &Problem<'a>, cost: Cost, id: usize, mut prev_solution: ProblemSolution<'a>) -> ProblemSolution<'a> {
+        for &layout_key in problem.changed_layouts() {
+            match problem.layouts().get(layout_key) {
+                Some(layout) => {
+                    prev_solution.layouts.insert(layout_key, Rc::new(layout.clone()));
+                }
+                None => {
+                    prev_solution.layouts.remove(layout_key);
+                }
             }
         }
 
-        debug_assert!(layouts.iter().all(|(_id, l)| {
+        debug_assert!(prev_solution.layouts.iter().all(|(_id, l)| {
             let top_node = l.top_node_index();
             assertions::children_nodes_fit(top_node, l.nodes())
         }));
 
-        let parttype_qtys = problem.parttype_qtys().clone();
-        let sheettype_qtys = problem.sheettype_qtys().clone();
-
-        let usage = problem.usage();
-
-        Self {
-            instance: problem.instance(),
-            layouts,
-            cost,
-            id,
-            parttype_qtys,
-            sheettype_qtys,
-            usage,
-        }
+        prev_solution.cost = cost;
+        prev_solution.id = id;
+        prev_solution.parttype_qtys = problem.parttype_qtys().clone();
+        prev_solution.sheettype_qtys = problem.sheettype_qtys().clone();
+        prev_solution.usage = problem.usage();
+        prev_solution
     }
 
     pub fn new_force_copy_all(problem: &Problem<'a>, cost: Cost, id: usize) -> ProblemSolution<'a> {

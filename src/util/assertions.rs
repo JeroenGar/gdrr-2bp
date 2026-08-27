@@ -93,7 +93,7 @@ pub fn all_weak_references_alive<T>(values: &Vec<Weak<T>>) -> bool {
 }
 
 pub fn problem_matches_solution(problem: &Problem, solution: &ProblemSolution) -> bool {
-    if !problem.layouts().len() == solution.layouts().len() {
+    if problem.layouts().len() != solution.layouts().len() {
         return false;
     }
 

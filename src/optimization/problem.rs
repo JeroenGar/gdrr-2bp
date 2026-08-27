@@ -161,7 +161,7 @@ impl<'a> Problem<'a> {
         cost
     }
 
-    pub fn create_solution(&mut self, old_solution: &Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
+    pub fn create_solution(&mut self, old_solution: Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
         //TODO: implement cached cost for problem
 
         debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
