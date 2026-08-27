@@ -237,6 +237,21 @@ pub fn cached_used_part_area_correct(nodes: &SlotMap<NodeKey, Node>, cached_used
         .sum::<u64>() == cached_used_part_area
 }
 
+pub fn cached_removable_nodes_correct(nodes: &SlotMap<NodeKey, Node>, removable_nodes: &[NodeKey]) -> bool {
+    nodes.iter().all(|(node_key, node)| {
+        let removable = node.parttype().is_some() || node.has_children();
+        match node.removable_position() {
+            Some(position) => removable && removable_nodes.get(position) == Some(&node_key),
+            None => !removable,
+        }
+    }) && removable_nodes.iter().enumerate().all(|(position, node_key)| {
+        nodes.get(*node_key).is_some_and(|node| {
+            node.removable_position() == Some(position)
+                && (node.parttype().is_some() || node.has_children())
+        })
+    })
+}
+
 pub fn instance_parttypes_and_sheettypes_ids_correct(parttypes: &Vec<(PartType, usize)>, sheettypes: &Vec<(SheetType, usize)>) -> bool {
     parttypes.iter().enumerate().all(|(i, (p, _qty))| {
         p.id() == i

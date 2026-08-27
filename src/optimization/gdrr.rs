@@ -3,12 +3,11 @@ use std::collections::VecDeque;
 
 use colored::*;
 use ordered_float::NotNan;
-use rand::prelude::{IndexedRandom, SliceRandom};
+use rand::prelude::SliceRandom;
 use rand::RngExt;
 use rand::rngs::SmallRng;
 
 use crate::core::cost::Cost;
-use crate::core::entities::node::NodeKey;
 use crate::core::entities::parttype::PartType;
 use crate::core::insertion::insertion_blueprint::InsertionBlueprint;
 use crate::core::layout_index::LayoutIndex;
@@ -89,7 +88,6 @@ impl<'a> GDRR<'a> {
         let mut n_improved = 0;
         let mut mat_limit = self.local_sol_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
-        let mut removable_nodes = Vec::new();
         let mut insertion_option_cache = InsertionOptionCache::new(self.instance);
 
         while n_iterations < max_rr_iterations && !self.local_sol_collector.terminate() {
@@ -98,7 +96,7 @@ impl<'a> GDRR<'a> {
                 None => mat_limit as i128 - 1 - self.problem.cost().material_cost as i128,
             };
 
-            let mat_limit_budget = self.ruin(mat_limit_budget, &mut removable_nodes);
+            let mat_limit_budget = self.ruin(mat_limit_budget);
             let max_part_area_not_included = match local_optimum.as_ref() {
                 Some(local_optimum) => u64::max(lahc_history.front().unwrap().part_area_excluded, local_optimum.cost().part_area_excluded),
                 None => lahc_history.front().unwrap().part_area_excluded
@@ -160,7 +158,7 @@ impl<'a> GDRR<'a> {
         }
     }
 
-    fn ruin(&mut self, mut mat_limit_budget: i128, removable_nodes: &mut Vec<NodeKey>) -> i128 {
+    fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
         let n_nodes_to_remove = self.problem.rng().random_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
@@ -185,9 +183,7 @@ impl<'a> GDRR<'a> {
                     _ => 2,
                 }].0;
 
-                removable_nodes.clear();
-                removable_nodes.extend(self.problem.layouts()[layout_index].removable_nodes());
-                let selected_node = *removable_nodes.choose(&mut self.problem.rng()).unwrap();
+                let selected_node = self.problem.choose_removable_node(layout_index);
 
                 let removed_sheet_value = self.problem.remove_node(selected_node, LayoutIndex::Existing(layout_index));
                 if let Some(removed_sheet_value) = removed_sheet_value {

@@ -1,4 +1,5 @@
 use slotmap::{new_key_type, SlotMap};
+use std::num::NonZeroU32;
 
 use crate::core::cost::Cost;
 use crate::core::entities::parttype::PartType;
@@ -23,6 +24,7 @@ pub struct Node<'a> {
     pub(super) next_sibling: Option<NodeKey>,
     parttype: Option<&'a PartType>,
     next_cut_orient: Orientation,
+    removable_position: Option<NonZeroU32>,
 }
 
 
@@ -39,6 +41,7 @@ impl<'a> Node<'a> {
             next_sibling: None,
             parttype,
             next_cut_orient,
+            removable_position: None,
         }
     }
 
@@ -152,5 +155,15 @@ impl<'a> Node<'a> {
     }
     pub fn level(&self) -> u8 {
         self.level
+    }
+    pub(crate) fn removable_position(&self) -> Option<usize> {
+        self.removable_position.map(|position| position.get() as usize - 1)
+    }
+    pub(super) fn set_removable_position(&mut self, position: Option<usize>) {
+        self.removable_position = position.map(|position| {
+            let position = u32::try_from(position + 1)
+                .expect("layout exceeds u32 removable-node positions");
+            NonZeroU32::new(position).unwrap()
+        });
     }
 }

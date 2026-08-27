@@ -1,3 +1,4 @@
+use rand::prelude::IndexedRandom;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 use slotmap::SlotMap;
@@ -246,6 +247,14 @@ impl<'a> Problem<'a> {
 
     pub fn rng(&mut self) -> &mut SmallRng {
         &mut self.rng
+    }
+
+    pub fn choose_removable_node(&mut self, layout_index: LayoutKey) -> NodeKey {
+        let layouts = &self.layouts;
+        *layouts[layout_index]
+            .removable_nodes()
+            .choose(&mut self.rng)
+            .expect("layout has no removable node")
     }
 
     pub fn layouts(&self) -> &SlotMap<LayoutKey, Layout<'a>> {

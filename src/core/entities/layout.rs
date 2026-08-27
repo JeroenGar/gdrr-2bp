@@ -21,6 +21,7 @@ pub struct Layout<'a> {
     cached_cost: Option<Cost>,
     used_part_area: u64,
     sorted_empty_nodes: Vec<NodeKey>, //sorted by descending area
+    removable_nodes: Vec<NodeKey>,
 }
 
 impl<'a> Layout<'a> {
@@ -43,6 +44,7 @@ impl<'a> Layout<'a> {
             cached_cost: None,
             used_part_area: 0,
             sorted_empty_nodes: vec![],
+            removable_nodes: vec![],
         };
 
         //The top node cannot be modified, so we register a placeholder node to be able to insert parts
@@ -68,6 +70,7 @@ impl<'a> Layout<'a> {
         self.cached_cost.clone_from(&snapshot.cached_cost);
         self.used_part_area = snapshot.used_part_area;
         self.sorted_empty_nodes.clone_from(&snapshot.sorted_empty_nodes);
+        self.removable_nodes.clone_from(&snapshot.removable_nodes);
     }
 
     pub fn implement_insertion_blueprint(
@@ -116,6 +119,7 @@ impl<'a> Layout<'a> {
         debug_assert!(assertions::children_nodes_fit(&parent, &self.nodes), "{:#?}", blueprint);
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
+        debug_assert!(assertions::cached_removable_nodes_correct(&self.nodes, &self.removable_nodes));
     }
 
     pub fn remove_node(&mut self, node_index: NodeKey) -> Vec<usize>{
@@ -210,6 +214,7 @@ impl<'a> Layout<'a> {
 
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes(), &self.sorted_empty_nodes), "{:#?}", self.sorted_empty_nodes.iter().map(|n| &self.nodes[*n]).collect_vec());
+        debug_assert!(assertions::cached_removable_nodes_correct(&self.nodes, &self.removable_nodes));
 
         removed_parts.unwrap()
     }
@@ -239,7 +244,12 @@ impl<'a> Layout<'a> {
 
         debug_assert!(node.level() == self.nodes[parent].level() + 1);
 
+        let parent_had_children = self.nodes[parent].has_children();
         let node_index = self.nodes.insert(node);
+
+        if self.nodes[node_index].parttype().is_some() {
+            self.register_removable_node(node_index);
+        }
 
         //All empty nodes need to be added to the sorted empty nodes list
         if is_empty {
@@ -267,6 +277,9 @@ impl<'a> Layout<'a> {
             None => self.nodes[parent].first_child = Some(node_index),
         }
         self.nodes[parent].last_child = Some(node_index);
+        if !parent_had_children {
+            self.register_removable_node(parent);
+        }
 
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
         node_index
@@ -308,6 +321,8 @@ impl<'a> Layout<'a> {
             self.unregister_node(child, removed_part_ids);
         }
 
+        self.unregister_removable_node(node_index);
+
         //remove the node
         let node = self.nodes.remove(node_index).expect("Node to be removed does not exist");
         debug_assert!(node.first_child.is_none() && node.last_child.is_none());
@@ -330,6 +345,9 @@ impl<'a> Layout<'a> {
                 Some(next_sibling) => self.nodes[next_sibling].previous_sibling = node.previous_sibling,
                 None => self.nodes[parent].last_child = node.previous_sibling,
             }
+            if !self.nodes[parent].has_children() {
+                self.unregister_removable_node(parent);
+            }
         }
 
         debug_assert!(assertions::node_arena_valid(&self.nodes, &self.top_node_i));
@@ -341,6 +359,26 @@ impl<'a> Layout<'a> {
 
     fn unregister_part(&mut self, parttype: &PartType) {
         self.used_part_area -= parttype.area();
+    }
+
+    fn register_removable_node(&mut self, node_index: NodeKey) {
+        debug_assert!(self.nodes[node_index].removable_position().is_none());
+        debug_assert!(self.nodes[node_index].parttype().is_some() || self.nodes[node_index].has_children());
+        let position = self.removable_nodes.len();
+        self.nodes[node_index].set_removable_position(Some(position));
+        self.removable_nodes.push(node_index);
+    }
+
+    fn unregister_removable_node(&mut self, node_index: NodeKey) {
+        let Some(position) = self.nodes[node_index].removable_position() else {
+            return;
+        };
+        let removed_node = self.removable_nodes.swap_remove(position);
+        debug_assert_eq!(removed_node, node_index);
+        self.nodes[node_index].set_removable_position(None);
+        if let Some(&moved_node) = self.removable_nodes.get(position) {
+            self.nodes[moved_node].set_removable_position(Some(position));
+        }
     }
 
     pub fn get_included_parts(&self) -> Vec<usize> {
@@ -396,11 +434,9 @@ impl<'a> Layout<'a> {
         &self.sorted_empty_nodes
     }
 
-    pub fn removable_nodes(&self) -> impl Iterator<Item = NodeKey> + '_ {
-        //All nodes with children or that contain a part are removable
-        self.nodes.iter()
-            .filter(|(_, node)| node.parttype().is_some() || node.has_children())
-            .map(|(index, _)| index)
+    pub fn removable_nodes(&self) -> &[NodeKey] {
+        debug_assert!(assertions::cached_removable_nodes_correct(&self.nodes, &self.removable_nodes));
+        &self.removable_nodes
     }
 
     pub fn sheettype(&self) -> &'a SheetType {
