@@ -32,6 +32,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Compact insertion descriptor parents after `11b45db`
+
+- Stored each insertion descriptor's optional parent position as `u8` instead of `usize`, widening only before indexing the fixed five-entry descriptor array. Every generated parent is position 0 or 1, and `InsertionNode` shrank from 40 to 24 bytes.
+- The initial ten-sample gate was inconclusive at +0.80% throughput (`-0.08%..+1.63%`, `p = 0.11`). The isolated sequential 20-sample comparison found no change: -0.16% with a `-0.84%..+0.57%` confidence interval and `p = 0.67`.
+- Reverted because the smaller short-lived descriptor did not improve the full solver and does not justify another integer representation boundary.
+
 ### Reject oversized incremental cache candidates by area after `1a8a0eb`
 
 - Compared each part area with the empty-node area before the existing dimensional fit checks during incremental cache updates. A larger part area proves that neither orientation can fit, so the surviving candidate order and solver behavior would remain unchanged.
