@@ -24,6 +24,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Compact part-type storage after `84fd040`
+
+- Removed the duplicate width and height fields from `PartType` and read them from its existing `Size` value instead.
+- Full-solver Criterion found no change: +0.06% median throughput with a `-0.40%..+0.49%` confidence interval and `p = 0.79`.
+- Reverted because the smaller representation did not improve the full solver.
+
 ### Remove redundant insertion-option rotation after `172d012`
 
 - Removed `InsertionOption::rotation` after cache-created options began storing the same value as `PartType::fixed_rotation`.
