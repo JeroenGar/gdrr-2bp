@@ -30,7 +30,7 @@ The PR description is the public accepted-change report. This file also records 
 
 - Removed each node's previous-sibling key and found the predecessor by scanning the parent's children during removal.
 - Full-solver Criterion found no gain: -0.33% median throughput with a `-0.85%..+0.20%` confidence interval and `p = 0.28`.
-- Rejected because the extra removal scan added code and canceled any representation benefit.
+- The compiler did shrink `Node` from 72 to 64 bytes and each SlotMap slot from 80 to 72 bytes, but the extra removal scan canceled that representation benefit.
 
 ### Dense node SlotMap after `234f9b5`
 
