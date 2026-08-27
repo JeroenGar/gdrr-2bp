@@ -27,6 +27,18 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Direct solver cost comparator after `f54e845`
+
+- Removed `GDRR`'s stored function pointer and called the fixed solver cost comparator directly, while preserving the public configurable comparator used by solution collectors.
+- Full-solver Criterion found no gain: -0.32% median throughput with a `-1.02%..+0.38%` confidence interval and `p = 0.37`.
+- Reverted because the net code deletion did not improve the full solver; compiler optimization already removes enough of the indirection or the remaining call cost is immaterial.
+
+### Single-pass sampled layout resolution after `f54e845`
+
+- Drew the same three random layout positions, sorted them, and resolved their `SlotMap` keys with one forward traversal instead of three independent `keys().nth(position)` traversals.
+- Before compact insertion-option indices landed, the probe measured +1.29% and an isolated 20-sample comparison measured +0.76% throughput (`+0.35%..+1.19%`, `p = 0.00`). Rebased onto the actual immediate parent, full-solver Criterion found no change: +0.32% with a `-0.16%..+0.75%` confidence interval and `p = 0.19`.
+- Reverted because the gain did not survive composition with the preceding accepted change, and 25 lines of position-resolution bookkeeping are not justified without a measurable improvement.
+
 ### Compact insertion-cache positions after `00f3b6a`
 
 - Stored each cached option's part-type and node reverse positions as `u32`, shrinking `CachedInsertionOption` from 56 to 48 bytes.
