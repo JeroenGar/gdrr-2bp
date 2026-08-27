@@ -35,6 +35,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Restore `usize` insertion-option indices after `c9b6ad1`
+
+- Replaced the two compact `u32` reverse-index buffers with native `usize` indices. This removed six net lines, all checked narrowing conversions, and the cache-size bound introduced by #35.
+- A sequential 20-sample full-solver comparison with mimalloc measured the simpler candidate 1.78% slower, with the entire confidence interval below zero (`-2.34%..-1.17%`, `p = 0.00`).
+- Rejected. The compact buffers now provide a larger reproduced gain than their original 0.55% measurement, while their conversion logic remains private to `InsertionOptionCache`.
+
 ### Remove reusable recreate scratch buffers after `44a7836`
 
 - Moved the two insertion-blueprint vectors and part-type selection index vector back into the functions that consume them. This deleted 11 net lines from `GDRR` and restored the simpler pre-#5/#8 ownership.
