@@ -52,7 +52,7 @@ impl Instance {
     }
 
     pub fn smallest_sheet_value(&self) -> u64 {
-        self.sheets.iter().map(|(s, _)| s.area()).min().unwrap()
+        self.sheets.iter().map(|(s, _)| s.value).min().unwrap()
     }
 
     pub fn total_part_area(&self) -> u64 {
