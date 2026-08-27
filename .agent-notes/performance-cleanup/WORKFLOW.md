@@ -19,7 +19,7 @@ Delegate a promising candidate to a sub-agent in a separate worktree while the p
 
 1. Audit semantics, invariants, and the complete diff.
 2. Compare seeded 50,000-iteration behavior with the immediate parent. Exact output is preferred; equivalent solver behavior is acceptable and must be explained.
-3. Run the small debug build so debug assertions exercise structural and cache invariants.
+3. Run three debug iterations on the large fixture so debug assertions exercise structural and cache invariants. Do not use the 100-iteration verification config here: rebuilding the insertion cache after every mutation makes that take several minutes.
 4. Run the 60-second production solver and record iterations per second plus complete and incomplete solution quality.
 5. Run `cargo check --all-targets`, `cargo test --lib`, and `git diff --check`.
 6. Commit only the accepted experiment, push it, update the PR table and numbered section, and verify the exact pushed revision in CI.

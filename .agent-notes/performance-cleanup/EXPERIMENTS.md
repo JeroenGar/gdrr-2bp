@@ -28,6 +28,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Normalize rotatable insertion dimensions after `415c21f`
+
+- Replaced the default-or-rotated fit checks used during initial cache population with one comparison of each rectangle's shorter and longer sides.
+- Full-solver Criterion measured a 1.93% throughput regression, with the entire confidence interval below zero (`-2.53%..-1.32%`).
+- Rejected immediately. The existing check often accepts the default orientation after two comparisons; normalizing both rectangles always pays for the extra minimum and maximum operations.
+
 ### Precomputed part-type area order after `5fcf708`
 
 - Stored one stable descending-area part-type index order in immutable `Instance`, filtered it for active quantities, and passed the already sorted references into initial cache population.
