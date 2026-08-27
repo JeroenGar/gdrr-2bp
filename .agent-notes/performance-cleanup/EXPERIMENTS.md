@@ -26,6 +26,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Singly linked layout nodes after `4e3f903`
+
+- Removed each node's previous-sibling key and found the predecessor by scanning the parent's children during removal.
+- Full-solver Criterion found no gain: -0.33% median throughput with a `-0.85%..+0.20%` confidence interval and `p = 0.28`.
+- Rejected because the extra removal scan added code and canceled any representation benefit.
+
 ### Dense node SlotMap after `234f9b5`
 
 - Replaced each layout's `SlotMap<NodeKey, Node>` with `DenseSlotMap<NodeKey, Node>` while keeping the same typed stable keys.
