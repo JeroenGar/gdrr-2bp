@@ -33,6 +33,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Remove cached node options in reverse after `1a711b7`
+
+- Iterated each cached node's contiguous option range back-to-front so recently appended groups could turn `swap_remove` into tail pops and avoid reverse-index repairs.
+- Full-solver Criterion found no change: -0.30% median throughput with a `-1.03%..+0.41%` confidence interval and `p = 0.47`.
+- Reverted because tail-group removal is not common enough to improve the full solver, and changing internal option order is unjustified without a gain.
+
 ### Use stable sorting for option node ranges after `47bfaba`
 
 - Replaced the final unstable sort of `option_node_ranges` with Rust's adaptive stable slice sort so it could exploit the ranges already grouped by layout.
