@@ -27,6 +27,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Precomputed part-type area order after `5fcf708`
+
+- Stored one stable descending-area part-type index order in immutable `Instance`, filtered it for active quantities, and passed the already sorted references into initial cache population.
+- Full-solver Criterion measured a 2.21% throughput regression, with the entire confidence interval below zero (`-2.74%..-1.66%`).
+- Rejected immediately. Avoiding the small per-recreate reference sort did not repay the extra indexed traversal through `Instance`; the existing direct-reference sort has better locality.
+
 ### Force-inline scalar size accessors after `e30de3b`
 
 - Added `#[inline(always)]` to `Size::width`, `Size::height`, and `Size::area` after the symbolized profile attributed 4.7% of worker leaf samples to the accessors.
