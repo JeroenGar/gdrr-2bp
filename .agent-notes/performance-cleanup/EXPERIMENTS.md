@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `b5e6a94` - maintain each layout's removable nodes in a flat key vector with niche-packed reverse positions and O(1) `swap_remove`. Criterion +0.92% versus `c9baf4a` (`+0.16%..+1.61%`, `p = 0.02`); equivalent seeded 50,000-iteration behavior because unordered removal changes the trajectory (parent 298 sheets/96.15138% usage, candidate 299/95.8298%); 60-second result 68,407 iter/s, with a complete 291-sheet solution at 98.4643% usage and an incomplete 290-sheet solution at 98.498% usage/99.690% included.
 - `f54e845` - store insertion-option indices as `u32` in the node and part-type reverse lookup buffers. Criterion +0.55% versus `e76d32e` (`+0.15%..+0.91%`, `p = 0.01`); exact normalized seeded 50,000-iteration behavior; 60-second result 66,963 iter/s.
 - `0bc4e6b` - copy part-type references directly into the sort buffer and sort them in place. Criterion +1.79% versus `c25a270` (`+1.42%..+2.16%`, `p = 0.00`); exact normalized seeded 50,000-iteration behavior; 60-second result 65,960 iter/s.
 - `c25a270` - maintain each layout's used part area at node registration, recursive removal, clone, and restore boundaries. Criterion +5.83% versus `ed5f5a0` (`+5.39%..+6.25%`, `p = 0.00`); exact normalized seeded 50,000-iteration behavior; 60-second result 66,494 iter/s.
