@@ -242,10 +242,6 @@ impl<'a> Problem<'a> {
         &self.layouts.live
     }
 
-    pub(crate) fn layouts_mut(&mut self) -> &mut SlotMap<LayoutKey, Layout<'a>> {
-        &mut self.layouts.live
-    }
-
     pub fn layout_keys(&self) -> &[LayoutKey] {
         self.layouts.keys()
     }

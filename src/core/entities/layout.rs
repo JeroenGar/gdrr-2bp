@@ -268,12 +268,7 @@ impl<'a> Layout<'a> {
         cost
     }
 
-    pub fn usage(&mut self) -> f64 {
-        debug_assert!(assertions::cached_used_part_area_correct(&self.nodes.arena, self.nodes.used_part_area));
-        self.calculate_usage()
-    }
-
-    pub fn usage_immut(&self) -> f64 {
+    pub fn usage(&self) -> f64 {
         debug_assert!(assertions::cached_used_part_area_correct(&self.nodes.arena, self.nodes.used_part_area));
         self.calculate_usage()
     }

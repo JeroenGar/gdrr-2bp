@@ -167,7 +167,7 @@ impl<'a> GDRR<'a> {
                 let mut sampled_layouts: [_; 3] = std::array::from_fn(|_| {
                     let sample_index = self.problem.rng().random_range(0..n_layouts);
                     let layout_index = self.problem.layout_keys()[sample_index];
-                    let usage = self.problem.layouts_mut()[layout_index].usage();
+                    let usage = self.problem.layouts()[layout_index].usage();
                     (layout_index, NotNan::new(usage).expect("layout usage is NaN"))
                 });
                 sampled_layouts.sort_by(|a, b| a.1.cmp(&b.1));
@@ -188,7 +188,7 @@ impl<'a> GDRR<'a> {
         } else {
             while mat_limit_budget < 0 {
                 //Search the lowest usage layout
-                let min_usage_layout_index = self.problem.layouts_mut().iter_mut()
+                let min_usage_layout_index = self.problem.layouts().iter()
                     .map(|(i, l)| (i, l.usage()))
                     .min_by(|(_, a), (_, b)| {
                         a.partial_cmp(b).unwrap()

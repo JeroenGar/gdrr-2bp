@@ -18,7 +18,7 @@ impl SendableLayout {
             sheettype_id: layout.sheettype().id,
             top_node: NodeBlueprint::from_node(*layout.top_node_index(), layout.nodes()),
             cost: layout.cost_immut(false),
-            usage: layout.usage_immut(),
+            usage: layout.usage(),
         }
     }
 
