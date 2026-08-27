@@ -325,7 +325,7 @@ impl<'a> GDRR<'a> {
 
         let n_options = indices.iter().map(|i| {
             let parttype = parttypes[*i];
-            insertion_option_cache.get_for_parttype(parttype).len()
+            insertion_option_cache.count_for_parttype(parttype)
         });
 
         let blink = blink::select_lowest_entry(n_options, config.blink_rate, rand);

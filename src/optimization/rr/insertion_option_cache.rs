@@ -262,6 +262,10 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
             .map(|key| &self.options[*key as usize].option)
     }
 
+    pub fn count_for_parttype(&self, parttype: &PartType) -> usize {
+        self.option_parttype_map[parttype.id()].len()
+    }
+
     pub fn get_for_node(
         &self,
         node_i: &NodeKey,
