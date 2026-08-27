@@ -4,7 +4,7 @@ new_key_type! {
     pub struct LayoutKey;
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LayoutIndex {
     Existing(LayoutKey),
     Empty(u32),

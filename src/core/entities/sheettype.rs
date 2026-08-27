@@ -1,4 +1,3 @@
-use std::hash::{Hash, Hasher};
 use crate::core::orientation::Orientation;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -25,11 +24,5 @@ impl SheetType {
 
     pub fn area(&self) -> u64 {
         self.width * self.height
-    }
-}
-
-impl Hash for SheetType {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
     }
 }
