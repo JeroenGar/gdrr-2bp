@@ -28,5 +28,6 @@ This is a hypothesis list, not a commitment. Re-profile after every accepted pat
 ## Allocator end state
 
 - Keep mimalloc while it remains materially faster.
+- At `abfed3d`, an isolated 20-sample comparison measured the system allocator 3.54% slower than mimalloc (`-4.14%..-2.91%`, `p = 0.00`). This is much smaller than the earlier 24.0% gap but still material.
 - Re-test system allocator versus mimalloc only after hot-path allocations have fallen substantially.
 - If the delta becomes inconsequential, remove mimalloc in its own measured commit to improve portability and compatibility.

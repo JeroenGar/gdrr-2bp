@@ -32,6 +32,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Store insertion-option part types as IDs after `abfed3d`
+
+- Replaced each cached `&PartType` with a checked dense `u32` ID and resolved the canonical part type from `Problem` only when generating blueprints. This removed the cache lifetime and shrank `InsertionOption` from 32 to 24 bytes and `CachedInsertionOption` from 48 to 40 bytes.
+- Full-solver Criterion measured an 8.25% throughput regression, with the entire confidence interval below zero (`-9.39%..-7.13%`, `p = 0.00`).
+- Rejected immediately. Blueprint generation uses the part type often enough that retaining the direct pointer is substantially faster than resolving its ID; the smaller cache entries do not repay that lookup.
+
 ### Store sorted empty nodes in a `VecDeque` after `9184917`
 
 - Replaced each layout's sorted empty-node `Vec` with `VecDeque`, whose middle insertion and removal shift the nearer end instead of always shifting the suffix. The standard-library container preserved the exact ordering and required no custom index structure.
