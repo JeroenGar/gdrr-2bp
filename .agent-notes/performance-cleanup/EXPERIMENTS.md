@@ -22,6 +22,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Cache part-type areas during insertion-cache population after `572db05`
+
+- Cached each part type's area beside its reference while sorting, then reused it when skipping oversized prefixes for empty nodes.
+- An initial ten-sample probe measured +2.42%, but an isolated 20-sample comparison found no change: +0.91% median throughput with a `-0.74%..+2.15%` confidence interval and `p = 0.20`.
+- Reverted because the stronger result did not reproduce the gain; the extra tuple field is not justified.
+
 ### Constant-time selected part-type removal after `572db05`
 
 - Returned the selected part-type vector index and removed exhausted or infeasible entries with `swap_remove` instead of scanning the vector with `retain`.
