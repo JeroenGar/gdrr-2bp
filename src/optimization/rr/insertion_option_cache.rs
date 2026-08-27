@@ -66,10 +66,8 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         'a: 'c,
     {
         //sort by decreasing area
-        let sorted_parttypes: Vec<&&PartType> = parttypes
-            .iter()
-            .sorted_by(|a, b| a.area().cmp(&b.area()).reverse())
-            .collect_vec();
+        let mut sorted_parttypes = parttypes.to_vec();
+        sorted_parttypes.sort_by(|a, b| a.area().cmp(&b.area()).reverse());
 
         if sorted_parttypes.is_empty() {
             return;
