@@ -26,6 +26,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Binary part-type area cutoff after `9d0013d`
+
+- Replaced the monotonic linear scan over area-sorted part types with `partition_point` on the remaining suffix.
+- Full-solver Criterion measured a 0.88% throughput regression, with the entire confidence interval below zero (`-1.57%..-0.18%`).
+- Rejected immediately. The solver's short active slices favor the existing linear merge.
+
 ### Compact part-type storage after `84fd040`
 
 - Removed the duplicate width and height fields from `PartType` and read them from its existing `Size` value instead.
