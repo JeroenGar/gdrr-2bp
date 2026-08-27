@@ -14,6 +14,8 @@ Work interactively and finish one item before starting the next. Keep every impl
 6. Draft a private `ProblemLayouts` boundary in `problem.rs` for review. If approved, move the existing live, detached, sampled, and changed-layout state without changing solver policy.
 7. Reconcile the PR report and run the final correctness, behavior, quality, and sustained-throughput gates.
 
+Items 1-6 are complete at `91466ee`; final reconciliation is in progress.
+
 For every A/B test, compare sequentially against the immediate parent with the same target directory, lockfile, allocator feature, compiler, and benchmark input. Reject added complexity when the result is flat. A simpler implementation may replace a faster one only after reporting the measured cost and receiving user approval.
 
 Do not start new optimization experiments during this cleanup sequence.
