@@ -85,7 +85,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn insertion_possible(&self, parttype: &PartType, rotation: Rotation) -> bool {
-        debug_assert!(*parttype.fixed_rotation() == None || *parttype.fixed_rotation() == Some(rotation));
+        debug_assert!(parttype.fixed_rotation() == None || parttype.fixed_rotation() == Some(rotation));
         debug_assert!(!self.has_children() && self.parttype.is_none());
 
         let part_size = match rotation {

@@ -232,12 +232,12 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         node_i: NodeKey,
     ) -> Option<InsertionOption<'a>> {
         match parttype.fixed_rotation() {
-            Some(fixed_rotation) => match node.insertion_possible(parttype, *fixed_rotation) {
+            Some(fixed_rotation) => match node.insertion_possible(parttype, fixed_rotation) {
                 true => Some(InsertionOption::new(
                     layout_i,
                     node_i,
                     parttype,
-                    Some(*fixed_rotation),
+                    Some(fixed_rotation),
                 )),
                 false => None,
             },

@@ -37,8 +37,8 @@ impl PartType {
         self.height
     }
 
-    pub fn fixed_rotation(&self) -> &Option<Rotation> {
-        &self.fixed_rotation
+    pub fn fixed_rotation(&self) -> Option<Rotation> {
+        self.fixed_rotation
     }
 
     pub fn size(&self) -> &Size {
