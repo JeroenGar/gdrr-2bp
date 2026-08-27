@@ -104,7 +104,10 @@ impl<'a> Problem<'a> {
         match blueprint.layout_index() {
             LayoutIndex::Existing(index) => {
                 let blueprint_layout = &mut self.layouts[*index];
-                let mut cache_updates = IOCUpdates::new(*blueprint.layout_index());
+                let mut cache_updates = IOCUpdates::new(
+                    *blueprint.layout_index(),
+                    *blueprint.original_node_index(),
+                );
                 blueprint_layout.implement_insertion_blueprint(blueprint, &mut cache_updates);
 
                 self.layout_has_changed(*index);
@@ -120,7 +123,10 @@ impl<'a> Problem<'a> {
                 let clone_index = self.register_layout(empty_layout_clone);
 
                 //Implement the blueprint
-                let mut cache_updates = IOCUpdates::new(LayoutIndex::Existing(clone_index));
+                let mut cache_updates = IOCUpdates::new(
+                    LayoutIndex::Existing(clone_index),
+                    *blueprint.original_node_index(),
+                );
                 self.layouts[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates);
 
                 cache_updates

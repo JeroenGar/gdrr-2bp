@@ -84,7 +84,6 @@ impl<'a> Layout<'a> {
 
         //unregister the original node
         self.unregister_node(original, &mut None);
-        updates.add_removed(original);
 
         //create and register the replacements
         let mut inserted_nodes = [None; 5];
@@ -112,7 +111,9 @@ impl<'a> Layout<'a> {
                 parttype,
             );
             let node_index = self.register_node(node, parent, is_empty);
-            updates.add_new(node_index);
+            if is_empty {
+                updates.add_new_empty(node_index);
+            }
             inserted_nodes[i] = Some(node_index);
         }
 

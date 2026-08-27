@@ -41,11 +41,9 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         problem: &Problem,
     ) {
         let layout_i = cache_updates.layout_index();
-        cache_updates.removed_nodes().iter().for_each(|node_i| {
-            self.remove_for_node(layout_i, node_i);
-        });
+        self.remove_for_node(layout_i, cache_updates.removed_node());
         let layout = problem.get_layout(layout_i);
-        cache_updates.new_nodes().iter().for_each(|node_i| {
+        cache_updates.new_empty_nodes().for_each(|node_i| {
             let node = &layout.nodes()[*node_i];
             self.add_for_node(node_i, node, layout_i, parttypes.iter());
         });
