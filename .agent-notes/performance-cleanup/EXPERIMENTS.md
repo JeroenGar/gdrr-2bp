@@ -33,6 +33,18 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Fuse blueprint empty-index replacement after `d35edf4`
+
+- Preserved the original empty node's sorted-vector slot during blueprint application, replaced it with the first new empty key, and rotated that key once to its new sorted position; exact-fill and second-empty cases kept the normal behavior.
+- Full-solver Criterion found no change: +0.53% median throughput with a `-0.27%..+1.33%` confidence interval and `p = 0.23`.
+- Reverted because the temporarily stale index and 47 net lines are not justified without a measurable gain.
+
+### Convert last part nodes to empty in place after `d35edf4`
+
+- In removal scenario 2, converted a selected last-sibling leaf part directly into the required empty child, preserving its SlotMap key and links while updating part, removable-node, and sorted-empty indexes.
+- Full-solver Criterion found no change: +0.32% median throughput with a `-0.42%..+1.11%` confidence interval and `p = 0.46`.
+- Reverted because the invariant-bearing fast path adds 18 net lines and changes key/order behavior without a measurable gain.
+
 ### Select only the blink-ranked blueprint after `909d083`
 
 - Replaced the full stable blueprint sort with `select_nth_unstable_by` for the same blink-selected rank, leaving unused candidates unordered.
