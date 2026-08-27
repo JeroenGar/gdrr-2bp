@@ -7,6 +7,10 @@ default-run = "gdrr_main"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+mimalloc = ["dep:mimalloc"]
+
 [dependencies]
 rand = "0.10"
 serde_json = "1.0"
@@ -18,7 +22,7 @@ svg = "0.18.0"
 horrorshow = "0.8.4"
 itertools = "0.15.0"
 ordered-float = "5.0.0"
-mimalloc = "0.1"
+mimalloc = { version = "0.1", optional = true }
 slotmap = "1.1"
 
 [dev-dependencies]

@@ -10,8 +10,10 @@ use gdrr_2bp::io::parser;
 use gdrr_2bp::optimization::config::{Config, SheetValuationMode};
 use gdrr_2bp::optimization::gdrr::GDRR;
 use gdrr_2bp::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
+#[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
 
+#[cfg(feature = "mimalloc")]
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 

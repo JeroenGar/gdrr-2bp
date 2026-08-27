@@ -17,10 +17,12 @@ use gdrr_2bp::optimization::sol_collectors::global_sol_collector::GlobalSolColle
 use gdrr_2bp::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use gdrr_2bp::timed_println;
 use gdrr_2bp::COST_COMPARATOR;
+#[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
 
 pub static EPOCH: Lazy<Instant> = Lazy::new(Instant::now);
 
+#[cfg(feature = "mimalloc")]
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
