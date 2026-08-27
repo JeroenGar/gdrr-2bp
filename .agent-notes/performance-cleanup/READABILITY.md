@@ -22,14 +22,15 @@ These types contain derived state or cross-field invariants. Their accessors are
 
 Test separately; public-field conversion is appropriate only where the constructor currently accepts every representable state.
 
-- `SheetType`: independent input values; no cached derived fields.
+- Accepted: `SheetType` is now a public-field record because its input values are independent and it has no cached derived fields.
 - `NodeBlueprint`: a transport tree whose public constructor and `add_child` already permit arbitrary contents.
 - `SendableLayout`: an output record; also remove the unused `convert_to_layout` method that only contains `todo!()`.
 
 ## Accessor experiments
 
 - Rejected: public `InsertionOption` fields regressed full-solver throughput by 1.66%; keep its private hot representation.
-- Return small `Copy` values directly instead of `&Copy` where this simplifies callers (`LayoutIndex`, `NodeKey`, `Option<Rotation>`). Benchmark hot groups independently.
+- Accepted: `PartType::fixed_rotation` returns its small `Copy` option by value with no measurable throughput change.
+- Rejected: returning hot `NodeKey` and `LayoutIndex` values by value regressed throughput by 1.02%; keep those accessors borrowed.
 - Remove repository-unused accessors only with an explicit public-API decision; they may still be external API.
 - Rename Java-style `get_*` methods only as a separate public-API cleanup.
 

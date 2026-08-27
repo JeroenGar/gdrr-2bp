@@ -37,6 +37,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Return hot index keys by value after `92ab241`
+
+- Returned `NodeKey` and `LayoutIndex` values directly from layout, blueprint, and cache-update accessors instead of borrowing them, removing caller dereference and clone noise without changing representation or behavior.
+- Full-solver Criterion with mimalloc measured a 1.02% throughput regression, with the entire confidence interval below zero (`-1.69%..-0.30%`, `p = 0.01`).
+- Rejected. These hot accessors should continue borrowing their keys; the small syntax improvement does not justify copying larger enum values through the call chain.
+
 ### Expose `InsertionOption` fields after `8f652ef`
 
 - Replaced four trivial accessors with public record fields and updated hot callers directly, deleting 15 net lines without changing the representation or solver decisions.
