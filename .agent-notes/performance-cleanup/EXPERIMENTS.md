@@ -32,6 +32,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Use stable sorting for option node ranges after `47bfaba`
+
+- Replaced the final unstable sort of `option_node_ranges` with Rust's adaptive stable slice sort so it could exploit the ranges already grouped by layout.
+- Full-solver Criterion found no change: -0.16% median throughput with a `-0.99%..+0.68%` confidence interval and `p = 0.72`.
+- Reverted because the existing run structure does not make the allocating stable sort faster, and a flat result does not justify changing the primitive.
+
 ### Store insertion-option part types as IDs after `abfed3d`
 
 - Replaced each cached `&PartType` with a checked dense `u32` ID and resolved the canonical part type from `Problem` only when generating blueprints. This removed the cache lifetime and shrank `InsertionOption` from 32 to 24 bytes and `CachedInsertionOption` from 48 to 40 bytes.
