@@ -32,6 +32,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Store sorted empty nodes in a `VecDeque` after `9184917`
+
+- Replaced each layout's sorted empty-node `Vec` with `VecDeque`, whose middle insertion and removal shift the nearer end instead of always shifting the suffix. The standard-library container preserved the exact ordering and required no custom index structure.
+- Full-solver Criterion measured a 6.74% throughput regression, with the entire confidence interval below zero (`-7.42%..-6.02%`, `p = 0.00`).
+- Rejected immediately. Reduced key movement does not repay ring-buffer indexing and split-storage traversal; keep this hot ordered index contiguous.
+
 ### Compact insertion descriptor parents after `11b45db`
 
 - Stored each insertion descriptor's optional parent position as `u8` instead of `usize`, widening only before indexing the fixed five-entry descriptor array. Every generated parent is position 0 or 1, and `InsertionNode` shrank from 40 to 24 bytes.
