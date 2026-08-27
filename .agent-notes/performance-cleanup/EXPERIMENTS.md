@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `da48351` - cache excluded part area and maintain it at part registration, removal, and snapshot restore boundaries. Criterion +2.03% versus `65e0153`; exact 50,000-iteration behavior; 60-second result 52,020 iter/s.
 - `8701ffa` - sample only the three layouts considered by ruin's low-usage bias instead of allocating and valuing every live layout. Criterion +3.86% versus `84d3cc2`; exact 50,000-iteration behavior; 60-second result 50,210 iter/s.
 - `1734ef7` - record each changed layout only once so rejected-solution restore cannot restore the same snapshot repeatedly after several mutations. Criterion +1.68% versus `8e2129e`; exact 50,000-iteration behavior; 60-second result 45,820 iter/s.
 - `8e2129e` - stream existing and eligible empty layouts directly into initial insertion-cache population. Criterion +3.64% versus `ef0c65a`; exact 50,000-iteration behavior; 60-second result 45,435 iter/s.
@@ -55,6 +56,24 @@ The PR description is the public accepted-change report. This file also records 
 - Retained the temporary vector used to area-sort eligible part types inside `InsertionOptionCache`.
 - The probe improved Criterion throughput by 1.88% before insertion blueprints were flattened, but only 0.39% afterward with a `-1.39%..+2.13%` confidence interval.
 - Reverted because the gain did not survive against the new immediate parent.
+
+### Compare insertion dimensions directly after `8e2129e`
+
+- Replaced `Size` selection in `Node::insertion_possible` with direct width and height comparisons.
+- Full-solver Criterion measured a 1.69% throughput regression, with the entire confidence interval below zero (`-2.26%..-1.12%`).
+- Reverted because avoiding the small `Size` selection made the full solver slower.
+
+### Height-first insertion fit check after `8e2129e`
+
+- Reversed the equivalent width and height short-circuit checks in `Node::insertion_possible` to reject tall options first.
+- An initial ten-sample probe measured +0.95%, but an isolated 20-sample comparison found no change: +0.16% median throughput with a `-0.18%..+0.52%` confidence interval and `p = 0.38`.
+- Reverted because the stronger result did not reproduce the gain.
+
+### Reuse quantity-vector allocations on restore after `8e2129e`
+
+- Used `Vec::clone_from` for part-type and sheet-type quantity restoration.
+- Full-solver Criterion measured a 1.88% throughput regression, with the entire confidence interval below zero (`-2.41%..-1.39%`).
+- Reverted because retaining those vector allocations was slower than fresh clones.
 
 ### Reuse InsertionOptionCache with `SlotMap::clear`
 
