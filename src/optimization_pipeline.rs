@@ -56,6 +56,19 @@ fn solution_paths(input: &Path, output_dir: &Path) -> io::Result<(PathBuf, PathB
     Ok((output_dir.join(json_name), output_dir.join(html_name)))
 }
 
+fn prepare_output(input: &Path, output_dir: &Path) -> io::Result<(PathBuf, PathBuf)> {
+    fs::create_dir_all(output_dir).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!(
+                "could not create output directory {}: {error}",
+                output_dir.display()
+            ),
+        )
+    })?;
+    solution_paths(input, output_dir)
+}
+
 pub fn run(
     input_path: PathBuf,
     config_path: PathBuf,
@@ -69,6 +82,10 @@ pub fn run(
             format!("invalid config {}: {message}", config_path.display()),
         )
     })?;
+    let output_paths = output_dir
+        .as_deref()
+        .map(|output_dir| prepare_output(&input_path, output_dir))
+        .transpose()?;
 
     timed_println!("Config file loaded: {}", serde_json::to_string(&config)?);
 
@@ -124,17 +141,7 @@ pub fn run(
         timed_println!("No solution available");
         return Ok(());
     };
-    if let Some(output_dir) = output_dir {
-        fs::create_dir_all(&output_dir).map_err(|error| {
-            io::Error::new(
-                error.kind(),
-                format!(
-                    "could not create output directory {}: {error}",
-                    output_dir.display()
-                ),
-            )
-        })?;
-        let (json_path, html_path) = solution_paths(&input_path, &output_dir)?;
+    if let Some((json_path, html_path)) = output_paths {
         let json_solution = parser::generate_json_solution(&json_instance, solution, &config_path);
 
         let mut writer = create_output(&json_path)?;
