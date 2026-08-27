@@ -1,0 +1,40 @@
+# Core readability audit
+
+This audit covers solver and domain types, not `util`, debug assertions, or presentation helpers. Apply one narrow commit at a time; benchmark any hot-path change and revert it when throughput regresses.
+
+## Keep fields private
+
+These types contain derived state or cross-field invariants. Their accessors are intentional boundaries.
+
+- `Size`: cached area must match width and height.
+- `PartType`: default and rotated sizes must agree with its dimensions.
+- `Node` / `LayoutNodes`: intrusive links, removable positions, used area, and node indexes must stay synchronized.
+- `Layout`: node state and cached cost must stay synchronized.
+- `Instance`: dense IDs and cached totals depend on the part and sheet collections.
+- `Problem` / `ProblemLayouts`: quantities, excluded area, live keys, snapshots, and changed membership move together.
+- `InsertionBlueprint`: replacement shape and cached cost are derived together.
+- `IOCUpdates`: one removed node and at most two new empty nodes describe one mutation.
+- `InsertionOptionCache` / `CachedInsertionOption`: dense storage and reverse indexes move together.
+- `ProblemSolution` / `SendableSolution`: layouts, quantities, cost, and usage form one snapshot.
+- `LocalSolCollector` / `GlobalSolCollector`: best solutions, transfer flags, and material limits form coordination state.
+
+## Plain-record candidates
+
+Test separately; public-field conversion is appropriate only where the constructor currently accepts every representable state.
+
+- `SheetType`: independent input values; no cached derived fields.
+- `NodeBlueprint`: a transport tree whose public constructor and `add_child` already permit arbitrary contents.
+- `SendableLayout`: an output record; also remove the unused `convert_to_layout` method that only contains `todo!()`.
+
+## Accessor experiments
+
+- Rejected: public `InsertionOption` fields regressed full-solver throughput by 1.66%; keep its private hot representation.
+- Return small `Copy` values directly instead of `&Copy` where this simplifies callers (`LayoutIndex`, `NodeKey`, `Option<Rotation>`). Benchmark hot groups independently.
+- Remove repository-unused accessors only with an explicit public-API decision; they may still be external API.
+- Rename Java-style `get_*` methods only as a separate public-API cleanup.
+
+## Core control-flow cleanup
+
+- Prefer `if let`, `let ... else`, `Option` combinators, and tail expressions when they remove branching ceremony in solver/domain code.
+- Keep mutation-heavy loops imperative; do not introduce iterator chains merely for style.
+- Benchmark changes in `gdrr`, `problem`, `layout`, insertion generation, and cache code. Cold snapshot/collector cleanups need correctness checks but no sustained performance run.

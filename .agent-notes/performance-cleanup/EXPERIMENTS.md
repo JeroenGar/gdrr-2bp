@@ -37,6 +37,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Expose `InsertionOption` fields after `8f652ef`
+
+- Replaced four trivial accessors with public record fields and updated hot callers directly, deleting 15 net lines without changing the representation or solver decisions.
+- Full-solver Criterion with mimalloc measured a 1.66% throughput regression, with the entire confidence interval below zero (`-2.22%..-1.07%`, `p = 0.00`).
+- Rejected. Keep the private hot-path representation and its accessors; this source-level simplification produced worse code layout or code generation.
+
 ### Flatten per-part-type option buckets after `42cfc3c`
 
 - Replaced the per-part-type `Vec<Vec<u32>>` index with compact intrusive head/tail chains stored beside the dense cached options. This removed the inner allocations while preserving `swap_remove` iteration order and the size of each cached option.
