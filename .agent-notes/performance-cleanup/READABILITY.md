@@ -33,6 +33,9 @@ Test separately; public-field conversion is appropriate only where the construct
 - Remove repository-unused accessors only with an explicit public-API decision; they may still be external API.
 - Rename Java-style `get_*` methods only as a separate public-API cleanup.
 - Accepted: core `get_*` methods now use Rust noun names, manual quantity matches use `Option::map`, and repository-unused core accessors are removed.
+- Accepted: insertion-option cache queries now state that they return options instead of using `get_*` names.
+- Accepted: `Layout::usage` is one immutable query; the duplicate `usage_immut`, obsolete recalculate flag, and `Problem::layouts_mut` escape hatch are gone.
+- Accepted: solution collectors return `Option<&Solution>` instead of exposing `&Option<Solution>`.
 
 ## Core control-flow cleanup
 
@@ -40,3 +43,4 @@ Test separately; public-field conversion is appropriate only where the construct
 - Keep mutation-heavy loops imperative; do not introduce iterator chains merely for style.
 - Benchmark changes in `gdrr`, `problem`, `layout`, insertion generation, and cache code. Cold snapshot/collector cleanups need correctness checks but no sustained performance run.
 - Accepted: solution creation uses a lazy cached-cost fallback, avoiding a discarded full-layout scan and improving adjacent Criterion throughput by 2.84%.
+- Accepted: GDRR uses `let ... else` for required selections and ordinary loops for mutation-heavy cache updates.
