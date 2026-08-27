@@ -290,7 +290,9 @@ impl<'a> Problem<'a> {
     }
 
     fn layout_has_changed(&mut self, layout_key: LayoutKey) {
-        self.changed_layouts.push(layout_key);
+        if !self.changed_layouts.contains(&layout_key) {
+            self.changed_layouts.push(layout_key);
+        }
     }
 
     fn discard_detached_layouts(&mut self) {
