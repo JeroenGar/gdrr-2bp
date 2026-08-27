@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `2418100` - calculate layout cost from the maintained empty-node index instead of scanning every SlotMap node. Criterion +6.90% versus `1da65a9` (`+6.55%..+7.25%`, `p = 0.00`); normalized seeded 50,000-iteration output exact, conservatively classified equivalent because `f32` summation order changes; 60-second result 58,021 iter/s.
 - `ff0df2b` - reuse the previous solution's `SecondaryMap` and replace only changed layout snapshots. Criterion +2.76% versus `da48351`; exact 50,000-iteration behavior; 60-second result 52,427 iter/s.
 - `da48351` - cache excluded part area and maintain it at part registration, removal, and snapshot restore boundaries. Criterion +2.03% versus `65e0153`; exact 50,000-iteration behavior; 60-second result 52,020 iter/s.
 - `8701ffa` - sample only the three layouts considered by ruin's low-usage bias instead of allocating and valuing every live layout. Criterion +3.86% versus `84d3cc2`; exact 50,000-iteration behavior; 60-second result 50,210 iter/s.
