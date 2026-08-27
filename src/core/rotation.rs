@@ -8,7 +8,7 @@ impl Rotation {
     pub fn rotate(&self) -> Rotation {
         match self {
             Rotation::Default => Rotation::Rotated,
-            Rotation::Rotated => Rotation::Default
+            Rotation::Rotated => Rotation::Default,
         }
     }
 }

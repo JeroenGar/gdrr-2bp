@@ -1,8 +1,8 @@
 use horrorshow::helper::doctype;
 use horrorshow::html;
 use horrorshow::prelude::*;
-use svg::node::element::{Group, Rectangle, Text};
 use svg::Document;
+use svg::node::element::{Group, Rectangle, Text};
 
 use crate::io::json_format::{JsonCP, JsonCPNode, JsonCPNodeType, JsonOrientation, JsonSolution};
 

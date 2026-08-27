@@ -21,5 +21,4 @@ impl SendableLayout {
             usage: layout.usage(),
         }
     }
-
 }

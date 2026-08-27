@@ -21,7 +21,12 @@ pub struct InsertionOption<'a> {
 }
 
 impl<'a> InsertionOption<'a> {
-    pub fn new(layout_i: LayoutIndex, original_node_i: NodeKey, parttype: &'a PartType, rotation: Option<Rotation>) -> Self {
+    pub fn new(
+        layout_i: LayoutIndex,
+        original_node_i: NodeKey,
+        parttype: &'a PartType,
+        rotation: Option<Rotation>,
+    ) -> Self {
         Self {
             layout_i,
             original_node_i,

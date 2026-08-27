@@ -1,8 +1,8 @@
 use crate::core::cost::Cost;
 use crate::core::entities::node::{Node, NodeKey};
 use crate::core::entities::parttype::PartType;
-use crate::core::leftover_valuator;
 use crate::core::layout_index::LayoutIndex;
+use crate::core::leftover_valuator;
 use crate::core::orientation::Orientation;
 use crate::core::rotation::Rotation;
 
@@ -48,8 +48,7 @@ impl<'a> InsertionBlueprint<'a> {
                     leftover_valuation_power,
                 ))
             });
-        blueprint.cost =
-            replacement_cost - original_node.calculate_cost(leftover_valuation_power);
+        blueprint.cost = replacement_cost - original_node.calculate_cost(leftover_valuation_power);
         blueprint
     }
 
@@ -70,22 +69,22 @@ impl<'a> InsertionBlueprint<'a> {
             along_inner_remainder,
             across_inner_remainder,
         ) = match orientation {
-                Orientation::Horizontal => (
-                    (part_width, height),
-                    (width - part_width, height),
-                    (width, part_height),
-                    (width, height - part_height),
-                    (part_width, height - part_height),
-                    (width - part_width, part_height),
-                ),
-                Orientation::Vertical => (
-                    (width, part_height),
-                    (width, height - part_height),
-                    (part_width, height),
-                    (width - part_width, height),
-                    (width - part_width, part_height),
-                    (part_width, height - part_height),
-                ),
+            Orientation::Horizontal => (
+                (part_width, height),
+                (width - part_width, height),
+                (width, part_height),
+                (width, height - part_height),
+                (part_width, height - part_height),
+                (width - part_width, part_height),
+            ),
+            Orientation::Vertical => (
+                (width, part_height),
+                (width, height - part_height),
+                (part_width, height),
+                (width - part_width, height),
+                (width - part_width, part_height),
+                (part_width, height - part_height),
+            ),
         };
         let node = |parent, (width, height), next_cut_orient, kind| {
             Some(InsertionNode {
@@ -106,7 +105,12 @@ impl<'a> InsertionBlueprint<'a> {
                 None,
             ],
             InsertionShape::AcrossCurrentCut => [
-                node(None, (width, height), orientation, InsertionNodeKind::Structure),
+                node(
+                    None,
+                    (width, height),
+                    orientation,
+                    InsertionNodeKind::Structure,
+                ),
                 node(
                     Some(0),
                     across_strip,
@@ -140,14 +144,24 @@ impl<'a> InsertionBlueprint<'a> {
                 None,
             ],
             InsertionShape::AcrossThenAlong => [
-                node(None, (width, height), orientation, InsertionNodeKind::Structure),
+                node(
+                    None,
+                    (width, height),
+                    orientation,
+                    InsertionNodeKind::Structure,
+                ),
                 node(
                     Some(0),
                     across_strip,
                     orientation.rotate(),
                     InsertionNodeKind::Structure,
                 ),
-                node(Some(1), (part_width, part_height), orientation, InsertionNodeKind::Part),
+                node(
+                    Some(1),
+                    (part_width, part_height),
+                    orientation,
+                    InsertionNodeKind::Part,
+                ),
                 node(
                     Some(1),
                     across_inner_remainder,

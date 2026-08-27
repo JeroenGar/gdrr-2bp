@@ -9,9 +9,8 @@ pub struct Cost {
     pub part_area_included: u64,
 }
 
-
 impl Cost {
-    pub fn empty() -> Self{
+    pub fn empty() -> Self {
         Self {
             material_cost: 0,
             leftover_value: 0.0,
@@ -20,8 +19,18 @@ impl Cost {
         }
     }
 
-    pub fn new(material_cost: u64, leftover_value: f32, part_area_excluded: u64, part_area_included: u64) -> Self {
-        Self { material_cost, leftover_value, part_area_excluded, part_area_included }
+    pub fn new(
+        material_cost: u64,
+        leftover_value: f32,
+        part_area_excluded: u64,
+        part_area_included: u64,
+    ) -> Self {
+        Self {
+            material_cost,
+            leftover_value,
+            part_area_excluded,
+            part_area_included,
+        }
     }
 
     pub fn part_area_fraction_included(&self) -> f64 {
@@ -66,7 +75,7 @@ impl Sub for Cost {
 }
 
 impl Sum for Cost {
-    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::new(0, 0.0, 0, 0), |acc, cost| acc + cost)
     }
 }

@@ -14,7 +14,6 @@ impl Size {
         }
     }
 
-
     pub fn width(&self) -> u64 {
         self.width
     }

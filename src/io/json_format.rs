@@ -22,7 +22,6 @@ pub struct JsonSolution {
     pub cutting_patterns: Vec<JsonCP>,
     #[serde(rename = "Statistics")]
     pub statistics: JsonSolutionStats,
-
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -94,4 +93,3 @@ pub struct JsonSolutionStats {
     pub run_time_ms: usize,
     pub config_path: String,
 }
-

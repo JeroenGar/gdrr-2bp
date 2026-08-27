@@ -12,14 +12,23 @@ const DEFAULT_CHANCE_ARRAY: [f64; DEFAULT_N_SAMPLES] = [0.625, 0.875, 1.0];
 /// It will then return the first entry with a probability of 0.625, the second with a probability of 0.25 and the third with a probability of 0.125.
 /// This allows us to sample at random, but with a bias.
 
-pub struct BiasedSampler<T, V, const N: usize> where V: Ord {
+pub struct BiasedSampler<T, V, const N: usize>
+where
+    V: Ord,
+{
     entries: Vec<(T, V)>,
     bias_mode: BiasMode,
     chance_vec: [f64; N],
 }
 
-impl<T, V> BiasedSampler<T, V, DEFAULT_N_SAMPLES> where V: Ord {
-    pub fn new_default(entries: Vec<(T, V)>, bias_mode: BiasMode) -> BiasedSampler<T, V, DEFAULT_N_SAMPLES> {
+impl<T, V> BiasedSampler<T, V, DEFAULT_N_SAMPLES>
+where
+    V: Ord,
+{
+    pub fn new_default(
+        entries: Vec<(T, V)>,
+        bias_mode: BiasMode,
+    ) -> BiasedSampler<T, V, DEFAULT_N_SAMPLES> {
         BiasedSampler {
             entries,
             bias_mode,
@@ -28,8 +37,15 @@ impl<T, V> BiasedSampler<T, V, DEFAULT_N_SAMPLES> where V: Ord {
     }
 }
 
-impl<T, V, const N: usize> BiasedSampler<T, V, N> where V: Ord {
-    pub fn new(entries: Vec<(T, V)>, mode: BiasMode, chance_vec: [f64; N]) -> BiasedSampler<T, V, N> {
+impl<T, V, const N: usize> BiasedSampler<T, V, N>
+where
+    V: Ord,
+{
+    pub fn new(
+        entries: Vec<(T, V)>,
+        mode: BiasMode,
+        chance_vec: [f64; N],
+    ) -> BiasedSampler<T, V, N> {
         BiasedSampler {
             entries,
             bias_mode: mode,

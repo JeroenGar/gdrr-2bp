@@ -8,6 +8,10 @@ pub struct SolutionStats {
 
 impl SolutionStats {
     pub fn new(cost: Cost, usage: f64, n_sheets: usize) -> Self {
-        Self { cost, usage, n_sheets }
+        Self {
+            cost,
+            usage,
+            n_sheets,
+        }
     }
 }

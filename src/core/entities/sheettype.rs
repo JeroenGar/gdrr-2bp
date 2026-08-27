@@ -11,7 +11,14 @@ pub struct SheetType {
 }
 
 impl SheetType {
-    pub fn new(id: usize, width: u64, height: u64, value: u64, fixed_first_cut_orientation: Option<Orientation>, max_stages: u8) -> SheetType {
+    pub fn new(
+        id: usize,
+        width: u64,
+        height: u64,
+        value: u64,
+        fixed_first_cut_orientation: Option<Orientation>,
+        max_stages: u8,
+    ) -> SheetType {
         SheetType {
             id,
             width,

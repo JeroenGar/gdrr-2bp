@@ -1,19 +1,19 @@
-use slotmap::SlotMap;
-use itertools::Itertools;
+use crate::core::entities::node::{Node, NodeKey};
+use crate::core::orientation::Orientation;
 use crate::core::{
     cost::Cost,
     insertion::insertion_blueprint::{InsertionBlueprint, InsertionNodeKind},
 };
-use crate::core::entities::node::{Node, NodeKey};
-use crate::core::orientation::Orientation;
 use crate::optimization::rr::cache_updates::IOCUpdates;
 use crate::util::assertions;
+use itertools::Itertools;
+use slotmap::SlotMap;
 
 use super::sheettype::SheetType;
 
 #[derive(Debug, Clone)]
 pub struct Layout<'a> {
-    id : usize,
+    id: usize,
     sheettype: &'a SheetType,
     leftover_valuation_power: f32,
     nodes: LayoutNodes<'a>,
@@ -27,7 +27,13 @@ impl<'a> Layout<'a> {
         first_cut_orientation: Orientation,
         leftover_valuation_power: f32,
     ) -> Self {
-        let top_node = Node::new(0, sheettype.width, sheettype.height, first_cut_orientation, None);
+        let top_node = Node::new(
+            0,
+            sheettype.width,
+            sheettype.height,
+            first_cut_orientation,
+            None,
+        );
         let nodes = LayoutNodes::new(top_node);
 
         let mut layout = Self {
@@ -39,17 +45,20 @@ impl<'a> Layout<'a> {
         };
 
         //The top node cannot be modified, so we register a placeholder node to be able to insert parts
-        let placeholder_node = Node::new(1, sheettype.width, sheettype.height, first_cut_orientation.rotate(), None);
+        let placeholder_node = Node::new(
+            1,
+            sheettype.width,
+            sheettype.height,
+            first_cut_orientation.rotate(),
+            None,
+        );
         layout.register_node(placeholder_node, layout.nodes.top_node, true);
 
         layout
     }
 
-    pub fn clone_with_id(&self, id : usize) -> Self{
-        Self {
-            id,
-            ..self.clone()
-        }
+    pub fn clone_with_id(&self, id: usize) -> Self {
+        Self { id, ..self.clone() }
     }
 
     pub(crate) fn restore_from(&mut self, snapshot: &Self) {
@@ -66,7 +75,9 @@ impl<'a> Layout<'a> {
         updates: &mut IOCUpdates,
     ) {
         let original = *blueprint.original_node_index();
-        let parent = self.nodes.arena[original].parent().expect("original node has no parent");
+        let parent = self.nodes.arena[original]
+            .parent()
+            .expect("original node has no parent");
         let insertion_nodes = blueprint.nodes(&self.nodes.arena[original]);
 
         //unregister the original node
@@ -104,51 +115,61 @@ impl<'a> Layout<'a> {
             inserted_nodes[i] = Some(node_index);
         }
 
-        debug_assert!(assertions::children_nodes_fit(&parent, &self.nodes.arena), "{:#?}", blueprint);
+        debug_assert!(
+            assertions::children_nodes_fit(&parent, &self.nodes.arena),
+            "{:#?}",
+            blueprint
+        );
         self.nodes.debug_assert_valid();
     }
 
-    pub fn remove_node(&mut self, node_index: NodeKey) -> Vec<usize>{
+    pub fn remove_node(&mut self, node_index: NodeKey) -> Vec<usize> {
         /*®
-           Scenario 1: Empty node present + other child(ren)
-            -> expand existing waste piece
+          Scenario 1: Empty node present + other child(ren)
+           -> expand existing waste piece
 
-             ---******               ---******
-                *$$$$*                  *$$$$*
-                ******                  ******
-                *XXXX*     ----->       *    *
-                ******                  *    *
-                *    *                  *    *
-             ---******               ---******
+            ---******               ---******
+               *$$$$*                  *$$$$*
+               ******                  ******
+               *XXXX*     ----->       *    *
+               ******                  *    *
+               *    *                  *    *
+            ---******               ---******
 
-             Scenario 2: No waste piece present
-                -> convert Node to be removed into waste Node
+            Scenario 2: No waste piece present
+               -> convert Node to be removed into waste Node
 
-             ---******               ---******
-                *$$$$*                  *$$$$*
-                ******    ----->        ******
-                *XXXX*                  *    *
-             ---******               ---******
+            ---******               ---******
+               *$$$$*                  *$$$$*
+               ******    ----->        ******
+               *XXXX*                  *    *
+            ---******               ---******
 
-             Scenario 3: No other children present besides waste piece
-                -> convert parent into waste piece
+            Scenario 3: No other children present besides waste piece
+               -> convert parent into waste piece
 
-             ---******               ---******
-                *XXXX*                  *    *
-                ******    ----->        *    *
-                *    *                  *    *
-             ---******               ---******
+            ---******               ---******
+               *XXXX*                  *    *
+               ******    ----->        *    *
+               *    *                  *    *
+            ---******               ---******
 
-         */
+        */
 
-        let parent_node_index = self.nodes.arena[node_index].parent().expect("Cannot remove a node without a parent");
+        let parent_node_index = self.nodes.arena[node_index]
+            .parent()
+            .expect("Cannot remove a node without a parent");
         let parent_node = &self.nodes.arena[parent_node_index];
 
         //Check if there is an empty_node present
-        let empty_node = parent_node.last_child.filter(|child| self.nodes.arena[*child].is_empty());
+        let empty_node = parent_node
+            .last_child
+            .filter(|child| self.nodes.arena[*child].is_empty());
         debug_assert_eq!(
             empty_node,
-            parent_node.children(&self.nodes.arena).find(|child| self.nodes.arena[*child].is_empty()),
+            parent_node
+                .children(&self.nodes.arena)
+                .find(|child| self.nodes.arena[*child].is_empty()),
         );
 
         let mut removed_parts = Some(vec![]);
@@ -156,7 +177,9 @@ impl<'a> Layout<'a> {
         match empty_node {
             Some(empty_node_index) => {
                 //Scenario 1 and 3
-                if parent_node.first_child != parent_node.last_child || parent_node.parent().is_none() {
+                if parent_node.first_child != parent_node.last_child
+                    || parent_node.parent().is_none()
+                {
                     //Scenario 1 (also do this when the parent node is the root)
                     //Two children are merged into one
 
@@ -165,11 +188,23 @@ impl<'a> Layout<'a> {
                     let replacement_node = match parent_node.next_cut_orient() {
                         Orientation::Horizontal => {
                             let new_height = empty_node.height() + node.height();
-                            Node::new(node.level(), node.width(), new_height, node.next_cut_orient(), None)
+                            Node::new(
+                                node.level(),
+                                node.width(),
+                                new_height,
+                                node.next_cut_orient(),
+                                None,
+                            )
                         }
                         Orientation::Vertical => {
                             let new_width = empty_node.width() + node.width();
-                            Node::new(node.level(), new_width, node.height(), node.next_cut_orient(), None)
+                            Node::new(
+                                node.level(),
+                                new_width,
+                                node.height(),
+                                node.next_cut_orient(),
+                                None,
+                            )
                         }
                     };
 
@@ -179,10 +214,18 @@ impl<'a> Layout<'a> {
                     self.register_node(replacement_node, parent_node_index, true);
                 } else {
                     //Scenario 3: replace the parent with an empty node
-                    let grandparent_index = parent_node.parent().expect("grandparent node needs to be present");
+                    let grandparent_index = parent_node
+                        .parent()
+                        .expect("grandparent node needs to be present");
 
                     //create empty parent
-                    let empty_parent_node = Node::new(parent_node.level(), parent_node.width(), parent_node.height(), parent_node.next_cut_orient(), None);
+                    let empty_parent_node = Node::new(
+                        parent_node.level(),
+                        parent_node.width(),
+                        parent_node.height(),
+                        parent_node.next_cut_orient(),
+                        None,
+                    );
 
                     //replace
                     self.unregister_node(parent_node_index, &mut removed_parts);
@@ -194,7 +237,13 @@ impl<'a> Layout<'a> {
 
                 //create empty replacement node
                 let node = &self.nodes.arena[node_index];
-                let replacement_node = Node::new(node.level(), node.width(), node.height(), node.next_cut_orient(), None);
+                let replacement_node = Node::new(
+                    node.level(),
+                    node.width(),
+                    node.height(),
+                    node.next_cut_orient(),
+                    None,
+                );
 
                 //replace
                 self.unregister_node(node_index, &mut removed_parts);
@@ -212,10 +261,17 @@ impl<'a> Layout<'a> {
     }
 
     fn calculate_cost(&self) -> Cost {
-        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes.arena, &self.nodes.empty_nodes_by_area));
+        debug_assert!(assertions::cached_sorted_empty_nodes_correct(
+            &self.nodes.arena,
+            &self.nodes.empty_nodes_by_area
+        ));
         let material_cost = Cost::empty().add_material_cost(self.sheettype.value);
-        self.nodes.empty_nodes_by_area.iter()
-            .map(|node_index| self.nodes.arena[*node_index].calculate_cost(self.leftover_valuation_power))
+        self.nodes
+            .empty_nodes_by_area
+            .iter()
+            .map(|node_index| {
+                self.nodes.arena[*node_index].calculate_cost(self.leftover_valuation_power)
+            })
             .fold(material_cost, |acc, cost| acc + cost)
     }
 
@@ -234,7 +290,9 @@ impl<'a> Layout<'a> {
     }
 
     pub fn included_part_ids(&self) -> Vec<usize> {
-        self.nodes.arena.iter()
+        self.nodes
+            .arena
+            .iter()
             .filter_map(|(_, node)| node.parttype().map(|parttype| parttype.id()))
             .collect_vec()
     }
@@ -266,18 +324,43 @@ impl<'a> Layout<'a> {
     }
 
     pub fn usage(&self) -> f64 {
-        debug_assert!(assertions::cached_used_part_area_correct(&self.nodes.arena, self.nodes.used_part_area));
+        debug_assert!(assertions::cached_used_part_area_correct(
+            &self.nodes.arena,
+            self.nodes.used_part_area
+        ));
         self.calculate_usage()
     }
 
     pub fn sorted_empty_nodes(&self) -> &[NodeKey] {
-        debug_assert!(assertions::node_arena_valid(&self.nodes.arena, &self.nodes.top_node), "{:#?}", self.nodes.empty_nodes_by_area.iter().map(|n| &self.nodes.arena[*n]).collect_vec());
-        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes.arena, &self.nodes.empty_nodes_by_area), "{:#?}", self.nodes.empty_nodes_by_area.iter().map(|n| &self.nodes.arena[*n]).collect_vec());
+        debug_assert!(
+            assertions::node_arena_valid(&self.nodes.arena, &self.nodes.top_node),
+            "{:#?}",
+            self.nodes
+                .empty_nodes_by_area
+                .iter()
+                .map(|n| &self.nodes.arena[*n])
+                .collect_vec()
+        );
+        debug_assert!(
+            assertions::cached_sorted_empty_nodes_correct(
+                &self.nodes.arena,
+                &self.nodes.empty_nodes_by_area
+            ),
+            "{:#?}",
+            self.nodes
+                .empty_nodes_by_area
+                .iter()
+                .map(|n| &self.nodes.arena[*n])
+                .collect_vec()
+        );
         &self.nodes.empty_nodes_by_area
     }
 
     pub fn removable_nodes(&self) -> &[NodeKey] {
-        debug_assert!(assertions::cached_removable_nodes_correct(&self.nodes.arena, &self.nodes.removable_nodes));
+        debug_assert!(assertions::cached_removable_nodes_correct(
+            &self.nodes.arena,
+            &self.nodes.removable_nodes
+        ));
         &self.nodes.removable_nodes
     }
 
@@ -296,7 +379,6 @@ impl<'a> Layout<'a> {
     pub fn nodes(&self) -> &SlotMap<NodeKey, Node<'a>> {
         &self.nodes.arena
     }
-
 }
 
 /// Owns a layout's mutable node topology and its derived lookup state.
@@ -328,7 +410,8 @@ impl<'a> LayoutNodes<'a> {
         self.arena.clone_from(&snapshot.arena);
         self.top_node = snapshot.top_node;
         self.used_part_area = snapshot.used_part_area;
-        self.empty_nodes_by_area.clone_from(&snapshot.empty_nodes_by_area);
+        self.empty_nodes_by_area
+            .clone_from(&snapshot.empty_nodes_by_area);
         self.removable_nodes.clone_from(&snapshot.removable_nodes);
     }
 
@@ -375,12 +458,16 @@ impl<'a> LayoutNodes<'a> {
     fn remove_subtree(&mut self, node_index: NodeKey, removed_part_ids: &mut Option<Vec<usize>>) {
         if self.arena[node_index].is_empty() {
             let node_area = self.arena[node_index].area();
-            let lower_index = self.empty_nodes_by_area.partition_point(|key| self.arena[*key].area() > node_area);
+            let lower_index = self
+                .empty_nodes_by_area
+                .partition_point(|key| self.arena[*key].area() > node_area);
 
             if self.empty_nodes_by_area[lower_index] == node_index {
                 self.empty_nodes_by_area.remove(lower_index);
             } else {
-                let upper_index = self.empty_nodes_by_area.partition_point(|key| self.arena[*key].area() >= node_area);
+                let upper_index = self
+                    .empty_nodes_by_area
+                    .partition_point(|key| self.arena[*key].area() >= node_area);
 
                 let mut node_found = false;
                 for position in lower_index..upper_index {
@@ -402,7 +489,10 @@ impl<'a> LayoutNodes<'a> {
 
         self.unregister_removable(node_index);
 
-        let node = self.arena.remove(node_index).expect("Node to be removed does not exist");
+        let node = self
+            .arena
+            .remove(node_index)
+            .expect("Node to be removed does not exist");
         debug_assert!(node.first_child.is_none() && node.last_child.is_none());
 
         if let &Some(parttype) = node.parttype() {
@@ -414,11 +504,15 @@ impl<'a> LayoutNodes<'a> {
 
         if let Some(parent) = node.parent() {
             match node.previous_sibling {
-                Some(previous_sibling) => self.arena[previous_sibling].next_sibling = node.next_sibling,
+                Some(previous_sibling) => {
+                    self.arena[previous_sibling].next_sibling = node.next_sibling
+                }
                 None => self.arena[parent].first_child = node.next_sibling,
             }
             match node.next_sibling {
-                Some(next_sibling) => self.arena[next_sibling].previous_sibling = node.previous_sibling,
+                Some(next_sibling) => {
+                    self.arena[next_sibling].previous_sibling = node.previous_sibling
+                }
                 None => self.arena[parent].last_child = node.previous_sibling,
             }
             if !self.arena[parent].has_children() {
@@ -431,7 +525,9 @@ impl<'a> LayoutNodes<'a> {
 
     fn register_removable(&mut self, node_index: NodeKey) {
         debug_assert!(self.arena[node_index].removable_position().is_none());
-        debug_assert!(self.arena[node_index].parttype().is_some() || self.arena[node_index].has_children());
+        debug_assert!(
+            self.arena[node_index].parttype().is_some() || self.arena[node_index].has_children()
+        );
         let position = self.removable_nodes.len();
         self.arena[node_index].set_removable_position(Some(position));
         self.removable_nodes.push(node_index);
@@ -451,7 +547,17 @@ impl<'a> LayoutNodes<'a> {
 
     fn debug_assert_valid(&self) {
         debug_assert!(assertions::node_arena_valid(&self.arena, &self.top_node));
-        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.arena, &self.empty_nodes_by_area), "{:#?}", self.empty_nodes_by_area.iter().map(|key| &self.arena[*key]).collect_vec());
-        debug_assert!(assertions::cached_removable_nodes_correct(&self.arena, &self.removable_nodes));
+        debug_assert!(
+            assertions::cached_sorted_empty_nodes_correct(&self.arena, &self.empty_nodes_by_area),
+            "{:#?}",
+            self.empty_nodes_by_area
+                .iter()
+                .map(|key| &self.arena[*key])
+                .collect_vec()
+        );
+        debug_assert!(assertions::cached_removable_nodes_correct(
+            &self.arena,
+            &self.removable_nodes
+        ));
     }
 }

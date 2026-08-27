@@ -30,25 +30,24 @@ pub struct LocalSolCollector<'a> {
     terminate: bool,
 }
 
-
 impl<'a> LocalSolCollector<'a> {
-    pub fn new(instance: Arc<Instance>,
-               rx_sync: Receiver<SyncMessage>,
-               tx_solution_report: Sender<SolutionReportMessage>,
-               cost_comparator: fn(&Cost, &Cost) -> Ordering,
+    pub fn new(
+        instance: Arc<Instance>,
+        rx_sync: Receiver<SyncMessage>,
+        tx_solution_report: Sender<SolutionReportMessage>,
+        cost_comparator: fn(&Cost, &Cost) -> Ordering,
     ) -> Self {
-
         Self {
             instance,
-            best_complete_solution : None,
-            best_incomplete_solution : None,
+            best_complete_solution: None,
+            best_incomplete_solution: None,
             cost_comparator,
-            material_limit : None,
+            material_limit: None,
             rx_sync,
             tx_solution_report,
-            best_complete_transferred : false,
-            best_incomplete_transferred : false,
-            terminate : false,
+            best_complete_transferred: false,
+            best_incomplete_transferred: false,
+            terminate: false,
         }
     }
 
@@ -62,8 +61,12 @@ impl<'a> LocalSolCollector<'a> {
                 }
             }
             Some(best_incomplete_solution) => {
-                debug_assert!(solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX));
-                if (self.cost_comparator)(solution.cost(), best_incomplete_solution.cost()) == Ordering::Less {
+                debug_assert!(
+                    solution.cost().material_cost < self.material_limit.unwrap_or(u64::MAX)
+                );
+                if (self.cost_comparator)(solution.cost(), best_incomplete_solution.cost())
+                    == Ordering::Less
+                {
                     self.accept_solution(solution);
                     self.tx_solution_report();
                 }
@@ -105,23 +108,37 @@ impl<'a> LocalSolCollector<'a> {
                 let thread_name = std::thread::current().name().unwrap().parse().unwrap();
                 let cost = best_incomplete_solution.cost().clone();
                 let message = match self.material_limit {
-                    Some(_) => SolutionReportMessage::NewIncompleteStats(thread_name, SolutionStats::new(cost, best_incomplete_solution.usage(), best_incomplete_solution.n_layouts())),
+                    Some(_) => SolutionReportMessage::NewIncompleteStats(
+                        thread_name,
+                        SolutionStats::new(
+                            cost,
+                            best_incomplete_solution.usage(),
+                            best_incomplete_solution.n_layouts(),
+                        ),
+                    ),
                     None => {
-                        let sendable_solution = SendableSolution::new(self.instance.clone(), best_incomplete_solution);
+                        let sendable_solution =
+                            SendableSolution::new(self.instance.clone(), best_incomplete_solution);
                         SolutionReportMessage::NewIncompleteSolution(thread_name, sendable_solution)
                     }
                 };
-                self.tx_solution_report.send(message).expect("Failed to send solution report message");
+                self.tx_solution_report
+                    .send(message)
+                    .expect("Failed to send solution report message");
                 self.best_incomplete_transferred = true;
             }
         }
         if let Some(best_complete_solution) = self.best_complete_solution.as_ref() {
             if !self.best_complete_transferred {
                 let thread_name = std::thread::current().name().unwrap().parse().unwrap();
-                let sendable_solution = SendableSolution::new(self.instance.clone(), best_complete_solution);
-                self.tx_solution_report.send(
-                    SolutionReportMessage::NewCompleteSolution(thread_name, sendable_solution)
-                ).expect("Failed to send solution report message");
+                let sendable_solution =
+                    SendableSolution::new(self.instance.clone(), best_complete_solution);
+                self.tx_solution_report
+                    .send(SolutionReportMessage::NewCompleteSolution(
+                        thread_name,
+                        sendable_solution,
+                    ))
+                    .expect("Failed to send solution report message");
                 self.best_complete_transferred = true;
             }
         }

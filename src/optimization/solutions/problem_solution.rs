@@ -24,11 +24,18 @@ pub struct ProblemSolution<'a> {
 }
 
 impl<'a> ProblemSolution<'a> {
-    pub fn new(problem: &Problem<'a>, cost: Cost, id: usize, mut prev_solution: ProblemSolution<'a>) -> ProblemSolution<'a> {
+    pub fn new(
+        problem: &Problem<'a>,
+        cost: Cost,
+        id: usize,
+        mut prev_solution: ProblemSolution<'a>,
+    ) -> ProblemSolution<'a> {
         for &layout_key in problem.changed_layouts() {
             match problem.layouts().get(layout_key) {
                 Some(layout) => {
-                    prev_solution.layouts.insert(layout_key, Rc::new(layout.clone()));
+                    prev_solution
+                        .layouts
+                        .insert(layout_key, Rc::new(layout.clone()));
                 }
                 None => {
                     prev_solution.layouts.remove(layout_key);
@@ -71,7 +78,6 @@ impl<'a> ProblemSolution<'a> {
             usage,
         }
     }
-
 
     pub fn instance(&self) -> &'a Instance {
         self.instance

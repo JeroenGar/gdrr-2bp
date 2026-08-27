@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use crate::core::cost::Cost;
 use crate::core::entities::sendable_layout::SendableLayout;
 use crate::optimization::instance::Instance;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
+use std::sync::Arc;
 
 /// Representation of a solution, based on ProblemSolution, but that can be sent across threads
 
@@ -21,7 +21,11 @@ impl SendableSolution {
     pub fn new(instance: Arc<Instance>, problem_solution: &ProblemSolution) -> SendableSolution {
         debug_assert!(std::ptr::eq(instance.as_ref(), problem_solution.instance()));
 
-        let layouts = problem_solution.layouts().iter().map(|(_id, l)| SendableLayout::new(l)).collect();
+        let layouts = problem_solution
+            .layouts()
+            .iter()
+            .map(|(_id, l)| SendableLayout::new(l))
+            .collect();
         let cost = problem_solution.cost().clone();
         let usage = problem_solution.usage();
         let parttype_qtys = problem_solution.parttype_qtys().to_vec();
@@ -45,7 +49,6 @@ impl SendableSolution {
         &self.instance
     }
 }
-
 
 impl Solution for SendableSolution {
     fn cost(&self) -> &Cost {
