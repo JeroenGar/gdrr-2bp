@@ -26,9 +26,7 @@ use crate::util::util;
 
 pub struct GDRR<'a> {
     config: &'a Config,
-    instance: &'a Instance,
     problem: Problem<'a>,
-    cost_comparator: fn(&Cost, &Cost) -> Ordering,
     local_sol_collector: LocalSolCollector<'a>,
 }
 
@@ -40,12 +38,9 @@ impl<'a> GDRR<'a> {
             config.random_seed,
             config.leftover_valuation_power,
         );
-        let cost_comparator = crate::COST_COMPARATOR;
         Self {
             config,
-            instance,
             problem,
-            cost_comparator,
             local_sol_collector,
         }
     }
@@ -79,7 +74,7 @@ impl<'a> GDRR<'a> {
 
         let max_rr_iterations = self.config.max_rr_iterations.unwrap_or(usize::MAX);
 
-        let empty_problem_cost = Cost::new(0, 0.0, self.instance.total_part_area(), 0);
+        let empty_problem_cost = Cost::new(0, 0.0, self.problem.instance().total_part_area(), 0);
 
         let mut lahc_history: VecDeque<Cost> = VecDeque::with_capacity(self.config.history_length);
         lahc_history.push_back(empty_problem_cost.clone());
@@ -88,7 +83,7 @@ impl<'a> GDRR<'a> {
         let mut n_improved = 0;
         let mut mat_limit = self.local_sol_collector.material_limit();
         let mut local_optimum: Option<ProblemSolution> = None;
-        let mut insertion_option_cache = InsertionOptionCache::new(self.instance);
+        let mut insertion_option_cache = InsertionOptionCache::new(self.problem.instance());
 
         while n_iterations < max_rr_iterations && !self.local_sol_collector.terminate() {
             let mat_limit_budget: i128 = match local_optimum.as_ref() {
@@ -110,15 +105,15 @@ impl<'a> GDRR<'a> {
 
             let cost = self.problem.cost();
 
-            if (self.cost_comparator)(&cost, lahc_history.front().unwrap()) <= Ordering::Equal ||
-                (local_optimum.is_some() && (self.cost_comparator)(&cost, local_optimum.as_ref().unwrap().cost()) <= Ordering::Equal) {
+            if crate::COST_COMPARATOR(&cost, lahc_history.front().unwrap()) <= Ordering::Equal ||
+                (local_optimum.is_some() && crate::COST_COMPARATOR(&cost, local_optimum.as_ref().unwrap().cost()) <= Ordering::Equal) {
                 //Solution is better or equivalent to the last entry in the history queue or the local optimum.
 
                 local_optimum = Some(self.problem.create_solution(local_optimum.take(), Some(cost.clone())));
 
                 lahc_history.pop_front();
 
-                if (self.cost_comparator)(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
+                if crate::COST_COMPARATOR(&cost, lahc_history.back().unwrap_or(&empty_problem_cost)) == Ordering::Less {
                     //Current local optimum is better than the last value of the history queue
                     for _ in 0..(self.config.history_length - lahc_history.len()) {
                         lahc_history.push_back(cost.clone());
@@ -266,7 +261,6 @@ impl<'a> GDRR<'a> {
                 mat_limit_budget,
                 &mut self.problem,
                 &self.config,
-                &self.cost_comparator,
                 &mut existing_layout_blueprints,
                 &mut new_layout_blueprints,
             );
@@ -337,7 +331,6 @@ impl<'a> GDRR<'a> {
         mat_limit_budget: i128,
         problem: &mut Problem,
         config: &Config,
-        cost_comparator: &fn(&Cost, &Cost) -> Ordering,
         existing_layout_blueprints: &mut Vec<InsertionBlueprint<'a>>,
         new_layout_blueprints: &mut Vec<InsertionBlueprint<'a>>,
     ) -> Option<InsertionBlueprint<'a>> {
@@ -353,7 +346,7 @@ impl<'a> GDRR<'a> {
 
         if !existing_layout_blueprints.is_empty() {
             existing_layout_blueprints.sort_by(|a, b| {
-                cost_comparator(a.cost(), b.cost())
+                crate::COST_COMPARATOR(a.cost(), b.cost())
             });
             let selected_blinked_index = blink::select_lowest_in_range(0..existing_layout_blueprints.len(), config.blink_rate, problem.rng());
             return Some(existing_layout_blueprints.swap_remove(selected_blinked_index));
