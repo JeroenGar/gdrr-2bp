@@ -64,7 +64,7 @@ pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableS
     let parttypes = json_instance.parttypes.clone();
 
     let cutting_patterns = solution.layouts().iter()
-        .sorted_by(|a, b| { a.usage().partial_cmp(&b.usage()).unwrap().reverse() })
+        .sorted_by(|a, b| { a.usage.partial_cmp(&b.usage).unwrap().reverse() })
         .map(|l| { convert_layout_to_json_cp(l) }
         ).collect::<Vec<JsonCP>>();
 
@@ -87,9 +87,9 @@ pub fn generate_json_solution(json_instance: &JsonInstance, solution: &SendableS
 }
 
 pub fn convert_layout_to_json_cp(layout: &SendableLayout) -> JsonCP {
-    let object = layout.sheettype_id();
-    let root = convert_node_bp_to_json_cp_node(layout.top_node());
-    let usage = layout.usage();
+    let object = layout.sheettype_id;
+    let root = convert_node_bp_to_json_cp_node(&layout.top_node);
+    let usage = layout.usage;
 
     JsonCP {
         object,
@@ -100,13 +100,13 @@ pub fn convert_layout_to_json_cp(layout: &SendableLayout) -> JsonCP {
 
 pub fn convert_node_bp_to_json_cp_node(node: &NodeBlueprint) -> JsonCPNode {
     let mut json_children = Vec::new();
-    for child in node.children().iter().sorted_by(|a, b| a.calculate_usage().partial_cmp(&b.calculate_usage()).unwrap().reverse()) {
+    for child in node.children.iter().sorted_by(|a, b| a.calculate_usage().partial_cmp(&b.calculate_usage()).unwrap().reverse()) {
         json_children.push(convert_node_bp_to_json_cp_node(child));
     }
-    let length = node.width();
-    let height = node.height();
+    let length = node.width;
+    let height = node.height;
 
-    let node_type = match (node.parttype_id(), node.children().is_empty()) {
+    let node_type = match (node.parttype_id, node.children.is_empty()) {
         (None, true) => JsonCPNodeType::Leftover,
         (None, false) => JsonCPNodeType::Structure,
         (Some(_), true) => JsonCPNodeType::Item,
@@ -115,14 +115,14 @@ pub fn convert_node_bp_to_json_cp_node(node: &NodeBlueprint) -> JsonCPNode {
         }
     };
 
-    let orientation = match (&node_type, node.next_cut_orient()) {
+    let orientation = match (&node_type, node.next_cut_orient) {
         (JsonCPNodeType::Structure, Orientation::Horizontal) => Some(JsonOrientation::H),
         (JsonCPNodeType::Structure, Orientation::Vertical) => Some(JsonOrientation::V),
         (_, _) => None,
     };
 
     let item = match &node_type {
-        JsonCPNodeType::Item => Some(node.parttype_id().unwrap()),
+        JsonCPNodeType::Item => Some(node.parttype_id.unwrap()),
         _ => None,
     };
 

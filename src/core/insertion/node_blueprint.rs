@@ -11,11 +11,11 @@ use crate::core::orientation::Orientation;
 
 #[derive(Debug, Clone)]
 pub struct NodeBlueprint {
-    width: u64,
-    height: u64,
-    children: Vec<NodeBlueprint>,
-    parttype_id: Option<usize>,
-    next_cut_orient: Orientation,
+    pub width: u64,
+    pub height: u64,
+    pub children: Vec<NodeBlueprint>,
+    pub parttype_id: Option<usize>,
+    pub next_cut_orient: Orientation,
 }
 
 impl NodeBlueprint {
@@ -42,10 +42,6 @@ impl NodeBlueprint {
             .collect_vec();
 
         Self { width, height, parttype_id, children, next_cut_orient }
-    }
-
-    pub fn add_child(&mut self, child: NodeBlueprint) {
-        self.children.push(child);
     }
 
     pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
@@ -89,26 +85,6 @@ impl NodeBlueprint {
 
     pub fn area(&self) -> u64 {
         self.width * self.height
-    }
-
-    pub fn width(&self) -> u64 {
-        self.width
-    }
-
-    pub fn height(&self) -> u64 {
-        self.height
-    }
-
-    pub fn children(&self) -> &[NodeBlueprint] {
-        &self.children
-    }
-
-    pub fn parttype_id(&self) -> Option<usize> {
-        self.parttype_id
-    }
-
-    pub fn next_cut_orient(&self) -> Orientation {
-        self.next_cut_orient
     }
 
 }

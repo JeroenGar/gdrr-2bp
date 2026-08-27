@@ -53,30 +53,30 @@ pub fn children_nodes_fit(node_i: &NodeKey, arena: &SlotMap<NodeKey, Node>) -> b
 }
 
 pub fn children_node_blueprints_fit(node_bp: &NodeBlueprint) -> bool {
-    match node_bp.children().is_empty() {
+    match node_bp.children.is_empty() {
         true => true,
         false => {
-            match node_bp.next_cut_orient() {
+            match node_bp.next_cut_orient {
                 Orientation::Horizontal => {
-                    let all_children_same_width = node_bp.children().iter().all(|nb| nb.width() == node_bp.width());
-                    let sum_of_children_height = node_bp.children().iter().map(|nb| nb.height()).sum::<u64>();
-                    let all_children_vert_cut_orient = node_bp.children().iter().all(|nb| nb.next_cut_orient() == Orientation::Vertical);
+                    let all_children_same_width = node_bp.children.iter().all(|nb| nb.width == node_bp.width);
+                    let sum_of_children_height = node_bp.children.iter().map(|nb| nb.height).sum::<u64>();
+                    let all_children_vert_cut_orient = node_bp.children.iter().all(|nb| nb.next_cut_orient == Orientation::Vertical);
 
-                    if !all_children_same_width || sum_of_children_height != node_bp.height() || !all_children_vert_cut_orient {
+                    if !all_children_same_width || sum_of_children_height != node_bp.height || !all_children_vert_cut_orient {
                         return false;
                     }
-                    node_bp.children().iter().all(|nb| children_node_blueprints_fit(nb))
+                    node_bp.children.iter().all(|nb| children_node_blueprints_fit(nb))
                 }
                 Orientation::Vertical => {
-                    let all_children_same_height = node_bp.children().iter().all(|nb| nb.height() == node_bp.height());
-                    let sum_of_children_width = node_bp.children().iter().map(|nb| nb.width()).sum::<u64>();
-                    let all_children_horz_cut_orient = node_bp.children().iter().all(|nb| nb.next_cut_orient() == Orientation::Horizontal);
+                    let all_children_same_height = node_bp.children.iter().all(|nb| nb.height == node_bp.height);
+                    let sum_of_children_width = node_bp.children.iter().map(|nb| nb.width).sum::<u64>();
+                    let all_children_horz_cut_orient = node_bp.children.iter().all(|nb| nb.next_cut_orient == Orientation::Horizontal);
 
 
-                    if !all_children_same_height || sum_of_children_width != node_bp.width() || !all_children_horz_cut_orient {
+                    if !all_children_same_height || sum_of_children_width != node_bp.width || !all_children_horz_cut_orient {
                         return false;
                     }
-                    node_bp.children().iter().all(|nb| children_node_blueprints_fit(nb))
+                    node_bp.children.iter().all(|nb| children_node_blueprints_fit(nb))
                 }
             }
         }

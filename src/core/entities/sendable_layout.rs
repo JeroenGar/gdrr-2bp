@@ -1,16 +1,15 @@
 use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
-use crate::optimization::instance::Instance;
 
 ///Representation of a layout that can be sent across threads
 
 #[derive(Debug, Clone)]
 pub struct SendableLayout {
-    sheettype_id: usize,
-    top_node: NodeBlueprint,
-    cost: Cost,
-    usage: f64,
+    pub sheettype_id: usize,
+    pub top_node: NodeBlueprint,
+    pub cost: Cost,
+    pub usage: f64,
 }
 
 impl SendableLayout {
@@ -23,20 +22,4 @@ impl SendableLayout {
         }
     }
 
-    pub fn convert_to_layout<'a>(&self, _instance: &'a Instance) -> Layout<'a> {
-        todo!();
-    }
-
-    pub fn sheettype_id(&self) -> usize {
-        self.sheettype_id
-    }
-    pub fn top_node(&self) -> &NodeBlueprint {
-        &self.top_node
-    }
-    pub fn cost(&self) -> &Cost {
-        &self.cost
-    }
-    pub fn usage(&self) -> f64 {
-        self.usage
-    }
 }
