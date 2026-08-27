@@ -195,22 +195,16 @@ impl<'a> GDRR<'a> {
                     })
                     .map(|(i, _)| i);
 
-                match min_usage_layout_index {
-                    Some(min_usage_layout_index) => {
-                        let top_node = self.problem.layouts()[min_usage_layout_index].top_node_index().clone();
+                let Some(min_usage_layout_index) = min_usage_layout_index else {
+                    break; // no existing layouts
+                };
+                let top_node = *self.problem.layouts()[min_usage_layout_index].top_node_index();
 
-                        //release it and update mat_limit_exceedance
-                        let removed_sheet_value = self.problem.remove_node(top_node, LayoutIndex::Existing(min_usage_layout_index));
-                        if let Some(removed_sheet_value) = removed_sheet_value {
-                            mat_limit_budget += removed_sheet_value as i128;
-                        } else {
-                            panic!("Top node should remove entire layout!");
-                        }
-                    }
-                    None => {
-                        break; //no existing layouts
-                    }
-                }
+                // Release it and update mat_limit_exceedance.
+                let removed_sheet_value = self.problem
+                    .remove_node(top_node, LayoutIndex::Existing(min_usage_layout_index))
+                    .expect("top node should remove entire layout");
+                mat_limit_budget += removed_sheet_value as i128;
             }
         }
         mat_limit_budget
@@ -280,11 +274,11 @@ impl<'a> GDRR<'a> {
 
                     if self.problem.sheettype_qtys()[sheettype_id] == 0 {
                         //There is no more stock left of this sheettype, remove all empty layouts with this sheettype from the cache
-                        self.problem.empty_layouts().iter().enumerate()
-                            .filter(|(_, l)| l.sheettype().id == sheettype_id)
-                            .for_each(|(i, l)| {
-                                insertion_option_cache.remove_all_for_layout(&LayoutIndex::empty(i), l);
-                            });
+                        for (i, layout) in self.problem.empty_layouts().iter().enumerate()
+                            .filter(|(_, layout)| layout.sheettype().id == sheettype_id)
+                        {
+                            insertion_option_cache.remove_all_for_layout(&LayoutIndex::empty(i), layout);
+                        }
                     }
                 }
                 if insertion_option_cache.is_empty() {
@@ -294,10 +288,10 @@ impl<'a> GDRR<'a> {
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}\n{:#?}", elected_blueprint, cache_updates);
             } else {
                 //if there is no insertion blueprint, the part cannot be added to the problem
-                part_area_not_included += *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() as u64
+                part_area_not_included += self.problem.parttype_qtys()[elected_parttype.id()] as u64
                     * elected_parttype.area();
 
-                parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
+                parttypes_to_consider.retain(|pt| pt.id() != elected_parttype.id());
 
                 debug_assert!(assertions::insertion_option_cache_is_valid(&self.problem, &insertion_option_cache, &parttypes_to_consider), "{:#?}", elected_blueprint);
             }
