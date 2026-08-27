@@ -160,7 +160,11 @@ impl<'a> Layout<'a> {
         let parent_node = &self.nodes[parent_node_index];
 
         //Check if there is an empty_node present
-        let empty_node = parent_node.children(&self.nodes).find(|child| self.nodes[*child].is_empty());
+        let empty_node = parent_node.last_child.filter(|child| self.nodes[*child].is_empty());
+        debug_assert_eq!(
+            empty_node,
+            parent_node.children(&self.nodes).find(|child| self.nodes[*child].is_empty()),
+        );
 
         let mut removed_parts = Some(vec![]);
 
