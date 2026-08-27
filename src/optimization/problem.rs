@@ -25,12 +25,9 @@ pub struct Problem<'a> {
     parttype_qtys: Vec<usize>,
     part_area_excluded: u64,
     sheettype_qtys: Vec<usize>,
-    layouts: SlotMap<LayoutKey, Layout<'a>>,
-    layout_keys: Vec<LayoutKey>,
-    detached_layouts: Vec<(LayoutKey, Layout<'a>)>,
+    layouts: ProblemLayouts<'a>,
     empty_layouts: Vec<Layout<'a>>,
     rng: SmallRng,
-    changed_layouts: Vec<LayoutKey>,
     solution_id_changed_layouts: Option<usize>,
     solution_id_counter: usize,
     layout_id_counter: usize,
@@ -55,11 +52,8 @@ impl<'a> Problem<'a> {
             parttype_qtys,
             part_area_excluded,
             sheettype_qtys,
-            layouts : SlotMap::with_key(),
-            layout_keys : Vec::new(),
-            detached_layouts : Vec::new(),
+            layouts : ProblemLayouts::new(),
             empty_layouts : Vec::new(),
-            changed_layouts : Vec::new(),
             solution_id_changed_layouts : None,
             rng: random,
             solution_id_counter : 0,
@@ -105,7 +99,7 @@ impl<'a> Problem<'a> {
 
         match blueprint.layout_index() {
             LayoutIndex::Existing(index) => {
-                let blueprint_layout = &mut self.layouts[*index];
+                let blueprint_layout = &mut self.layouts.live[*index];
                 let mut cache_updates = IOCUpdates::new(
                     *blueprint.layout_index(),
                     *blueprint.original_node_index(),
@@ -129,7 +123,7 @@ impl<'a> Problem<'a> {
                     LayoutIndex::Existing(clone_index),
                     *blueprint.original_node_index(),
                 );
-                self.layouts[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates);
+                self.layouts.live[clone_index].implement_insertion_blueprint(blueprint, &mut cache_updates);
 
                 cache_updates
             }
@@ -143,16 +137,16 @@ impl<'a> Problem<'a> {
         };
         self.layout_has_changed(index);
 
-        if node_index == *self.layouts[index].top_node_index() {
+        if node_index == *self.layouts.live[index].top_node_index() {
             return Some(self.unregister_layout(layout_index));
         }
 
-        let removed_part_ids = self.layouts[index].remove_node(node_index);
+        let removed_part_ids = self.layouts.live[index].remove_node(node_index);
         for p_id in removed_part_ids {
             self.unregister_part(p_id, 1);
         }
 
-        if self.layouts[index].is_empty() {
+        if self.layouts.live[index].is_empty() {
             Some(self.unregister_layout(layout_index))
         } else {
             None
@@ -160,7 +154,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn cost(&mut self) -> Cost {
-        let mut cost = self.layouts.iter_mut()
+        let mut cost = self.layouts.live.iter_mut()
             .fold(Cost::empty(), |acc, (_,l)| acc + l.cost(false));
 
         cost.part_area_excluded = self.part_area_excluded();
@@ -174,7 +168,7 @@ impl<'a> Problem<'a> {
         //TODO: implement cached cost for problem
 
         debug_assert!(cached_cost.is_none() || cached_cost.as_ref().unwrap() == &self.cost());
-        self.discard_detached_layouts();
+        self.layouts.discard_detached();
         let id = self.next_solution_id();
         let cost = cached_cost.unwrap_or(self.cost());
         let solution = match old_solution {
@@ -201,25 +195,7 @@ impl<'a> Problem<'a> {
             "can only restore the latest problem solution",
         );
 
-        for layout_key in std::mem::take(&mut self.changed_layouts) {
-            match (self.layouts.contains_key(layout_key), solution.layouts().get(layout_key)) {
-                (true, Some(layout)) => self.layouts[layout_key].restore_from(layout),
-                (true, None) => {
-                    self.layouts.remove(layout_key);
-                    self.untrack_layout(layout_key);
-                },
-                (false, Some(layout)) => {
-                    let detached_index = self.detached_layouts.iter()
-                        .position(|(key, _)| *key == layout_key)
-                        .expect("changed layout key was not detached");
-                    self.detached_layouts.swap_remove(detached_index);
-                    self.layouts.reattach(layout_key, layout.as_ref().clone());
-                    self.track_layout(layout_key);
-                },
-                (false, None) => (),
-            }
-        }
-        self.discard_detached_layouts();
+        self.layouts.restore_from_solution(solution);
 
         self.parttype_qtys = solution.parttype_qtys().clone();
         self.part_area_excluded = solution.cost().part_area_excluded;
@@ -260,7 +236,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn choose_removable_node(&mut self, layout_index: LayoutKey) -> NodeKey {
-        let layouts = &self.layouts;
+        let layouts = &self.layouts.live;
         *layouts[layout_index]
             .removable_nodes()
             .choose(&mut self.rng)
@@ -268,23 +244,20 @@ impl<'a> Problem<'a> {
     }
 
     pub fn layouts(&self) -> &SlotMap<LayoutKey, Layout<'a>> {
-        &self.layouts
+        &self.layouts.live
     }
 
     pub(crate) fn layouts_mut(&mut self) -> &mut SlotMap<LayoutKey, Layout<'a>> {
-        &mut self.layouts
+        &mut self.layouts.live
     }
 
     pub fn layout_keys(&self) -> &[LayoutKey] {
-        debug_assert_eq!(self.layout_keys.len(), self.layouts.len());
-        debug_assert!(self.layout_keys.iter().all(|key| self.layouts.contains_key(*key)));
-        debug_assert!(self.layout_keys.iter().enumerate().all(|(i, key)| !self.layout_keys[..i].contains(key)));
-        &self.layout_keys
+        self.layouts.keys()
     }
 
     pub fn get_layout(&self, layout_index: &LayoutIndex) -> &Layout<'a>{
         match layout_index{
-            LayoutIndex::Existing(index) => self.layouts.get(*index).unwrap(),
+            LayoutIndex::Existing(index) => self.layouts.live.get(*index).unwrap(),
             LayoutIndex::Empty(index) => self.empty_layouts.get(*index as usize).unwrap(),
         }
     }
@@ -295,57 +268,33 @@ impl<'a> Problem<'a> {
             |p_id| {
                 self.register_part(*p_id, 1);
             });
-        let layout_key = self.layouts.insert(layout);
-        self.track_layout(layout_key);
-        self.layout_has_changed(layout_key);
-        layout_key
+        self.layouts.insert(layout)
     }
 
     pub fn unregister_layout(&mut self, layout_index: LayoutIndex) -> u64 {
         match layout_index {
             LayoutIndex::Empty(_) => panic!("Cannot unregister empty layout"),
             LayoutIndex::Existing(li) => {
-                let layout = self.layouts.detach(li).expect("Layout not found");
-                self.untrack_layout(li);
-
-                self.unregister_sheet(layout.sheettype().id(), 1);
-                layout.get_included_parts().iter().for_each(
-                    |p_id| { self.unregister_part(*p_id, 1) });
+                let layout = &self.layouts.live[li];
+                let sheettype_id = layout.sheettype().id();
                 let sheet_value = layout.sheettype().value();
-                self.detached_layouts.push((li, layout));
+                let included_parts = layout.get_included_parts();
+                self.layouts.detach(li);
+
+                self.unregister_sheet(sheettype_id, 1);
+                included_parts.iter().for_each(
+                    |p_id| { self.unregister_part(*p_id, 1) });
                 sheet_value
             }
         }
     }
 
     fn layout_has_changed(&mut self, layout_key: LayoutKey) {
-        if !self.changed_layouts.contains(&layout_key) {
-            self.changed_layouts.push(layout_key);
-        }
-    }
-
-    fn track_layout(&mut self, layout_key: LayoutKey) {
-        debug_assert!(self.layouts.contains_key(layout_key));
-        debug_assert!(!self.layout_keys.contains(&layout_key));
-        self.layout_keys.push(layout_key);
-    }
-
-    fn untrack_layout(&mut self, layout_key: LayoutKey) {
-        let position = self.layout_keys.iter()
-            .position(|key| *key == layout_key)
-            .expect("live layout key is not tracked");
-        self.layout_keys.swap_remove(position);
-    }
-
-    fn discard_detached_layouts(&mut self) {
-        for (key, layout) in self.detached_layouts.drain(..) {
-            self.layouts.reattach(key, layout);
-            self.layouts.remove(key);
-        }
+        self.layouts.mark_changed(layout_key);
     }
 
     fn reset_changed_layouts(&mut self, solution_id_changed_layouts: usize) {
-        self.changed_layouts.clear();
+        self.layouts.reset_changes();
         self.solution_id_changed_layouts = Some(solution_id_changed_layouts);
     }
 
@@ -386,7 +335,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn changed_layouts(&self) -> &Vec<LayoutKey> {
-        &self.changed_layouts
+        &self.layouts.changed
     }
 
     fn part_area_excluded(&self) -> u64 {
@@ -397,6 +346,99 @@ impl<'a> Problem<'a> {
             }),
         );
         self.part_area_excluded
+    }
+}
+
+/// Owns live layout membership and the bookkeeping needed to sample, snapshot, and restore it.
+///
+/// All insertions, detachments, and restores pass through this type so live keys, detached layouts,
+/// and the changed-layout set stay synchronized with the layout arena.
+struct ProblemLayouts<'a> {
+    live: SlotMap<LayoutKey, Layout<'a>>,
+    keys: Vec<LayoutKey>,
+    detached: Vec<(LayoutKey, Layout<'a>)>,
+    changed: Vec<LayoutKey>,
+}
+
+impl<'a> ProblemLayouts<'a> {
+    fn new() -> Self {
+        Self {
+            live: SlotMap::with_key(),
+            keys: Vec::new(),
+            detached: Vec::new(),
+            changed: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, layout: Layout<'a>) -> LayoutKey {
+        let key = self.live.insert(layout);
+        debug_assert!(!self.keys.contains(&key));
+        self.keys.push(key);
+        self.mark_changed(key);
+        key
+    }
+
+    fn detach(&mut self, key: LayoutKey) {
+        let layout = self.live.detach(key).expect("Layout not found");
+        let position = self.keys.iter()
+            .position(|candidate| *candidate == key)
+            .expect("live layout key is not tracked");
+        self.keys.swap_remove(position);
+        self.detached.push((key, layout));
+        self.mark_changed(key);
+    }
+
+    fn restore_from_solution(&mut self, solution: &ProblemSolution<'a>) {
+        for key in std::mem::take(&mut self.changed) {
+            match (self.live.contains_key(key), solution.layouts().get(key)) {
+                (true, Some(layout)) => self.live[key].restore_from(layout),
+                (true, None) => {
+                    self.live.remove(key);
+                    self.untrack(key);
+                },
+                (false, Some(layout)) => {
+                    let detached_index = self.detached.iter()
+                        .position(|(detached_key, _)| *detached_key == key)
+                        .expect("changed layout key was not detached");
+                    self.detached.swap_remove(detached_index);
+                    self.live.reattach(key, layout.as_ref().clone());
+                    self.keys.push(key);
+                },
+                (false, None) => (),
+            }
+        }
+        self.discard_detached();
+    }
+
+    fn discard_detached(&mut self) {
+        for (key, layout) in self.detached.drain(..) {
+            self.live.reattach(key, layout);
+            self.live.remove(key);
+        }
+    }
+
+    fn mark_changed(&mut self, key: LayoutKey) {
+        if !self.changed.contains(&key) {
+            self.changed.push(key);
+        }
+    }
+
+    fn reset_changes(&mut self) {
+        self.changed.clear();
+    }
+
+    fn keys(&self) -> &[LayoutKey] {
+        debug_assert_eq!(self.keys.len(), self.live.len());
+        debug_assert!(self.keys.iter().all(|key| self.live.contains_key(*key)));
+        debug_assert!(self.keys.iter().enumerate().all(|(i, key)| !self.keys[..i].contains(key)));
+        &self.keys
+    }
+
+    fn untrack(&mut self, key: LayoutKey) {
+        let position = self.keys.iter()
+            .position(|candidate| *candidate == key)
+            .expect("live layout key is not tracked");
+        self.keys.swap_remove(position);
     }
 }
 
