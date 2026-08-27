@@ -34,6 +34,18 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Cache flat insertion-option counts after `af3799d`
+
+- Maintained a dense count vector beside the per-part-type option buckets so selection could read one compact array instead of each nested vector's length.
+- Full-solver Criterion measured a 7.27% throughput regression, with the entire confidence interval below zero (`-7.89%..-6.65%`, `p = 0.00`).
+- Rejected immediately. Updating the duplicate count on every insertion and removal costs far more than reading the existing bucket length.
+
+### Precompute sheet-area reciprocals after `af3799d`
+
+- Stored each sheet type's reciprocal area and multiplied by it when calculating layout usage, while a debug assertion independently checked the cached value.
+- Full-solver Criterion found no gain: -0.32% median throughput with a `-1.17%..+0.44%` confidence interval and `p = 0.48`.
+- Reverted because one saved floating-point division does not justify duplicate derived state.
+
 ### Hand-sort the three sampled ruin layouts after `af3799d`
 
 - Replaced the stable slice sort with a three-comparison stable adjacent-swap network specialized for the fixed three sampled layouts.
