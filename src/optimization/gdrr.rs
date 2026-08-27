@@ -2,7 +2,6 @@ use std::cmp::Ordering;
 use std::collections::VecDeque;
 
 use colored::*;
-use itertools::Itertools;
 use ordered_float::NotNan;
 use rand::prelude::{IndexedRandom, SliceRandom};
 use rand::RngExt;
@@ -21,7 +20,6 @@ use crate::optimization::sol_collectors::local_sol_collector::LocalSolCollector;
 use crate::optimization::solutions::problem_solution::ProblemSolution;
 use crate::optimization::solutions::solution::Solution;
 use crate::util::{assertions, blink};
-use crate::util::biased_sampler::{BiasedSampler, BiasMode};
 use crate::timed_thread_println;
 use crate::util::util;
 
@@ -169,26 +167,31 @@ impl<'a> GDRR<'a> {
             for _i in 0..n_nodes_to_remove {
                 //The bias sampler allows us to select a random layout for removing a node, but with a bias towards layouts with a low usage.
                 //This is done to preserve 'good' layouts and give 'bad' layouts more opportunity to improve
-                let entries = self.problem.layouts_mut().iter_mut()
-                    .map(|(i, l)| (i, NotNan::new(l.usage(false)).expect("layout usage is NaN")))
-                    .collect_vec();
-                let biased_sampler = BiasedSampler::new_default(entries, BiasMode::Low);
-                let selected_layout = biased_sampler.sample(&mut self.problem.rng());
+                let n_layouts = self.problem.layouts().len();
+                if n_layouts == 0 {
+                    break;
+                }
+                let mut sampled_layouts: [_; 3] = std::array::from_fn(|_| {
+                    let sample_index = self.problem.rng().random_range(0..n_layouts);
+                    let layout_index = self.problem.layouts().keys().nth(sample_index).unwrap();
+                    let usage = self.problem.layouts_mut()[layout_index].usage(false);
+                    (layout_index, NotNan::new(usage).expect("layout usage is NaN"))
+                });
+                sampled_layouts.sort_by(|a, b| a.1.cmp(&b.1));
+                let sample = self.problem.rng().random::<f64>();
+                let layout_index = sampled_layouts[match sample {
+                    sample if sample <= 0.625 => 0,
+                    sample if sample <= 0.875 => 1,
+                    _ => 2,
+                }].0;
 
-                match selected_layout {
-                    Some(layout_index) => {
-                        removable_nodes.clear();
-                        removable_nodes.extend(self.problem.layouts()[*layout_index].removable_nodes());
-                        let selected_node = *removable_nodes.choose(&mut self.problem.rng()).unwrap();
+                removable_nodes.clear();
+                removable_nodes.extend(self.problem.layouts()[layout_index].removable_nodes());
+                let selected_node = *removable_nodes.choose(&mut self.problem.rng()).unwrap();
 
-                        let removed_sheet_value = self.problem.remove_node(selected_node, LayoutIndex::Existing(*layout_index));
-                        if let Some(removed_sheet_value) = removed_sheet_value {
-                            mat_limit_budget += removed_sheet_value as i128;
-                        }
-                    }
-                    None => {
-                        break;
-                    }
+                let removed_sheet_value = self.problem.remove_node(selected_node, LayoutIndex::Existing(layout_index));
+                if let Some(removed_sheet_value) = removed_sheet_value {
+                    mat_limit_budget += removed_sheet_value as i128;
                 }
             }
         } else {
