@@ -334,7 +334,7 @@ impl<'a> GDRR<'a> {
         existing_layout_blueprints: &mut Vec<InsertionBlueprint<'a>>,
         new_layout_blueprints: &mut Vec<InsertionBlueprint<'a>>,
     ) -> Option<InsertionBlueprint<'a>> {
-        for option in insertion_option_cache.get_for_parttype(parttype) {
+        for option in insertion_option_cache.options_for_parttype(parttype) {
             if existing_layout_blueprints.len() > 20 {
                 break; //enough blueprints to consider
             }
@@ -352,7 +352,7 @@ impl<'a> GDRR<'a> {
             return Some(existing_layout_blueprints.swap_remove(selected_blinked_index));
         }
 
-        for option in insertion_option_cache.get_for_parttype(parttype) {
+        for option in insertion_option_cache.options_for_parttype(parttype) {
             if let LayoutIndex::Empty(i) = option.layout_index() {
                 if mat_limit_budget >= problem.empty_layouts()[*i as usize].sheettype().value as i128 {
                     option.append_blueprints(problem, new_layout_blueprints);

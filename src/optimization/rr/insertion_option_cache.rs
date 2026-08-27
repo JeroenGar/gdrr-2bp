@@ -253,7 +253,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         }
     }
 
-    pub fn get_for_parttype(
+    pub fn options_for_parttype(
         &self,
         parttype: &PartType,
     ) -> impl ExactSizeIterator<Item = &InsertionOption<'a>> {
@@ -266,7 +266,7 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
         self.option_parttype_map[parttype.id()].len()
     }
 
-    pub fn get_for_node(
+    pub fn options_for_node(
         &self,
         node_i: &NodeKey,
         layout_i: &LayoutIndex,
