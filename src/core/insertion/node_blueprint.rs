@@ -7,7 +7,7 @@ use crate::core::entities::parttype::PartType;
 use crate::core::leftover_valuator;
 use crate::core::orientation::Orientation;
 
-/// Represents a node in an InsertionBlueprint
+/// Owned tree snapshot of a layout node used for solution transfer and serialization.
 
 #[derive(Debug, Clone)]
 pub struct NodeBlueprint {

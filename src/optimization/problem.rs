@@ -164,8 +164,6 @@ impl<'a> Problem<'a> {
     }
 
     pub fn create_solution(&mut self, old_solution: Option<ProblemSolution<'a>>, cached_cost: Option<Cost>) -> ProblemSolution<'a> {
-        //TODO: implement cached cost for problem
-
         debug_assert!(cached_cost.as_ref().is_none_or(|cost| cost == &self.cost()));
         self.layouts.discard_detached();
         let id = self.next_solution_id();

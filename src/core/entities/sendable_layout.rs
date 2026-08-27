@@ -2,7 +2,7 @@ use crate::core::cost::Cost;
 use crate::core::entities::layout::Layout;
 use crate::core::insertion::node_blueprint::NodeBlueprint;
 
-///Representation of a layout that can be sent across threads
+/// Owned layout snapshot that can be sent across threads.
 
 #[derive(Debug, Clone)]
 pub struct SendableLayout {
