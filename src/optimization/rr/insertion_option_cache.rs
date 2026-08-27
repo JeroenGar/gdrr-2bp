@@ -238,23 +238,12 @@ impl<'a: 'b, 'b> InsertionOptionCache<'a> {
                 false => None,
             },
             None => {
-                let default_possible = node.insertion_possible(parttype, Rotation::Default);
-                let rotated_possible = node.insertion_possible(parttype, Rotation::Rotated);
-                match (default_possible, rotated_possible) {
-                    (true, true) => Some(InsertionOption::new(layout_i, node_i, parttype, None)),
-                    (true, false) => Some(InsertionOption::new(
-                        layout_i,
-                        node_i,
-                        parttype,
-                        Some(Rotation::Default),
-                    )),
-                    (false, true) => Some(InsertionOption::new(
-                        layout_i,
-                        node_i,
-                        parttype,
-                        Some(Rotation::Rotated),
-                    )),
-                    (false, false) => None,
+                if node.insertion_possible(parttype, Rotation::Default)
+                    || node.insertion_possible(parttype, Rotation::Rotated)
+                {
+                    Some(InsertionOption::new(layout_i, node_i, parttype, None))
+                } else {
+                    None
                 }
             }
         }

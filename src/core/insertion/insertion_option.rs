@@ -17,7 +17,7 @@ pub struct InsertionOption<'a> {
     layout_i: LayoutIndex,
     original_node_i: NodeKey,
     parttype: &'a PartType,
-    rotation: Option<Rotation>, // None means both rotations are possible
+    rotation: Option<Rotation>, // None means both rotations are checked lazily
 }
 
 impl<'a> InsertionOption<'a> {
@@ -61,18 +61,16 @@ impl<'a> InsertionOption<'a> {
                 );
             }
             None => {
-                original_node.for_each_insertion_shape(
-                    self.parttype,
-                    Rotation::Default,
-                    max_stages,
-                    &mut |shape| append_blueprint(shape, Rotation::Default),
-                );
-                original_node.for_each_insertion_shape(
-                    self.parttype,
-                    Rotation::Rotated,
-                    max_stages,
-                    &mut |shape| append_blueprint(shape, Rotation::Rotated),
-                );
+                for rotation in [Rotation::Default, Rotation::Rotated] {
+                    if original_node.insertion_possible(self.parttype, rotation) {
+                        original_node.for_each_insertion_shape(
+                            self.parttype,
+                            rotation,
+                            max_stages,
+                            &mut |shape| append_blueprint(shape, rotation),
+                        );
+                    }
+                }
             }
         }
     }
