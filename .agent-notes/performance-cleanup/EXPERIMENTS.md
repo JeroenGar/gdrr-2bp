@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Reuse uniquely owned layout snapshot buffers after `1a8a0eb`
+
+- Used `Rc::get_mut` to restore changed layouts into uniquely owned snapshot allocations, retaining the existing fresh-clone path for shared or missing snapshots.
+- The initial ten-sample gate measured +2.34% throughput (`+0.94%..+3.79%`). The isolated sequential 20-sample comparison in one worktree and target measured a 1.97% regression, with the entire confidence interval below zero (`-2.81%..-1.03%`, `p = 0.00`).
+- Reverted because retaining the `SlotMap` and vector allocations is slower than cloning a fresh layout in the full solver. The ownership cases are sound, but the extra path does not earn its complexity.
+
 ### Reuse solution quantity buffers after `1a8a0eb`
 
 - Replaced fresh clones of `ProblemSolution`'s fixed-length part-type and sheet-type quantity vectors with `clone_from_slice`, retaining both previous allocations.
