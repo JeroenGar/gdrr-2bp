@@ -220,9 +220,10 @@ impl<'a> Layout<'a> {
     }
 
     fn calculate_cost(&self) -> Cost {
+        debug_assert!(assertions::cached_sorted_empty_nodes_correct(&self.nodes, &self.sorted_empty_nodes));
         let material_cost = Cost::empty().add_material_cost(self.sheettype.value());
-        self.nodes.iter()
-            .map(|(_, node)| node.calculate_cost(self.leftover_valuation_power))
+        self.sorted_empty_nodes.iter()
+            .map(|node_index| self.nodes[*node_index].calculate_cost(self.leftover_valuation_power))
             .fold(material_cost, |acc, cost| acc.add(&cost))
     }
 
