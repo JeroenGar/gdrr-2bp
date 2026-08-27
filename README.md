@@ -8,7 +8,7 @@ https://doi.org/10.48550/arXiv.2508.19306)**.
 The code used in the experiments in the paper was originally written in Java.
 Due to contractual obligations, this codebase can unfortunately not be made public.
 However, this reimplementation closely resembles the original design philosophy and datastructures.
-It is also much (50-100x) faster than the implementation used for the benchmarks in the paper.
+It is also over 100 times faster than the implementation used for the benchmarks in the paper.
 
 If this repository helps you in any way, please let me know.
 I'm very interested to know whether this work is useful to anyone.
@@ -53,6 +53,13 @@ cargo run --release \
 
 Make sure to include the `--release` flag to build the optimized version of the binary. 
 Omitting the flag not only leads to an unoptimized binary but also enables many (highly costly) assertions that validate the correctness of the algorithm (for use during debugging).
+
+The default build uses Rust's system allocator for maximum portability. Enabling the optional `mimalloc` feature improves solver throughput by roughly 4% on the benchmark machine:
+```bash
+cargo run --release --features mimalloc -- \
+    [path to input JSON] \
+    [path to config JSON]
+```
 
 Run the solver throughput benchmark with `cargo bench --bench ci_bench`.
 
