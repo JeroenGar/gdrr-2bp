@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Specialize unrestricted-rotation option generation after `14168d1`
+
+- Detected instances where every part permits both rotations, selected that mode once per empty node, and monomorphized the inner option-generation loop without the per-part fixed-rotation match.
+- Full-solver Criterion measured a 5.70% throughput regression, with the entire confidence interval below zero (`-6.37%..-5.10%`).
+- Rejected immediately. The extra helper boundary and larger generated loop cost much more than the already predictable `Option<Rotation>` branch.
+
 ### Sort empty-node keys once per recreate after `4a8f105`
 
 - Kept each layout's empty-node key vector unordered during ruin and recreate mutations with `push` and `swap_remove`, then sorted only dirty layouts once before initial insertion-cache population.
