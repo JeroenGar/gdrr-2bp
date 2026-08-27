@@ -273,6 +273,9 @@ impl<'a> GDRR<'a> {
 
             if let Some(elected_blueprint) = elected_blueprint.as_ref() {
                 let cache_updates = self.problem.implement_insertion_blueprint(elected_blueprint);
+                if self.problem.parttype_qtys()[elected_parttype.id()] == 0 {
+                    parttypes_to_consider.retain(|pt| pt.id() != elected_parttype.id());
+                }
                 insertion_option_cache.update_cache(&cache_updates, &parttypes_to_consider, &self.problem);
 
                 if let LayoutIndex::Empty(index) = elected_blueprint.layout_index() {
@@ -290,11 +293,6 @@ impl<'a> GDRR<'a> {
                             });
                     }
                 }
-                if *self.problem.parttype_qtys().get(elected_parttype.id()).unwrap() == 0 {
-                    //if the parttype is not needed anymore, remove it from the cache
-                    parttypes_to_consider.retain(|pt| { pt.id() != elected_parttype.id() });
-                }
-
                 if insertion_option_cache.is_empty() {
                     break;
                 }
