@@ -28,6 +28,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Sort the active part-type vector in place after `90f945a`
+
+- Let initial cache population area-sort the recreate loop's existing active part-type vector instead of allocating and sorting a second copy.
+- Full-solver Criterion measured a 1.81% throughput regression, with the entire confidence interval below zero (`-2.48%..-1.19%`).
+- Rejected immediately. Removing one allocation did not repay carrying area order into later selection and incremental cache updates; the current separate sorted copy preserves the better downstream order.
+
 ### Normalize rotatable insertion dimensions after `415c21f`
 
 - Replaced the default-or-rotated fit checks used during initial cache population with one comparison of each rectangle's shorter and longer sides.
