@@ -35,6 +35,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Remove reusable recreate scratch buffers after `44a7836`
+
+- Moved the two insertion-blueprint vectors and part-type selection index vector back into the functions that consume them. This deleted 11 net lines from `GDRR` and restored the simpler pre-#5/#8 ownership.
+- The ten-sample gate measured the no-reuse candidate 1.89% slower (`-2.88%..-0.92%`, `p = 0.00`). A sequential 20-sample confirmation measured the accepted reusable-buffer implementation 0.97% faster (`+0.24%..+1.75%`, `p = 0.02`).
+- Rejected. Three obvious scratch vectors and 11 net lines are a reasonable cost for the reproduced full-solver gain.
+
 ### Remove maintained removable-node indexing after `730435b`
 
 - Restored the pre-#36 approach: scan each selected layout's nodes into one reusable buffer, then sample that buffer. This deleted 70 net lines across `Layout`, `Node`, `Problem`, `GDRR`, and the debug assertions.
