@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Sort empty-node keys once per recreate after `4a8f105`
+
+- Kept each layout's empty-node key vector unordered during ruin and recreate mutations with `push` and `swap_remove`, then sorted only dirty layouts once before initial insertion-cache population.
+- Full-solver Criterion measured a 5.05% throughput regression, with the entire confidence interval below zero (`-5.63%..-4.44%`).
+- Rejected immediately. Even one unstable sort per recreate costs more than the existing sorted insertion and area-bounded removal. This is distinct from the earlier failed probe that sorted after every public layout mutation; do not try a third batching boundary without a different ordering algorithm.
+
 ### Cache the active part-area cutoff after `bc04200`
 
 - Kept the current area-sorted part type's area in one scalar while advancing the monotonic cutoff during initial cache population, avoiding a repeated `PartType::area` load when the cutoff did not move.
