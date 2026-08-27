@@ -35,6 +35,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Remove maintained removable-node indexing after `730435b`
+
+- Restored the pre-#36 approach: scan each selected layout's nodes into one reusable buffer, then sample that buffer. This deleted 70 net lines across `Layout`, `Node`, `Problem`, `GDRR`, and the debug assertions.
+- Sequential full-solver Criterion with mimalloc measured a 4.93% throughput regression versus `730435b`, with the entire confidence interval below zero (`-5.74%..-4.15%`, `p = 0.00`).
+- Rejected immediately. The maintained index earns its complexity on the current head, so keep it and contain its invariants inside the planned `LayoutNodes` boundary.
+
 ### Sort insertion-option ranges per layout after `b32fa9e`
 
 - Replaced one global unstable sort with a small unstable sort after each layout, while a debug assertion checked that the concatenated ranges retained the same global key order.
