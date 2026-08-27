@@ -4,6 +4,7 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Current accepted head
 
+- `ff0df2b` - reuse the previous solution's `SecondaryMap` and replace only changed layout snapshots. Criterion +2.76% versus `da48351`; exact 50,000-iteration behavior; 60-second result 52,427 iter/s.
 - `da48351` - cache excluded part area and maintain it at part registration, removal, and snapshot restore boundaries. Criterion +2.03% versus `65e0153`; exact 50,000-iteration behavior; 60-second result 52,020 iter/s.
 - `8701ffa` - sample only the three layouts considered by ruin's low-usage bias instead of allocating and valuing every live layout. Criterion +3.86% versus `84d3cc2`; exact 50,000-iteration behavior; 60-second result 50,210 iter/s.
 - `1734ef7` - record each changed layout only once so rejected-solution restore cannot restore the same snapshot repeatedly after several mutations. Criterion +1.68% versus `8e2129e`; exact 50,000-iteration behavior; 60-second result 45,820 iter/s.
