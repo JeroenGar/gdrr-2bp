@@ -22,6 +22,7 @@ use crate::util::assertions;
 pub struct Problem<'a> {
     instance: &'a Instance,
     parttype_qtys: Vec<usize>,
+    part_area_excluded: u64,
     sheettype_qtys: Vec<usize>,
     layouts: SlotMap<LayoutKey, Layout<'a>>,
     detached_layouts: Vec<(LayoutKey, Layout<'a>)>,
@@ -40,6 +41,7 @@ impl<'a> Problem<'a> {
         leftover_valuation_power: f32,
     ) -> Self {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
+        let part_area_excluded = instance.total_part_area();
         let sheettype_qtys = instance.sheets().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let random = match random_seed {
             Some(seed) => SmallRng::seed_from_u64(seed),
@@ -49,6 +51,7 @@ impl<'a> Problem<'a> {
         let mut problem = Problem {
             instance,
             parttype_qtys,
+            part_area_excluded,
             sheettype_qtys,
             layouts : SlotMap::with_key(),
             detached_layouts : Vec::new(),
@@ -151,8 +154,7 @@ impl<'a> Problem<'a> {
         let mut cost = self.layouts.iter_mut()
             .fold(Cost::empty(), |acc, (_,l)| acc + l.cost(false));
 
-        cost.part_area_excluded = self.parttype_qtys.iter().enumerate()
-            .fold(0, |acc, (id, qty)| acc + self.instance().get_parttype(id).area() * (*qty as u64));
+        cost.part_area_excluded = self.part_area_excluded();
 
         cost.part_area_included = self.instance.total_part_area() - cost.part_area_excluded;
 
@@ -209,6 +211,7 @@ impl<'a> Problem<'a> {
         self.discard_detached_layouts();
 
         self.parttype_qtys = solution.parttype_qtys().clone();
+        self.part_area_excluded = solution.cost().part_area_excluded;
         self.sheettype_qtys = solution.sheettype_qtys().clone();
 
         debug_assert!(assertions::problem_matches_solution(self, solution));
@@ -221,9 +224,7 @@ impl<'a> Problem<'a> {
     }
 
     pub fn usage(&self) -> f64 {
-        let total_included_part_area = self.instance().parts().iter().map(
-            |(parttype, qty)| { parttype.area() * (*qty - self.parttype_qtys.get(parttype.id()).unwrap()) as u64 }
-        ).sum::<u64>();
+        let total_included_part_area = self.instance.total_part_area() - self.part_area_excluded();
         let total_used_sheet_area = self.layouts().iter().map(
             |(_, layout)| { layout.sheettype().area() }
         ).sum::<u64>();
@@ -308,12 +309,15 @@ impl<'a> Problem<'a> {
     }
 
     fn register_part(&mut self, parttype_id: usize, qty: usize) {
+        debug_assert!(self.parttype_qtys[parttype_id] >= qty);
         self.parttype_qtys[parttype_id] -= qty;
+        self.part_area_excluded -= self.instance.get_parttype(parttype_id).area() * qty as u64;
     }
 
     fn unregister_part(&mut self, parttype_id: usize, qty: usize) {
         debug_assert!(self.parttype_qtys[parttype_id] + qty <= self.instance.get_parttype_qty(parttype_id).unwrap());
         self.parttype_qtys[parttype_id] += qty;
+        self.part_area_excluded += self.instance.get_parttype(parttype_id).area() * qty as u64;
     }
 
     fn register_sheet(&mut self, sheettype_id: usize, qty: usize) {
@@ -342,6 +346,16 @@ impl<'a> Problem<'a> {
 
     pub fn changed_layouts(&self) -> &Vec<LayoutKey> {
         &self.changed_layouts
+    }
+
+    fn part_area_excluded(&self) -> u64 {
+        debug_assert_eq!(
+            self.part_area_excluded,
+            self.parttype_qtys.iter().enumerate().fold(0, |area, (id, qty)| {
+                area + self.instance.get_parttype(id).area() * *qty as u64
+            }),
+        );
+        self.part_area_excluded
     }
 }
 
