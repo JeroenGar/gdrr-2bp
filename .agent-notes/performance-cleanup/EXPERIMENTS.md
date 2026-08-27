@@ -35,6 +35,24 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Sort insertion-option ranges per layout after `b32fa9e`
+
+- Replaced one global unstable sort with a small unstable sort after each layout, while a debug assertion checked that the concatenated ranges retained the same global key order.
+- Full-solver Criterion measured a 7.77% throughput regression, with the entire confidence interval below zero (`-9.06%..-6.49%`, `p = 0.00`).
+- Rejected immediately. One larger standard-library sort is far cheaper than invoking hundreds of tiny sorts.
+
+### Build the initial cache with direct layout loops after `b32fa9e`
+
+- Replaced the chained layout iterator with direct existing-layout and empty-layout loops sharing one helper, while preserving their order.
+- Full-solver Criterion measured a 1.43% throughput regression, with the entire confidence interval below zero (`-2.36%..-0.51%`, `p = 0.01`).
+- Rejected immediately. The generic iterator already optimizes well, and the extra helper boundary made the hot cache build slower.
+
+### Delete stale insertion-option ranges after `b32fa9e`
+
+- Removed an exhausted node's range record instead of retaining its key with an empty range for the rest of the recreate phase.
+- Full-solver Criterion found no gain: -0.07% median throughput with a `-0.94%..+0.79%` confidence interval and `p = 0.88`.
+- Reverted because the extra middle shift does not repay shorter later binary searches.
+
 ### Cache flat insertion-option counts after `af3799d`
 
 - Maintained a dense count vector beside the per-part-type option buckets so selection could read one compact array instead of each nested vector's length.
