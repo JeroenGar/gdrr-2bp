@@ -33,6 +33,30 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Re-shuffle retained part-type indices after `2b74da0`
+
+- Reused the existing shuffled permutation when the active part-type count stayed unchanged, rebuilding `0..len` only after a part type left the active set.
+- Full-solver Criterion measured a 2.23% throughput regression, with the entire confidence interval below zero (`-2.91%..-1.51%`, `p = 0.00`).
+- Rejected immediately. Re-shuffling any existing permutation remains uniformly random, but the changed fixed-seed mapping follows a more expensive solver trajectory and fails the representative full-solver oracle.
+
+### Reuse removed-part IDs during ruin after `2b74da0`
+
+- Allocated one removed-part ID buffer per ruin and drained it after each node removal instead of allocating a fresh vector per non-root removal.
+- Full-solver Criterion found no gain: -0.76% median throughput with a `-1.55%..0.00%` confidence interval and `p = 0.08`.
+- Reverted because the extra buffer parameter across `GDRR`, `Problem`, and `Layout` does not improve the solver. This also confirms the earlier callback-based rejection from a different implementation.
+
+### Grow existing empty layout nodes in place after `2b74da0`
+
+- In removal scenario 1, resized the existing empty child and relocated its key once in the sorted empty-node index instead of removing both children and inserting a replacement node.
+- Full-solver Criterion measured a 1.35% throughput regression, with the entire confidence interval below zero (`-2.43%..-0.34%`, `p = 0.03`).
+- Rejected immediately. Avoiding one SlotMap removal/insertion and sibling relink does not repay the extra sorted-index bookkeeping, and the larger mutation path is harder to read.
+
+### Inline `PartType::id` after `2b74da0`
+
+- Added `#[inline]` to the public scalar getter after the row 41 profile attributed 2.24% of worker leaf samples to it.
+- Full-solver Criterion found no change: -0.17% median throughput with a `-0.96%..+0.68%` confidence interval and `p = 0.71`.
+- Reverted because the leaf symbol represented surrounding optimized work rather than useful call overhead; the annotation adds noise without improving the solver.
+
 ### Remove cached node options in reverse after `1a711b7`
 
 - Iterated each cached node's contiguous option range back-to-front so recently appended groups could turn `swap_remove` into tail pops and avoid reverse-index repairs.
