@@ -30,6 +30,12 @@ The PR description is the public accepted-change report. This file also records 
 
 ## Rejected experiments
 
+### Reuse solution quantity buffers after `1a8a0eb`
+
+- Replaced fresh clones of `ProblemSolution`'s fixed-length part-type and sheet-type quantity vectors with `clone_from_slice`, retaining both previous allocations.
+- The initial ten-sample gate misleadingly measured +1.59% throughput (`+1.10%..+2.09%`). The isolated sequential 20-sample comparison in one worktree and target measured a 3.51% regression, with the entire confidence interval below zero (`-4.27%..-2.85%`, `p = 0.00`).
+- Reverted because retaining these allocations is slower than cloning fresh vectors in the full solver. The length invariant is sound, but the representation change does not earn its cost.
+
 ### Put unrestricted rotation first after `208fd7f`
 
 - Reordered `generate_insertion_option` so its unrestricted-rotation arm, used by every part in the representative workload, appears before the fixed-rotation arm without adding a helper or changing control flow.
