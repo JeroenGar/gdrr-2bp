@@ -50,6 +50,10 @@ fn main() {
 
     let mut json_instance: JsonInstance = serde_json::from_reader(BufReader::new(&input_file)).unwrap();
     let config: Config = serde_json::from_reader(BufReader::new(&config_file)).unwrap();
+    if let Err(err) = config.validate() {
+        eprintln!("Invalid config: {err}");
+        std::process::exit(1);
+    }
 
     timed_println!("Config file loaded: {}", serde_json::to_string(&config).unwrap());
 

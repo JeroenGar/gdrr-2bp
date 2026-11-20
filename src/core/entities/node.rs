@@ -96,7 +96,7 @@ impl<'a> Node<'a> {
         self.width >= part_size.width() && self.height >= part_size.height()
     }
 
-    pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
+    pub fn calculate_cost(&self, leftover_valuation_power: f64) -> Cost {
         match (self.parttype, self.has_children()) {
             (Some(_), false) => Cost::empty(), // part-node
             (None, true) => Cost::empty(), // structure-node
