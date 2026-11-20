@@ -8,6 +8,7 @@ use std::sync::mpsc::channel;
 use std::time::Instant;
 use once_cell::sync::Lazy;
 
+use gdrr_2bp::core::leftover_valuator;
 use gdrr_2bp::io::html_export::generate_solution;
 use gdrr_2bp::io::json_format::JsonInstance;
 use gdrr_2bp::io::parser;
@@ -54,6 +55,17 @@ fn main() {
     timed_println!("Config file loaded: {}", serde_json::to_string(&config).unwrap());
 
     let instance = parser::generate_instance(&mut json_instance, &config);
+
+    let largest_sheet_area = instance.sheets().iter().map(|(sheettype, _)| sheettype.area()).max().unwrap_or(0);
+    if let Err(err) = config.validate().and_then(|_| leftover_valuator::check_finite(
+        largest_sheet_area,
+        instance.total_part_qty(),
+        config.leftover_valuation_power,
+    )) {
+        eprintln!("Invalid config: {err}");
+        std::process::exit(1);
+    }
+
     timed_println!("Starting optimization of {} parts of {} different types for {} seconds", instance.total_part_qty(), instance.parts().len(), config.max_run_time.unwrap_or(usize::MAX));
     timed_println!("Press Ctrl+C to terminate manually");
 

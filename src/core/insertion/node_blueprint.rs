@@ -38,7 +38,7 @@ impl NodeBlueprint {
         Self { width, height, parttype_id, children, next_cut_orient }
     }
 
-    pub fn calculate_cost(&self, leftover_valuation_power: f32) -> Cost {
+    pub fn calculate_cost(&self, leftover_valuation_power: f64) -> Cost {
         if self.parttype_id.is_some() {
             Cost::empty()
         } else if self.children.is_empty() {

@@ -15,7 +15,7 @@ use super::sheettype::SheetType;
 pub struct Layout<'a> {
     id : usize,
     sheettype: &'a SheetType,
-    leftover_valuation_power: f32,
+    leftover_valuation_power: f64,
     nodes: LayoutNodes<'a>,
     cached_cost: Option<Cost>,
 }
@@ -25,7 +25,7 @@ impl<'a> Layout<'a> {
         id: usize,
         sheettype: &'a SheetType,
         first_cut_orientation: Orientation,
-        leftover_valuation_power: f32,
+        leftover_valuation_power: f64,
     ) -> Self {
         let top_node = Node::new(0, sheettype.width, sheettype.height, first_cut_orientation, None);
         let nodes = LayoutNodes::new(top_node);
@@ -285,7 +285,7 @@ impl<'a> Layout<'a> {
         self.sheettype
     }
 
-    pub fn leftover_valuation_power(&self) -> f32 {
+    pub fn leftover_valuation_power(&self) -> f64 {
         self.leftover_valuation_power
     }
 

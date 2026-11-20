@@ -36,7 +36,7 @@ impl<'a> Problem<'a> {
     pub fn new(
         instance: &'a Instance,
         random_seed: Option<u64>,
-        leftover_valuation_power: f32,
+        leftover_valuation_power: f64,
     ) -> Self {
         let parttype_qtys = instance.parts().iter().map(|(_, qty)| *qty).collect::<Vec<_>>();
         let part_area_excluded = instance.total_part_area();

@@ -27,7 +27,7 @@ impl<'a> InsertionBlueprint<'a> {
         rotation: Rotation,
         parttype: &'a PartType,
         original_node: &Node,
-        leftover_valuation_power: f32,
+        leftover_valuation_power: f64,
     ) -> Self {
         let mut blueprint = Self {
             layout_i,
