@@ -5,31 +5,14 @@
 /// distinguish small leftover changes. For integral `power = 2` the result is exact as long as
 /// the total stays below 2^53.
 pub fn valuate(area: u64, power: f64) -> f64 {
-    let value = area_pow(area, power);
-    debug_assert!(value.is_finite(), "leftover value of area {area} with power {power} is not finite");
-    value
-}
-
-fn area_pow(area: u64, power: f64) -> f64 {
     let area = area as f64;
-    if power == 2.0 {
+    let value = if power == 2.0 {
         area * area
     } else {
         area.powf(power)
-    }
-}
-
-/// Checks whether leftover values remain finite for this instance: the largest sheet's leftover
-/// value, summed over the maximum number of layouts a solution can contain, must not overflow.
-pub fn check_finite(largest_sheet_area: u64, max_n_layouts: usize, power: f64) -> Result<(), String> {
-    let value = area_pow(largest_sheet_area, power);
-    if value.is_finite() && (value * max_n_layouts.max(1) as f64).is_finite() {
-        Ok(())
-    } else {
-        Err(format!(
-            "leftoverValuationPower {power} is too large for sheets of area {largest_sheet_area}: leftover values overflow"
-        ))
-    }
+    };
+    debug_assert!(value.is_finite(), "leftover value of area {area} with power {power} is not finite");
+    value
 }
 
 #[cfg(test)]
@@ -58,13 +41,5 @@ mod tests {
     fn non_integer_power() {
         assert!((valuate(100, 1.5) - 1000.0).abs() < 1e-9);
         assert_eq!(valuate(0, 1.5), 0.0);
-    }
-
-    #[test]
-    fn check_finite_rejects_overflowing_powers() {
-        let sheet_area = 550_000 * 368_000;
-        assert!(check_finite(sheet_area, 5000, 2.0).is_ok());
-        assert!(check_finite(sheet_area, 5000, 4.0).is_ok());
-        assert!(check_finite(sheet_area, 5000, 30.0).is_err());
     }
 }
