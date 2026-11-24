@@ -153,6 +153,7 @@ impl<'a> GDRR<'a> {
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
+        // Unlike Algorithm 1, this range yields 4..=2μ−2 (mean μ+1), not 1..=2μ−1 (mean μ).
         let n_nodes_to_remove = self.problem.rng().random_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
