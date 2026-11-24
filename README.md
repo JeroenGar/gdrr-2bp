@@ -82,7 +82,7 @@ A detailed explanation of most of these parameters can be found in the paper.
     "randomSeed": 0, //optional fixed seed; use one thread for reproducible runs
     "nThreads": 4, //number of threads to use
     "rotationAllowed": true, //if true, 90 degree rotation of parts is allowed (2BP|R|G), false otherwise (2BP|O|G)
-    "avgNodesRemoved": 6, //average number of removed nodes per iteration (μ)
+    "avgNodesRemoved": 6, //average number of removed nodes per iteration (μ); the implementation removes μ + 1 on average, see #13
     "blinkRate": 0.01, //blink rate (β)
     "leftoverValuationPower": 2, //exponent used for the valuation of leftover nodes (α)
     "historyLength": 500, //late-acceptance history length (Lh)

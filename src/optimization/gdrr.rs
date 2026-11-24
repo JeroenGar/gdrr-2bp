@@ -153,6 +153,9 @@ impl<'a> GDRR<'a> {
     }
 
     fn ruin(&mut self, mut mat_limit_budget: i128) -> i128 {
+        // Diverges from the paper (Algorithm 1 samples i ∈ {1, …, 2μ−1}, mean μ):
+        // here i ∈ {4, …, 2μ−2}, mean μ + 1, so at least 4 nodes are always removed.
+        // Kept as-is to preserve the tuned behaviour, see #13.
         let n_nodes_to_remove = self.problem.rng().random_range(2..(self.config.avg_nodes_removed - 2) * 2 + 1) + 2;
 
         if mat_limit_budget >= 0 {
